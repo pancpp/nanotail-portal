@@ -3,3 +3,7 @@
 .claude/
 .codex/
 .vscode/
+
+fairnet-portal
+fairnet-portal.arm64
+fairnet-portal.yml
