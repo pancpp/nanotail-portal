@@ -1,0 +1,28 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+scalar Int64
+scalar Uint64
+scalar Time
+
+type User {
+  id: Int64!
+  username: String!
+  role: String!
+  createTime: Time!
+  updateTime: Time!
+}
+
+type Query {
+  user: User!
+}
+
+input ChangePassword {
+  oldpassword: String!
+  newpassword: String!
+}
+
+type Mutation {
+  changePassword(passwords: ChangePassword!): Boolean!
+}

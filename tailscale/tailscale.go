@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v5"
-	"github.com/pancpp/nanotail-portal/internal/api"
 )
 
 // Register expects a group with authentication middleware already attached.

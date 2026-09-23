@@ -12,8 +12,12 @@ build_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 git_hash="$(git rev-parse --short HEAD)"
 build_number="$(git rev-list --count HEAD)"
 
-mkdir -p dist
-CGO_ENABLED=0 \
+# Generate GraphQL
+pushd app
+go tool gqlgen generate
+popd
+
+# Build nanotail-portal
 GOOS=linux \
 GOARCH=arm64 \
 go build -trimpath \

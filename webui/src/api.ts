@@ -4,8 +4,8 @@ export interface LoginCredentials {
 }
 
 export interface PasswordChange {
-  current_password: string
-  new_password: string
+  oldpassword: string
+  newpassword: string
 }
 
 export class ApiError extends Error {
@@ -65,28 +65,50 @@ export async function loginRequest(credentials: LoginCredentials): Promise<strin
   return payload.token
 }
 
+const CHANGE_PASSWORD_MUTATION = `
+  mutation ChangePassword($passwords: ChangePassword!) {
+    changePassword(passwords: $passwords)
+  }
+`
+
 export async function changePasswordRequest(token: string, passwords: PasswordChange): Promise<void> {
-  const bytes = new TextEncoder().encode(passwords.new_password).length
+  const bytes = new TextEncoder().encode(passwords.newpassword).length
   if (bytes < 8 || bytes > 72) {
     throw new Error('New password must contain between 8 and 72 bytes.')
   }
 
-  const response = await fetch('/api/change-password', {
+  const response = await fetch('/api/v1/query', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(passwords),
+    body: JSON.stringify({
+      operationName: 'ChangePassword',
+      query: CHANGE_PASSWORD_MUTATION,
+      variables: { passwords },
+    }),
   })
-  if (!response.ok) {
-    throw await apiError(response, 'Unable to change your password. Please try again.')
+  const payload = await response.json().catch(() => null)
+  const errors: unknown[] = Array.isArray(payload?.errors) ? payload.errors : []
+  // Resolver failures can use HTTP 200, even when data is also present.
+  if (!response.ok || errors.length > 0) {
+    const messages = errors.flatMap((error) => {
+      if (typeof error !== 'object' || error === null || !('message' in error)) return []
+      return typeof error.message === 'string' && error.message.trim() ? [error.message] : []
+    })
+    const message = messages.join('\n') ||
+      (typeof payload?.message === 'string' && payload.message) ||
+      'Unable to change your password. Please try again.'
+    throw new ApiError(message, response.status)
   }
-  // Success is 204 No Content, so there is no response JSON to decode.
+  if (payload?.data?.changePassword !== true ||
+      (payload.errors !== undefined && !Array.isArray(payload.errors))) {
+    throw new ApiError('The server did not confirm the password change.', response.status)
+  }
 }
 
 export function isSessionError(error: unknown): boolean {
-  // The endpoint also uses 401 for an incorrect current password; allow retries.
-  return error instanceof ApiError && error.status === 401 &&
-    error.message !== 'Current password is incorrect'
+  // JWT rejection is HTTP 401; an incorrect password is a GraphQL resolver error.
+  return error instanceof ApiError && error.status === 401
 }

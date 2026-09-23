@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/pancpp/nanotail-portal/webui"
 	"golang.org/x/crypto/bcrypt"
@@ -76,9 +77,9 @@ func TestLoginReturnsUsableJWT(t *testing.T) {
 			if err := json.Unmarshal(w.Body.Bytes(), &login); err != nil {
 				t.Fatal(err)
 			}
-			claims := new(Claims)
+			claims := new(auth.Claims)
 			token, err := jwt.ParseWithClaims(login.Token, claims, func(*jwt.Token) (any, error) {
-				return gJwtSigningKey, nil
+				return auth.GetJwtSignKey(), nil
 			}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
 			if err != nil {
 				t.Fatalf("invalid login token: %v", err)
@@ -92,13 +93,13 @@ func TestLoginReturnsUsableJWT(t *testing.T) {
 			if claims.IssuedAt.Time.Before(before) || claims.IssuedAt.Time.After(time.Now()) {
 				t.Fatalf("unexpected token issue time: %v", claims.IssuedAt.Time)
 			}
-			if ttl := claims.ExpiresAt.Sub(claims.IssuedAt.Time); ttl != JWT_EXP_LEN {
-				t.Fatalf("token lifetime = %v, want %v", ttl, JWT_EXP_LEN)
+			if ttl := claims.ExpiresAt.Sub(claims.IssuedAt.Time); ttl != auth.JWT_EXP_LEN {
+				t.Fatalf("token lifetime = %v, want %v", ttl, auth.JWT_EXP_LEN)
 			}
-			w = appRequest(e, http.MethodPost, "/api/change-password", `{}`, "Bearer "+login.Token)
-			// A valid token reaches the handler, which rejects the missing fields.
-			if w.Code != http.StatusBadRequest {
-				t.Fatalf("authenticated request: got %d, want 400: %s", w.Code, w.Body.String())
+			w = appRequest(e, http.MethodPost, "/api/v1/query", `{"query":"query { __typename }"}`, "Bearer "+login.Token)
+			// A valid token reaches the authenticated GraphQL endpoint.
+			if w.Code != http.StatusOK {
+				t.Fatalf("authenticated request: got %d, want 200: %s", w.Code, w.Body.String())
 			}
 		})
 	}
@@ -161,7 +162,7 @@ func TestProtectedAPI(t *testing.T) {
 	e := newTestApp(t)
 	sign := func(method jwt.SigningMethod, key []byte, expires time.Time) string {
 		t.Helper()
-		token := jwt.NewWithClaims(method, &Claims{
+		token := jwt.NewWithClaims(method, &auth.Claims{
 			UserPID: 42,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(expires),
@@ -174,7 +175,7 @@ func TestProtectedAPI(t *testing.T) {
 		return signed
 	}
 	future := time.Now().Add(time.Hour)
-	valid := sign(jwt.SigningMethodHS256, gJwtSigningKey, future)
+	valid := sign(jwt.SigningMethodHS256, auth.GetJwtSignKey(), future)
 	for _, tt := range []struct {
 		name          string
 		authorization string
@@ -184,12 +185,12 @@ func TestProtectedAPI(t *testing.T) {
 		{"malformed token", "Bearer invalid", http.StatusUnauthorized},
 		{"wrong authorization scheme", "Basic " + valid, http.StatusUnauthorized},
 		{"invalid signature", "Bearer " + sign(jwt.SigningMethodHS256, []byte("incorrect-test-signing-key"), future), http.StatusUnauthorized},
-		{"expired token", "Bearer " + sign(jwt.SigningMethodHS256, gJwtSigningKey, time.Now().Add(-time.Hour)), http.StatusUnauthorized},
-		{"wrong algorithm", "Bearer " + sign(jwt.SigningMethodHS384, gJwtSigningKey, future), http.StatusUnauthorized},
-		{"valid token reaches request validation", "Bearer " + valid, http.StatusBadRequest},
+		{"expired token", "Bearer " + sign(jwt.SigningMethodHS256, auth.GetJwtSignKey(), time.Now().Add(-time.Hour)), http.StatusUnauthorized},
+		{"wrong algorithm", "Bearer " + sign(jwt.SigningMethodHS384, auth.GetJwtSignKey(), future), http.StatusUnauthorized},
+		{"valid token reaches GraphQL", "Bearer " + valid, http.StatusOK},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			w := appRequest(e, http.MethodPost, "/api/change-password", `{}`, tt.authorization)
+			w := appRequest(e, http.MethodPost, "/api/v1/query", `{"query":"query { __typename }"}`, tt.authorization)
 			if w.Code != tt.code {
 				t.Fatalf("got %d, want %d: %s", w.Code, tt.code, w.Body.String())
 			}

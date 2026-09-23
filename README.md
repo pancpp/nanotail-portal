@@ -68,15 +68,16 @@ new Tailscale APIs is a separate frontend step.
 
 ## API
 
-Requests with JSON bodies require `Content-Type: application/json`, reject unknown
-fields, and are limited to 64 KiB. Errors use `{"message":"..."}`. Protected routes
-require `Authorization: Bearer <access_token>`. Query-string tokens are not accepted.
+Requests with JSON bodies require `Content-Type: application/json`. Protected routes
+require `Authorization: Bearer <token>`. Query-string tokens are not accepted.
+Login and JWT middleware errors use `{"message":"..."}`; GraphQL responses use
+`data` and `errors` as described below.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/health` | Public portal liveness; does not indicate Tailscale health |
 | POST | `/api/login` | Public login with `username` and `password`; returns a JWT in `token` |
-| POST | `/api/change-password` | Change the authenticated user's password; returns 204 |
+| POST | `/api/v1/query` | Authenticated GraphQL endpoint, including the password-change mutation |
 | GET | `/api/system` | Hostname, OS, architecture, portal uptime and build metadata |
 | GET | `/api/tailscale/status` | State, self, peers, health messages and traffic counters |
 | GET | `/api/tailscale/peers` | Sorted peer array |
@@ -95,22 +96,33 @@ curl -X POST http://localhost:8080/api/login \
   -d '{"username":"admin","password":"admin"}'
 ```
 
-To change the password, send the following JSON to `POST /api/change-password`,
+To change the password, send the following JSON to `POST /api/v1/query`,
 with `Content-Type: application/json` and `Authorization: Bearer <token>` from
 login. The account is selected exclusively from the JWT's user ID; do not supply
 a username or user ID in the request. The current password must match, and new
 passwords must be 8–72 bytes (bcrypt's limit, including UTF-8 bytes).
 
 ```json
-{"current_password":"admin","new_password":"choose-a-new-password"}
+{
+  "operationName": "ChangePassword",
+  "query": "mutation ChangePassword($passwords: ChangePassword!) { changePassword(passwords: $passwords) }",
+  "variables": {
+    "passwords": {
+      "oldpassword": "admin",
+      "newpassword": "choose-a-new-password"
+    }
+  }
+}
 ```
 
-Success returns `204 No Content`. Malformed JSON, unknown fields, missing fields,
-or invalid password lengths return `400`; oversized bodies return `413` and a
-non-JSON content type returns `415`. Invalid tokens, deleted users, or incorrect
-current passwords return `401`. Database failures return `500` without exposing
-database details. Subsequent logins must use the new password. Concurrent valid
+Success returns `{"data":{"changePassword":true}}`. Clients must check the
+GraphQL `errors` array even on HTTP 200 and require a true result before reporting
+success. An incorrect current password returns a GraphQL error; it does not
+invalidate the current browser session. JWT middleware rejects invalid tokens
+with HTTP 401. Subsequent logins must use the new password. Concurrent valid
 password changes are last-write-wins; the update matches the user ID only.
+Internal failures are logged on the server and exposed only as
+`Internal Server Error`; expected authentication and validation errors remain readable.
 
 A configuration PATCH may include `hostname`, `accept_dns`, `accept_routes`,
 `shields_up`, `exit_node`, `exit_node_allow_lan_access`, `advertise_routes`, and

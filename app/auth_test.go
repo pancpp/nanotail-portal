@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/uptrace/bun"
 	"golang.org/x/crypto/bcrypt"
@@ -82,10 +83,10 @@ func TestAuthenticateWithUsernamePassword(t *testing.T) {
 		{"empty credentials", "", "", nil},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := AuthenticateWithUsernamePassword(tt.username, tt.password)
+			got, err := auth.AuthenticateWithUsernamePassword(tt.username, tt.password)
 			if tt.want == nil {
-				if !errors.Is(err, ErrUnauthorized) || got != nil {
-					t.Fatalf("got (%v, %v), want (nil, ErrUnauthorized)", got, err)
+				if !errors.Is(err, auth.ErrUnauthorized) || got != nil {
+					t.Fatalf("got (%v, %v), want (nil, auth.ErrUnauthorized)", got, err)
 				}
 				return
 			}
@@ -105,8 +106,8 @@ func TestAuthenticateWithUsernamePasswordDatabaseError(t *testing.T) {
 	if _, err := db.NewDropTable().Model((*database.User)(nil)).Exec(database.Context()); err != nil {
 		t.Fatal(err)
 	}
-	user, err := AuthenticateWithUsernamePassword("admin", "admin")
-	if user != nil || err == nil || errors.Is(err, ErrUnauthorized) {
+	user, err := auth.AuthenticateWithUsernamePassword("admin", "admin")
+	if user != nil || err == nil || errors.Is(err, auth.ErrUnauthorized) {
 		t.Fatalf("got (%v, %v), want (nil, database error)", user, err)
 	}
 
@@ -121,9 +122,9 @@ func TestAuthenticateWithUsernamePasswordDatabaseError(t *testing.T) {
 		{"empty credentials", "", ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			user, err := AuthenticateWithUsernamePassword(tt.username, tt.password)
-			if user != nil || !errors.Is(err, ErrUnauthorized) {
-				t.Fatalf("got (%v, %v), want (nil, ErrUnauthorized)", user, err)
+			user, err := auth.AuthenticateWithUsernamePassword(tt.username, tt.password)
+			if user != nil || !errors.Is(err, auth.ErrUnauthorized) {
+				t.Fatalf("got (%v, %v), want (nil, auth.ErrUnauthorized)", user, err)
 			}
 		})
 	}
@@ -135,8 +136,79 @@ func TestAuthenticateWithUsernamePasswordCanceledContext(t *testing.T) {
 	setupAuthDatabase(t, ctx)
 	cancel()
 
-	user, err := AuthenticateWithUsernamePassword("admin", "admin")
+	user, err := auth.AuthenticateWithUsernamePassword("admin", "admin")
 	if user != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("got (%v, %v), want (nil, context.Canceled)", user, err)
+	}
+}
+
+func TestAuthenticateWithUserPIDPassword(t *testing.T) {
+	db := setupAuthDatabase(t, t.Context())
+	users := []database.User{
+		{Username: "admin", Role: "admin"},
+		{Username: "other", Role: "user"},
+		{Username: "invalid-hash", Passwd: "not-a-bcrypt-hash", Role: "user"},
+		{Username: "deleted", Role: "user"},
+	}
+	for i, password := range []string{"admin", "different-password", "", "admin"} {
+		if password != "" {
+			hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+			if err != nil {
+				t.Fatal(err)
+			}
+			users[i].Passwd = string(hash)
+		}
+		if _, err := db.NewInsert().Model(&users[i]).Exec(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := db.NewDelete().Model(&users[3]).WherePK().Exec(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tt := range []struct {
+		name     string
+		pid      int64
+		password string
+		want     error
+	}{
+		{"matching admin", users[0].PID, "admin", nil},
+		{"matching non-admin", users[1].PID, "different-password", nil},
+		{"wrong password", users[0].PID, "wrong", auth.ErrUnauthorized},
+		{"case sensitive password", users[0].PID, "ADMIN", auth.ErrUnauthorized},
+		{"another account's password", users[1].PID, "admin", auth.ErrUnauthorized},
+		{"empty password", users[0].PID, "", auth.ErrUnauthorized},
+		{"invalid hash", users[2].PID, "admin", auth.ErrUnauthorized},
+		{"deleted user", users[3].PID, "admin", auth.ErrUnauthorized},
+		{"missing user", users[3].PID + 100, "admin", auth.ErrUnauthorized},
+		{"zero PID", 0, "admin", auth.ErrUnauthorized},
+		{"negative PID", -1, "admin", auth.ErrUnauthorized},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := auth.AuthenticateWithUserPIDPassword(tt.pid, tt.password); !errors.Is(err, tt.want) {
+				t.Fatalf("got %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestAuthenticateWithUserPIDPasswordDatabaseError(t *testing.T) {
+	db := setupAuthDatabase(t, t.Context())
+	if _, err := db.NewDropTable().Model((*database.User)(nil)).Exec(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if err := auth.AuthenticateWithUserPIDPassword(1, "admin"); err == nil || errors.Is(err, auth.ErrUnauthorized) {
+		t.Fatalf("got %v, want a database error rather than a credentials mismatch", err)
+	}
+}
+
+func TestAuthenticateWithUserPIDPasswordCanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	setupAuthDatabase(t, ctx)
+	cancel()
+
+	if err := auth.AuthenticateWithUserPIDPassword(1, "admin"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("got %v, want context.Canceled", err)
 	}
 }

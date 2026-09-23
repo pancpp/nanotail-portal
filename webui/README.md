@@ -38,11 +38,14 @@ The browser storage key is `nanotail_access_token`. After upgrading from the old
 project name, sign in again; existing account passwords are unchanged.
 
 Open **Settings** in the sidebar, then use **Change password** to update the
-signed-in account. The form sends `current_password` and `new_password` to
-`POST /api/change-password`, with
-`Authorization: Bearer <token>`. It validates the new password's 8–72-byte UTF-8
-limit and confirmation, handles the empty `204` success response, and displays
-backend errors. An incorrect current password does not sign the user out.
+signed-in account. The form sends the GraphQL mutation
+`changePassword(passwords: ChangePassword!)` to `POST /api/v1/query`, with
+`Authorization: Bearer <token>`. The `passwords` variable contains `oldpassword`
+and `newpassword`; passwords are never interpolated into the GraphQL document.
+The form validates the new password's 8–72-byte UTF-8 limit and confirmation.
+Only `data.changePassword: true` without GraphQL errors confirms success.
+GraphQL errors are displayed even on HTTP 200. An incorrect current password
+does not sign the user out; an HTTP 401 from JWT middleware does.
 Successful changes keep the current session because existing JWTs are not revoked.
 
 The dashboard's network data remains illustrative. Tailscale routes are not yet

@@ -23,7 +23,7 @@ export default function ChangePasswordForm() {
 
     setIsSubmitting(true)
     try {
-      await changePassword({ current_password: currentPassword, new_password: newPassword })
+      await changePassword({ oldpassword: currentPassword, newpassword: newPassword })
       setCurrentPassword('')
       setNewPassword('')
       setConfirmation('')
@@ -47,13 +47,13 @@ export default function ChangePasswordForm() {
       <form className="login-form password-change-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
         <label htmlFor="current-password">Current password</label>
         <input
-          id="current-password" name="current_password" type="password"
+          id="current-password" name="oldpassword" type="password"
           autoComplete="current-password" required disabled={isSubmitting}
           value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)}
         />
         <label className="password-label" htmlFor="new-password">New password</label>
         <input
-          id="new-password" name="new_password" type="password"
+          id="new-password" name="newpassword" type="password"
           autoComplete="new-password" required disabled={isSubmitting}
           aria-describedby="password-help"
           value={newPassword} onChange={(event) => setNewPassword(event.target.value)}

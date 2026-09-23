@@ -1,4 +1,4 @@
-package app
+package auth
 
 import (
 	"database/sql"
@@ -26,12 +26,16 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func initJwtSignKey(sign_key string) {
+func Init(sign_key string) {
 	gJwtSigningKey = []byte(sign_key)
 }
 
+func GetJwtSignKey() []byte {
+	return gJwtSigningKey
+}
+
 // Create JWT token
-func createJwtToken(userPID int64) (string, error) {
+func CreateJwtToken(userPID int64) (string, error) {
 	now := time.Now()
 	claims := &Claims{
 		UserPID: userPID,
@@ -75,4 +79,24 @@ func AuthenticateWithUsernamePassword(username, password string) (*database.User
 		return nil, ErrUnauthorized
 	}
 	return user, nil
+}
+
+func AuthenticateWithUserPIDPassword(userPID int64, password string) error {
+	db := database.DB()
+	ctx := database.Context()
+
+	user := &database.User{PID: userPID}
+	if err := db.NewSelect().Model(user).WherePK().Scan(ctx); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUnauthorized
+		}
+		log.Println("(AuthenticateWithUserPIDPassword) db err: ", err)
+		return err
+	}
+
+	// Check password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Passwd), []byte(password)); err != nil {
+		return ErrUnauthorized
+	}
+	return nil
 }

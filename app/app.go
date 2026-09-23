@@ -5,11 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/pancpp/nanotail-portal/app/auth"
+	"github.com/pancpp/nanotail-portal/app/graph"
 	"github.com/pancpp/nanotail-portal/conf"
 	"github.com/pancpp/nanotail-portal/webui"
 )
@@ -44,15 +47,33 @@ func Init(ctx context.Context) error {
 }
 
 func initAPIs(e *echo.Echo) error {
+	// Only login needs no header authentication
 	e.POST("/api/login", handleLogin)
 
 	jwtMiddleware := echojwt.WithConfig(echojwt.Config{
-		SigningKey:    gJwtSigningKey,
-		ContextKey:    JWT_CONTEXT_KEY_TOKEN,
-		NewClaimsFunc: func(c *echo.Context) jwt.Claims { return new(Claims) },
+		SigningKey:    auth.GetJwtSignKey(),
+		ContextKey:    auth.JWT_CONTEXT_KEY_TOKEN,
+		NewClaimsFunc: func(c *echo.Context) jwt.Claims { return new(auth.Claims) },
 	})
-	apiGroup := e.Group("/api", jwtMiddleware)
-	apiGroup.POST("/change-password", handleChangePassword)
+	gqlSrv := newGraphQLServer()
+	e.POST("/api/v1/query",
+		func(c *echo.Context) error {
+			token, ok := c.Get(auth.JWT_CONTEXT_KEY_TOKEN).(*jwt.Token)
+			if !ok || token == nil || !token.Valid {
+				return echo.NewHTTPError(http.StatusUnauthorized, ErrUnauthorized.Error())
+			}
+			claims, ok := token.Claims.(*auth.Claims)
+			if !ok || claims == nil || claims.UserPID <= 0 {
+				return echo.NewHTTPError(http.StatusUnauthorized, ErrUnauthorized.Error())
+			}
+			ctx := context.WithValue(
+				c.Request().Context(),
+				graph.QUERY_CONTEXT_KEY,
+				&graph.ContextValue{UserPID: claims.UserPID})
+			gqlSrv.ServeHTTP(c.Response(), c.Request().WithContext(ctx))
+			return nil
+		},
+		jwtMiddleware)
 
 	return nil
 }
