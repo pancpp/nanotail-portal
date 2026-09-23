@@ -10,7 +10,6 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	"github.com/uptrace/bun/driver/sqliteshim"
-	"github.com/uptrace/bun/extra/bundebug"
 )
 
 var (
@@ -31,7 +30,7 @@ func Init(ctx context.Context) error {
 	db := bun.NewDB(sqldb, sqlitedialect.New())
 
 	// Add query debugging (optional)
-	db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+	// db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 
 	// Test connection
 	if err := db.PingContext(ctx); err != nil {

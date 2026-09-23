@@ -64,7 +64,7 @@ func init() {
 func Init() error {
 	p := gViper.ConfigFileUsed()
 	if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
-		f, err := os.Create("centauri.yml")
+		f, err := os.Create(p)
 		if err != nil {
 			return err
 		}
