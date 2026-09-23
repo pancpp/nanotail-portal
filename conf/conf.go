@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -19,82 +18,85 @@ var (
 )
 
 var (
-	gConf *viper.Viper
+	gViper *viper.Viper
 )
 
 func init() {
 	var showVersion bool
 	pflag.BoolVarP(&showVersion, "version", "V", false, "Show version information")
+	pflag.String("config", "fairnet-portal.yml", "Configuration file")
 	pflag.Parse()
-
 	if showVersion {
+		fmt.Println("###############################################")
 		fmt.Println("Version     :", gVersion)
 		fmt.Println("BuildTime   :", gBuildTime)
 		fmt.Println("GitHash     :", gGitHash)
 		fmt.Println("BuildNumber :", gBuildNumber)
+		fmt.Println("###############################################")
 		os.Exit(0)
 	}
-}
+	initDBArgs()
 
-func init() {
-	conf := viper.New()
+	// viper
+	v := viper.New()
 
-	// cloud server settings
-	conf.SetDefault("http_listen_addr", ":8080")
-	conf.SetDefault("log_dir", "/srv/fairnet-portal/logs")
-	conf.SetDefault("enable_console_log", true)
+	// server settings
+	v.SetDefault("http_listen_addr", "127.0.0.1:8080")
+	v.SetDefault("log_dir", "logs")
+	v.SetDefault("enable_console_log", true)
+	v.SetDefault("data_dir", "data")
+	v.SetDefault("database", "fairnet-portal.sqlite3")
+	v.SetDefault("webui_dir", "webui/dist")
+	v.SetDefault("session_ttl", "12h")
+	v.SetDefault("tailscale_binary", "tailscale")
+	v.SetDefault("tailscale_socket", "")
+	v.SetDefault("tailscale_timeout", "15s")
+	v.SetEnvPrefix("FAIRNET")
 
 	// set config path
-	conf.SetConfigFile("fairnet-portal.yml")
-
-	gConf = conf
+	v.SetConfigFile("fairnet-portal.yml")
+	gViper = v
 }
 
-func Init(ctx context.Context) error {
-	confFilePath := gConf.ConfigFileUsed()
-	if _, err := os.Stat(confFilePath); errors.Is(err, os.ErrNotExist) {
+func Init() error {
+	p := gViper.ConfigFileUsed()
+	if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
 		f, err := os.Create("centauri.yml")
 		if err != nil {
 			return err
 		}
 		f.Close()
 	}
-
-	if err := gConf.ReadInConfig(); err != nil {
+	if err := gViper.ReadInConfig(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func GetVersion() (version, buildTime, gitHash, buildNumber string) {
-	version = gVersion
-	buildTime = gBuildTime
-	gitHash = gGitHash
-	buildNumber = gBuildNumber
-	return
+	return gVersion, gBuildTime, gGitHash, gBuildNumber
 }
 
 func GetString(key string) string {
-	return gConf.GetString(key)
+	return gViper.GetString(key)
 }
 
 func GetInt(key string) int {
-	return gConf.GetInt(key)
+	return gViper.GetInt(key)
 }
 
 func GetInt64(key string) int64 {
-	return gConf.GetInt64(key)
+	return gViper.GetInt64(key)
 }
 
 func GetBool(key string) bool {
-	return gConf.GetBool(key)
+	return gViper.GetBool(key)
 }
 
 func GetStringSlice(key string) []string {
-	return gConf.GetStringSlice(key)
+	return gViper.GetStringSlice(key)
 }
 
 func GetTime(key string) time.Time {
-	return gConf.GetTime(key)
+	return gViper.GetTime(key)
 }

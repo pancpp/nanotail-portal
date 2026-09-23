@@ -1,11 +1,10 @@
 package logger
 
 import (
-	"errors"
 	"io"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/pancpp/fairnet-portal/conf"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -13,18 +12,15 @@ import (
 
 func Init() error {
 	logDir := conf.GetString("log_dir")
-	// check log directory existence
-	if _, err := os.Stat(logDir); errors.Is(err, os.ErrNotExist) {
-		if err := os.MkdirAll(logDir, 0755); err != nil {
-			return err
-		}
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return err
 	}
 
-	fileLogPath := path.Join(logDir, "fairnet-portal.log")
+	fileLogPath := filepath.Join(logDir, "fairnet-portal.log")
 	fileLogWriter := &lumberjack.Logger{
 		Filename:   fileLogPath,
-		MaxSize:    500, // megabytes
-		MaxBackups: 5,
+		MaxSize:    10, // megabytes
+		MaxBackups: 3,
 		LocalTime:  true,
 		Compress:   true,
 	}

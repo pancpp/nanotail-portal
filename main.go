@@ -9,7 +9,9 @@ import (
 
 	"github.com/pancpp/fairnet-portal/app"
 	"github.com/pancpp/fairnet-portal/conf"
+	"github.com/pancpp/fairnet-portal/database"
 	"github.com/pancpp/fairnet-portal/logger"
+	"github.com/pancpp/fairnet-portal/migrations"
 )
 
 func main() {
@@ -17,7 +19,7 @@ func main() {
 	defer cancel()
 
 	// config
-	if err := conf.Init(ctx); err != nil {
+	if err := conf.Init(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -26,14 +28,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	version, buildTime, gitHash, buildNumber := conf.GetVersion()
 	log.Println("Hello, fainet portal!")
-	log.Println("###############################################")
-	log.Println("Version:", version)
-	log.Println("Githash:", gitHash)
-	log.Println("BuildTime:", buildTime)
-	log.Println("BuildNumber:", buildNumber)
-	log.Println("###############################################")
+	defer log.Println("Goodbye, fairnet portal!")
+
+	// database
+	if err := database.Init(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	// db migrations
+	dbCmd, dbArg := conf.DbCmdArg()
+	if dbCmd != conf.DB_UNKNOWN {
+		if err := migrations.Migrate(dbCmd, dbArg); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	// app
 	if err := app.Init(ctx); err != nil {
@@ -44,7 +54,4 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 	<-sigChan
-
-	// say goodbye
-	log.Println("Goodbye, faient portal!")
 }

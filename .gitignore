@@ -7,3 +7,6 @@
 fairnet-portal
 fairnet-portal.arm64
 fairnet-portal.yml
+fairnet-portal.sqlite3
+/data/
+/logs/

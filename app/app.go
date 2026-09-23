@@ -7,10 +7,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
 	"github.com/pancpp/fairnet-portal/conf"
-	"github.com/pancpp/fairnet-portal/tailscale"
-	"github.com/pancpp/fairnet-portal/user"
+	"github.com/pancpp/fairnet-portal/webui"
 )
 
 func Init(ctx context.Context) error {
@@ -19,11 +20,11 @@ func Init(ctx context.Context) error {
 		return fmt.Errorf("error to create echo context")
 	}
 
-	if err := user.Init(ctx, e); err != nil {
+	if err := webui.Init(e); err != nil {
 		return err
 	}
 
-	if err := tailscale.Init(ctx, e); err != nil {
+	if err := initAPIs(e); err != nil {
 		return err
 	}
 
@@ -38,6 +39,19 @@ func Init(ctx context.Context) error {
 			log.Printf("HTTP server stopped: %v", err)
 		}
 	}()
+
+	return nil
+}
+
+func initAPIs(e *echo.Echo) error {
+	e.POST("/api/login", handleLogin)
+
+	jwtMiddleware := echojwt.WithConfig(echojwt.Config{
+		SigningKey:    gJwtSigningKey,
+		NewClaimsFunc: func(c *echo.Context) jwt.Claims { return new(Claims) },
+	})
+	apiGroup := e.Group("/api", jwtMiddleware)
+	apiGroup.POST("/change-password", handleChangePassword)
 
 	return nil
 }
