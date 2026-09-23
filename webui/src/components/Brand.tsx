@@ -11,7 +11,7 @@ export default function Brand({ compact = false }: BrandProps) {
         <Network size={compact ? 19 : 22} strokeWidth={2.2} />
       </span>
       <span className="brand__name">
-        fairnet<span>portal</span>
+        nanotail <span>portal</span>
       </span>
     </div>
   )

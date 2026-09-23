@@ -1,6 +1,6 @@
 # Fairnet Portal
 
-Go/Echo backend and React WebUI for managing Tailscale on a NanoPi Zero2.
+Go/Echo backend and React WebUI for managing Tailscale on nanotail.
 
 ## Run locally
 
@@ -10,10 +10,10 @@ Requires Go 1.26 and Node/npm for the WebUI build.
 go run .
 ```
 
-The backend listens on port `8080`. On first start it creates the administrator
-account with **username `admin` and password `admin`**. Credentials are stored as
-a salted PBKDF2-SHA256 hash in `data/admin.json`; the plaintext password is not
-stored. Changing the password persists across restarts.
+The backend listens on port `8080`. The initial database migration creates the
+administrator account with **username `admin` and password `admin`**. Passwords
+are stored as salted bcrypt hashes in SQLite, never as plaintext. Changing the
+password persists across restarts.
 
 Configuration is optional. Defaults work from the repository directory without
 root permissions. To customize them, copy `fairnet-portal.example.yml` to
@@ -53,7 +53,7 @@ Status uses `tailscale status --json`. Preferences are read using `tailscale deb
 prefs` for compatibility with clients predating `tailscale get`; only selected
 fields are returned, never the daemon's `Persist` object or private keys. The
 debug command's JSON is not a stable public API, so verify compatibility with the
-Tailscale version installed on the NanoPi. Writes use `tailscale set`, preserving
+Tailscale version installed on nanotail. Writes use `tailscale set`, preserving
 omitted preferences. See the [official CLI reference](https://tailscale.com/docs/reference/tailscale-cli).
 
 Connect/disconnect uses `tailscale up` and `tailscale down`; it does not log the
@@ -77,10 +77,8 @@ require `Authorization: Bearer <access_token>`. Query-string tokens are not acce
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/health` | Public portal liveness; does not indicate Tailscale health |
-| POST | `/api/user/login` | Public login with `username` and `password` |
-| GET | `/api/user/me` | Current username and session expiry |
-| POST | `/api/user/logout` | Revoke the current session; returns 204 |
-| PUT | `/api/user/password` | Change password; returns 204 and revokes all sessions |
+| POST | `/api/login` | Public login with `username` and `password`; returns a JWT in `token` |
+| POST | `/api/change-password` | Change the authenticated user's password; returns 204 |
 | GET | `/api/system` | Hostname, OS, architecture, portal uptime and build metadata |
 | GET | `/api/tailscale/status` | State, self, peers, health messages and traffic counters |
 | GET | `/api/tailscale/peers` | Sorted peer array |
@@ -89,25 +87,32 @@ require `Authorization: Bearer <access_token>`. Query-string tokens are not acce
 | POST | `/api/tailscale/up` | Connect an enrolled node; returns 204 |
 | POST | `/api/tailscale/down` | Disconnect the node; returns 204 |
 
-Login returns `access_token`, `token_type` (`Bearer`), `username` and `expires_at`.
-Sessions last 12 hours by default and are revoked on logout, password change or
-portal restart. At most 32 sessions are retained; a new login evicts the oldest
-when full. Login/password-change requests share a global limit of 10 initial
-attempts, replenishing one attempt every six seconds (`429` with `Retry-After`).
+Login returns `{"token":"<JWT>"}`. JWTs expire after seven days. The current
+stateless JWT implementation does not revoke existing tokens after a password
+change; they remain valid until expiry.
 
 ```sh
-curl -X POST http://localhost:8080/api/user/login \
+curl -X POST http://localhost:8080/api/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"admin"}'
 ```
 
-To change the password, send the following JSON to `PUT /api/user/password`, with
-the bearer token from login. New passwords must be 8–1024 bytes. Sign in again
-after a successful change.
+To change the password, send the following JSON to `POST /api/change-password`,
+with `Content-Type: application/json` and `Authorization: Bearer <token>` from
+login. The account is selected exclusively from the JWT's user ID; do not supply
+a username or user ID in the request. The current password must match, and new
+passwords must be 8–72 bytes (bcrypt's limit, including UTF-8 bytes).
 
 ```json
 {"current_password":"admin","new_password":"choose-a-new-password"}
 ```
+
+Success returns `204 No Content`. Malformed JSON, unknown fields, missing fields,
+or invalid password lengths return `400`; oversized bodies return `413` and a
+non-JSON content type returns `415`. Invalid tokens, deleted users, or incorrect
+current passwords return `401`. Database failures return `500` without exposing
+database details. Subsequent logins must use the new password. Concurrent valid
+password changes are last-write-wins; the update matches the user ID only.
 
 A configuration PATCH may include `hostname`, `accept_dns`, `accept_routes`,
 `shields_up`, `exit_node`, `exit_node_allow_lan_access`, `advertise_routes`, and
@@ -127,13 +132,25 @@ installed, so login and frontend development remain available.
 
 ## Verify and build
 
+Create a release for nanotail (Linux/ARM64) with:
+
+```sh
+./build.sh
+```
+
+The script installs frontend dependencies, builds the React WebUI, and embeds it
+in a static Linux/ARM64 binary at `dist/fairnet-portal`. Version metadata is filled
+automatically from Git and the build time. Go, Git, and Node/npm are required.
+There are no arguments or target overrides.
+
+For standalone development checks:
+
 ```sh
 go test -race ./...
 go vet ./...
-CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o fairnet-portal.arm64 .
 ```
 
 Tests use isolated credential files and fake Tailscale runners, and exercise
 authentication, revocation, persistence, validation, API protection, static asset
 serving, startup failures and graceful shutdown. They never change the host's
-Tailscale configuration. A live NanoPi test is still needed for device integration.
+Tailscale configuration. A live device test is still needed for device integration.

@@ -470,6 +470,34 @@ input:focus-visible {
   line-height: 1.4;
 }
 
+.form-success {
+  margin-top: 15px;
+  padding: 10px 12px;
+  border: 1px solid #bddfce;
+  border-radius: 9px;
+  color: var(--green-dark);
+  background: var(--soft-green);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.password-settings {
+  margin-top: 18px;
+  scroll-margin-top: 90px;
+}
+
+.password-change-form {
+  max-width: 520px;
+  padding: 22px;
+}
+
+.password-help {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .login-submit {
   display: flex;
   width: 100%;

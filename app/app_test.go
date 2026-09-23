@@ -96,9 +96,9 @@ func TestLoginReturnsUsableJWT(t *testing.T) {
 				t.Fatalf("token lifetime = %v, want %v", ttl, JWT_EXP_LEN)
 			}
 			w = appRequest(e, http.MethodPost, "/api/change-password", `{}`, "Bearer "+login.Token)
-			// The handler is currently a stub; this verifies authenticated access only.
-			if w.Code != http.StatusOK {
-				t.Fatalf("authenticated request: got %d, want 200: %s", w.Code, w.Body.String())
+			// A valid token reaches the handler, which rejects the missing fields.
+			if w.Code != http.StatusBadRequest {
+				t.Fatalf("authenticated request: got %d, want 400: %s", w.Code, w.Body.String())
 			}
 		})
 	}
@@ -186,7 +186,7 @@ func TestProtectedAPI(t *testing.T) {
 		{"invalid signature", "Bearer " + sign(jwt.SigningMethodHS256, []byte("incorrect-test-signing-key"), future), http.StatusUnauthorized},
 		{"expired token", "Bearer " + sign(jwt.SigningMethodHS256, gJwtSigningKey, time.Now().Add(-time.Hour)), http.StatusUnauthorized},
 		{"wrong algorithm", "Bearer " + sign(jwt.SigningMethodHS384, gJwtSigningKey, future), http.StatusUnauthorized},
-		{"valid token", "Bearer " + valid, http.StatusOK},
+		{"valid token reaches request validation", "Bearer " + valid, http.StatusBadRequest},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			w := appRequest(e, http.MethodPost, "/api/change-password", `{}`, tt.authorization)

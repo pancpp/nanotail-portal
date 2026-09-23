@@ -16,6 +16,9 @@ var (
 	gGitHash     string
 	gBuildNumber string
 )
+var (
+	gUseEmbeddedWebUI string
+)
 
 var (
 	gViper *viper.Viper
@@ -75,6 +78,10 @@ func Init() error {
 
 func GetVersion() (version, buildTime, gitHash, buildNumber string) {
 	return gVersion, gBuildTime, gGitHash, gBuildNumber
+}
+
+func UseEmbeddedWebUI() bool {
+	return gUseEmbeddedWebUI == "true"
 }
 
 func GetString(key string) string {

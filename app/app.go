@@ -48,6 +48,7 @@ func initAPIs(e *echo.Echo) error {
 
 	jwtMiddleware := echojwt.WithConfig(echojwt.Config{
 		SigningKey:    gJwtSigningKey,
+		ContextKey:    JWT_CONTEXT_KEY_TOKEN,
 		NewClaimsFunc: func(c *echo.Context) jwt.Claims { return new(Claims) },
 	})
 	apiGroup := e.Group("/api", jwtMiddleware)

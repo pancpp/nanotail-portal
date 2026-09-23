@@ -10,3 +10,4 @@ fairnet-portal.yml
 fairnet-portal.sqlite3
 /data/
 /logs/
+/dist/

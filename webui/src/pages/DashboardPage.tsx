@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth'
 import Brand from '../components/Brand'
+import ChangePasswordForm from '../components/ChangePasswordForm'
 
 const navItems = [
   { label: 'Overview', icon: CircleGauge, active: true },
@@ -87,7 +88,7 @@ export default function DashboardPage() {
         <div className="device-chip">
           <span className="device-chip__icon"><Cpu size={18} /></span>
           <span>
-            <strong>NanoPi Zero2</strong>
+            <strong>nanotail</strong>
             <small><i /> Online</small>
           </span>
         </div>
@@ -114,6 +115,17 @@ export default function DashboardPage() {
             <span>Portal version</span>
             <strong>0.1.0</strong>
           </div>
+          <button
+            type="button"
+            className="logout-button"
+            onClick={() => {
+              setMenuOpen(false)
+              document.getElementById('account-settings')?.scrollIntoView({ behavior: 'smooth' })
+            }}
+          >
+            <KeyRound size={18} />
+            Change password
+          </button>
           <button type="button" className="logout-button" onClick={logout}>
             <LogOut size={18} />
             Sign out
@@ -173,7 +185,7 @@ export default function DashboardPage() {
               <div className="status-card__body">
                 <span>Tailscale status</span>
                 <strong>Network is healthy</strong>
-                <p>nanopi-zero2.tailnet</p>
+                <p>nanotail.tailnet</p>
               </div>
               <div className="status-card__footer">
                 <span>100.84.17.23</span>
@@ -277,8 +289,8 @@ export default function DashboardPage() {
               <span className="device-panel__icon"><Zap size={22} /></span>
               <div>
                 <span className="panel__eyebrow">THIS DEVICE</span>
-                <h2>NanoPi Zero2</h2>
-                <p>Edge gateway · Fairnet Portal</p>
+                <h2>nanotail</h2>
+                <p>Edge gateway · nanotail portal</p>
               </div>
             </div>
             <div className="device-metrics">
@@ -288,6 +300,7 @@ export default function DashboardPage() {
               <span><Check size={17} /><small>Service</small><strong>Healthy</strong></span>
             </div>
           </section>
+          <ChangePasswordForm />
         </main>
       </div>
     </div>

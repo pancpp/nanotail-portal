@@ -2,72 +2,112 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
+import {
+  changePasswordRequest,
+  isSessionError,
+  loginRequest,
+  tokenExpiry,
+  type LoginCredentials,
+  type PasswordChange,
+} from './api'
 
 const TOKEN_STORAGE_KEY = 'fairnet_access_token'
-
-interface LoginCredentials {
-  username: string
-  password: string
-}
-
-interface LoginResponse {
-  access_token?: string
-  message?: string
-}
 
 interface AuthContextValue {
   isAuthenticated: boolean
   login: (credentials: LoginCredentials) => Promise<void>
+  changePassword: (passwords: PasswordChange) => Promise<void>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function readStoredToken(): string | null {
+  try {
+    const token = window.localStorage.getItem(TOKEN_STORAGE_KEY)
+    return token && tokenExpiry(token) !== null ? token : null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [accessToken, setAccessToken] = useState<string | null>(() =>
-    window.localStorage.getItem(TOKEN_STORAGE_KEY),
-  )
-
-  const login = useCallback(async (credentials: LoginCredentials) => {
-    const response = await fetch('/api/user/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    })
-
-    let payload: LoginResponse = {}
-    try {
-      payload = (await response.json()) as LoginResponse
-    } catch {
-      // A non-JSON response is handled by the generic error below.
-    }
-
-    if (!response.ok) {
-      throw new Error(payload.message || 'Unable to sign in. Check your credentials.')
-    }
-
-    if (!payload.access_token) {
-      throw new Error('The server did not return an access token.')
-    }
-
-    window.localStorage.setItem(TOKEN_STORAGE_KEY, payload.access_token)
-    setAccessToken(payload.access_token)
-  }, [])
+  const [accessToken, setAccessToken] = useState<string | null>(readStoredToken)
 
   const logout = useCallback(() => {
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY)
+    try {
+      window.localStorage.removeItem(TOKEN_STORAGE_KEY)
+    } catch {
+      // Local sign-out still works when browser storage is unavailable.
+    }
     setAccessToken(null)
   }, [])
 
+  useEffect(() => {
+    if (!accessToken) {
+      logout()
+      return
+    }
+
+    let timer: number
+    const checkExpiry = () => {
+      window.clearTimeout(timer)
+      const expiresAt = tokenExpiry(accessToken)
+      if (expiresAt === null) {
+        logout()
+        return
+      }
+      timer = window.setTimeout(checkExpiry, Math.min(expiresAt - Date.now(), 2_147_483_647))
+    }
+    checkExpiry()
+    window.addEventListener('focus', checkExpiry)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('focus', checkExpiry)
+    }
+  }, [accessToken, logout])
+
+  useEffect(() => {
+    const syncSession = (event: StorageEvent) => {
+      if (event.key === TOKEN_STORAGE_KEY || event.key === null) {
+        setAccessToken(readStoredToken())
+      }
+    }
+    window.addEventListener('storage', syncSession)
+    return () => window.removeEventListener('storage', syncSession)
+  }, [])
+
+  const login = useCallback(async (credentials: LoginCredentials) => {
+    const token = await loginRequest(credentials)
+    try {
+      window.localStorage.setItem(TOKEN_STORAGE_KEY, token)
+    } catch {
+      // Keep this tab signed in even if persistent storage is disabled.
+    }
+    setAccessToken(token)
+  }, [])
+
+  const changePassword = useCallback(async (passwords: PasswordChange) => {
+    if (!accessToken || tokenExpiry(accessToken) === null) {
+      logout()
+      throw new Error('Your session has expired. Please sign in again.')
+    }
+    try {
+      await changePasswordRequest(accessToken, passwords)
+    } catch (error) {
+      if (isSessionError(error)) logout()
+      throw error
+    }
+  }, [accessToken, logout])
+
   const value = useMemo(
-    () => ({ isAuthenticated: Boolean(accessToken), login, logout }),
-    [accessToken, login, logout],
+    () => ({ isAuthenticated: Boolean(accessToken), login, changePassword, logout }),
+    [accessToken, login, changePassword, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

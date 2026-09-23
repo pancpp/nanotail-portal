@@ -58,7 +58,7 @@ export default function LoginPage() {
         <div className="login-story__content">
           <div className="eyebrow">
             <span className="eyebrow__dot" />
-            Built for NanoPi Zero2
+            Built for nanotail
           </div>
           <h1>Your private network, under your control.</h1>
           <p>
@@ -103,7 +103,7 @@ export default function LoginPage() {
           <div className="login-card__heading">
             <span className="login-card__icon"><LockKeyhole size={22} /></span>
             <h2>Welcome back</h2>
-            <p>Sign in to manage your NanoPi gateway.</p>
+            <p>Sign in to manage your nanotail gateway.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
@@ -166,7 +166,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="login-panel__version">Fairnet Portal · NanoPi Zero2</p>
+        <p className="login-panel__version">Fairnet Portal · nanotail</p>
       </section>
     </main>
   )
