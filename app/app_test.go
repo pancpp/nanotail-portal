@@ -11,8 +11,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
-	"github.com/pancpp/fairnet-portal/database"
-	"github.com/pancpp/fairnet-portal/webui"
+	"github.com/pancpp/nanotail-portal/database"
+	"github.com/pancpp/nanotail-portal/webui"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/pancpp/fairnet-portal/database"
+	"github.com/pancpp/nanotail-portal/database"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -668,6 +668,7 @@ input:focus-visible {
   background: transparent;
   font-size: 12px;
   text-align: left;
+  text-decoration: none;
   transition: color 150ms ease, background 150ms ease;
 }
 

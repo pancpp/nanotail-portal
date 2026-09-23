@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/pancpp/fairnet-portal/database"
+	"github.com/pancpp/nanotail-portal/database"
 	"github.com/uptrace/bun"
 	"golang.org/x/crypto/bcrypt"
 )

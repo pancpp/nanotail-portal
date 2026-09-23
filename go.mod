@@ -1,4 +1,4 @@
-module github.com/pancpp/fairnet-portal
+module github.com/pancpp/nanotail-portal
 
 go 1.26.0
 

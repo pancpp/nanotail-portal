@@ -7,11 +7,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/pancpp/fairnet-portal/app"
-	"github.com/pancpp/fairnet-portal/conf"
-	"github.com/pancpp/fairnet-portal/database"
-	"github.com/pancpp/fairnet-portal/logger"
-	"github.com/pancpp/fairnet-portal/migrations"
+	"github.com/pancpp/nanotail-portal/app"
+	"github.com/pancpp/nanotail-portal/conf"
+	"github.com/pancpp/nanotail-portal/database"
+	"github.com/pancpp/nanotail-portal/logger"
+	"github.com/pancpp/nanotail-portal/migrations"
 )
 
 func main() {
@@ -28,8 +28,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println("Hello, fainet portal!")
-	defer log.Println("Goodbye, fairnet portal!")
+	log.Println("Hello, nanotail portal!")
+	defer log.Println("Goodbye, nanotail portal!")
 
 	// database
 	if err := database.Init(ctx); err != nil {

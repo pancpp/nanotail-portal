@@ -27,7 +27,7 @@ var (
 func init() {
 	var showVersion bool
 	pflag.BoolVarP(&showVersion, "version", "V", false, "Show version information")
-	pflag.String("config", "fairnet-portal.yml", "Configuration file")
+	pflag.String("config", "nanotail-portal.yml", "Configuration file")
 	pflag.Parse()
 	if showVersion {
 		fmt.Println("###############################################")
@@ -48,16 +48,16 @@ func init() {
 	v.SetDefault("log_dir", "logs")
 	v.SetDefault("enable_console_log", true)
 	v.SetDefault("data_dir", "data")
-	v.SetDefault("database", "fairnet-portal.sqlite3")
+	v.SetDefault("database", "nanotail-portal.sqlite3")
 	v.SetDefault("webui_dir", "webui/dist")
 	v.SetDefault("session_ttl", "12h")
 	v.SetDefault("tailscale_binary", "tailscale")
 	v.SetDefault("tailscale_socket", "")
 	v.SetDefault("tailscale_timeout", "15s")
-	v.SetEnvPrefix("FAIRNET")
+	v.SetEnvPrefix("NANOTAIL")
 
 	// set config path
-	v.SetConfigFile("fairnet-portal.yml")
+	v.SetConfigFile("nanotail-portal.yml")
 	gViper = v
 }
 

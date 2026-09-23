@@ -2,6 +2,8 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './auth'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
+import OverviewPage from './pages/OverviewPage'
+import SettingsPage from './pages/SettingsPage'
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
@@ -16,7 +18,12 @@ function ProtectedRoute() {
 
 function PublicOnlyRoute() {
   const { isAuthenticated } = useAuth()
-  return isAuthenticated ? <Navigate to="/" replace /> : <Outlet />
+  const location = useLocation()
+  const previousPath = (
+    location.state as { from?: { pathname?: string } } | null
+  )?.from?.pathname
+
+  return isAuthenticated ? <Navigate to={previousPath || '/'} replace /> : <Outlet />
 }
 
 export default function App() {
@@ -27,7 +34,10 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<DashboardPage />} />
+        <Route path="/" element={<DashboardPage />}>
+          <Route index element={<OverviewPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -3,8 +3,8 @@ package migrations
 import (
 	"fmt"
 
-	"github.com/pancpp/fairnet-portal/conf"
-	"github.com/pancpp/fairnet-portal/database"
+	"github.com/pancpp/nanotail-portal/conf"
+	"github.com/pancpp/nanotail-portal/database"
 	"github.com/uptrace/bun/migrate"
 )
 

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pancpp/fairnet-portal/conf"
+	"github.com/pancpp/nanotail-portal/conf"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -16,7 +16,7 @@ func Init() error {
 		return err
 	}
 
-	fileLogPath := filepath.Join(logDir, "fairnet-portal.log")
+	fileLogPath := filepath.Join(logDir, "nanotail-portal.log")
 	fileLogWriter := &lumberjack.Logger{
 		Filename:   fileLogPath,
 		MaxSize:    10, // megabytes

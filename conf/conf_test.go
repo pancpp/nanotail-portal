@@ -24,7 +24,7 @@ func isolateConfig(t *testing.T) string {
 		v.SetDefault(key, value)
 	}
 	v.SetEnvPrefix(original.GetEnvPrefix())
-	path := filepath.Join(t.TempDir(), "fairnet-portal.yml")
+	path := filepath.Join(t.TempDir(), "nanotail-portal.yml")
 	v.SetConfigFile(path)
 	gViper = v
 	t.Cleanup(func() { gViper = original })
@@ -33,11 +33,17 @@ func isolateConfig(t *testing.T) string {
 
 func TestDefaults(t *testing.T) {
 	// Check the actual package configuration before any file is loaded.
+	if got := gViper.ConfigFileUsed(); got != "nanotail-portal.yml" {
+		t.Errorf("configuration file = %q, want nanotail-portal.yml", got)
+	}
+	if got := gViper.GetEnvPrefix(); got != "NANOTAIL" {
+		t.Errorf("environment prefix = %q, want NANOTAIL", got)
+	}
 	for key, want := range map[string]string{
 		"http_listen_addr":  "127.0.0.1:8080",
 		"log_dir":           "logs",
 		"data_dir":          "data",
-		"database":          "fairnet-portal.sqlite3",
+		"database":          "nanotail-portal.sqlite3",
 		"webui_dir":         "webui/dist",
 		"session_ttl":       "12h",
 		"tailscale_binary":  "tailscale",

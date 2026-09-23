@@ -1,4 +1,4 @@
-# Fairnet Portal WebUI
+# Nanotail Portal WebUI
 
 React and TypeScript frontend for managing Tailscale on nanotail.
 
@@ -34,8 +34,12 @@ while the page is open. This client-side check only controls navigation; the
 backend verifies the signature on protected requests. JWTs currently last seven
 days. There is no `/me` or `/logout` API, so sign-out only clears the local token.
 
-Use **Change password** in the sidebar to update the signed-in account. The form
-sends `current_password` and `new_password` to `POST /api/change-password`, with
+The browser storage key is `nanotail_access_token`. After upgrading from the old
+project name, sign in again; existing account passwords are unchanged.
+
+Open **Settings** in the sidebar, then use **Change password** to update the
+signed-in account. The form sends `current_password` and `new_password` to
+`POST /api/change-password`, with
 `Authorization: Bearer <token>`. It validates the new password's 8–72-byte UTF-8
 limit and confirmation, handles the empty `204` success response, and displays
 backend errors. An incorrect current password does not sign the user out.

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/labstack/echo/v5"
-	"github.com/pancpp/fairnet-portal/conf"
+	"github.com/pancpp/nanotail-portal/conf"
 )
 
 //go:embed dist

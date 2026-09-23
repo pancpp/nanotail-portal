@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/pancpp/fairnet-portal/conf"
+	"github.com/pancpp/nanotail-portal/conf"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	"github.com/uptrace/bun/driver/sqliteshim"

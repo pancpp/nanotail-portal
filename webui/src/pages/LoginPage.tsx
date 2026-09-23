@@ -166,7 +166,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="login-panel__version">Fairnet Portal · nanotail</p>
+        <p className="login-panel__version">Nanotail Portal · nanotail</p>
       </section>
     </main>
   )

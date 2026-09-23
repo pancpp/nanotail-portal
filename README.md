@@ -1,4 +1,4 @@
-# Fairnet Portal
+# Nanotail Portal
 
 Go/Echo backend and React WebUI for managing Tailscale on nanotail.
 
@@ -15,18 +15,16 @@ administrator account with **username `admin` and password `admin`**. Passwords
 are stored as salted bcrypt hashes in SQLite, never as plaintext. Changing the
 password persists across restarts.
 
-Configuration is optional. Defaults work from the repository directory without
-root permissions. To customize them, copy `fairnet-portal.example.yml` to
-`fairnet-portal.yml`, or select another YAML file:
+Configuration is read from `nanotail-portal.yml` in the process working directory.
+Create this file before starting; an empty file uses the built-in defaults.
+The default database is `nanotail-portal.sqlite3`. When upgrading an existing
+installation, stop the portal and copy your existing configuration and database
+to these names, or set `database` in the new configuration to your existing
+database path. The rename does not move existing runtime files automatically.
 
-```sh
-go run . --config /path/to/fairnet-portal.yml
-```
-
-All example configuration keys support `FAIRNET_` environment overrides, such as
-`FAIRNET_HTTP_LISTEN_ADDR=127.0.0.1:8080`. Paths are relative to the process working
-directory. The default log directory is `logs/`, with rotation at 10 MB and three
-backups. Use `go run . --version` to print build metadata without starting services.
+Paths are relative to the process working directory. Logs are written to
+`logs/nanotail-portal.log`, with rotation at 10 MB and three backups.
+Use `go run . --version` to print build metadata without starting services.
 
 For frontend development, start the backend and run `npm run dev` in `webui/`.
 Vite forwards `/api` to `127.0.0.1:8080`. Alternatively, build the frontend once:
@@ -139,7 +137,7 @@ Create a release for nanotail (Linux/ARM64) with:
 ```
 
 The script installs frontend dependencies, builds the React WebUI, and embeds it
-in a static Linux/ARM64 binary at `dist/fairnet-portal`. Version metadata is filled
+in a static Linux/ARM64 binary at `./nanotail-portal`. Version metadata is filled
 automatically from Git and the build time. Go, Git, and Node/npm are required.
 There are no arguments or target overrides.
 

@@ -10,8 +10,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
-	"github.com/pancpp/fairnet-portal/conf"
-	"github.com/pancpp/fairnet-portal/webui"
+	"github.com/pancpp/nanotail-portal/conf"
+	"github.com/pancpp/nanotail-portal/webui"
 )
 
 func Init(ctx context.Context) error {

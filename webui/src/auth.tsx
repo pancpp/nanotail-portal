@@ -16,7 +16,7 @@ import {
   type PasswordChange,
 } from './api'
 
-const TOKEN_STORAGE_KEY = 'fairnet_access_token'
+const TOKEN_STORAGE_KEY = 'nanotail_access_token'
 
 interface AuthContextValue {
   isAuthenticated: boolean
