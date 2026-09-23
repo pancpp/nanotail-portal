@@ -10,7 +10,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 	"github.com/pancpp/fairnet-portal/database"
-	"github.com/pancpp/fairnet-portal/internal/api"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,7 +22,7 @@ func handleLogin(c *echo.Context) error {
 	var reqmsg ReqMsg
 	if err := c.Bind(&reqmsg); err != nil {
 		log.Println("(login) bind request msg err:", err)
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid username or password")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	user, err := AuthenticateWithUsernamePassword(reqmsg.Username, reqmsg.Password)
@@ -63,8 +62,9 @@ func handleChangePassword(c *echo.Context) error {
 		CurrentPassword string `json:"current_password"`
 		NewPassword     string `json:"new_password"`
 	}
-	if err := api.DecodeJSON(c, &reqmsg); err != nil {
-		return err
+	if err := c.Bind(&reqmsg); err != nil {
+		log.Println("(change-password) bind request msg err:", err)
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	if reqmsg.CurrentPassword == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Current password is required")
