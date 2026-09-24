@@ -44,7 +44,7 @@ func init() {
 	v := viper.New()
 
 	// server settings
-	v.SetDefault("http_listen_addr", "127.0.0.1:8080")
+	v.SetDefault("http_listen_addr", "127.0.0.1:7080")
 	v.SetDefault("log_dir", "logs")
 	v.SetDefault("enable_console_log", true)
 	v.SetDefault("database", "nanotail.sqlite3")
