@@ -5,6 +5,8 @@
 scalar Int64
 scalar Uint64
 scalar Time
+"A JSON object with dynamic keys, such as Tailscale capability names."
+scalar Map
 
 type User {
   id: Int64!
@@ -12,6 +14,90 @@ type User {
   role: String!
   createTime: Time!
   updateTime: Time!
+}
+
+type TailscaleUser {
+  id: Int64!
+  loginName: String!
+  displayName: String!
+  profilePicURL: String!
+}
+
+type Tailnet {
+  name: String!
+  magicDNSSuffix: String!
+  magicDNSEnabled: Boolean!
+}
+
+type TailscaleDNSRecord {
+  name: String!
+  # An empty type means A or AAAA, inferred from the value.
+  type: String!
+  value: String!
+}
+
+type TailscaleClientVersion {
+  runningLatest: Boolean!
+  # Empty when the client is already running the latest version.
+  latestVersion: String!
+  urgentSecurityUpdate: Boolean!
+  notify: Boolean!
+  notifyURL: String!
+  notifyText: String!
+}
+
+type TailscalePeer {
+  id: String!
+  nodeID: Int64!
+  publicKey: String!
+  hostName: String!
+  dnsName: String!
+  os: String!
+  userID: Int64!
+  tailscaleIPs: [String!]!
+  allowedIPs: [String!]!
+  tags: [String!]!
+  addrs: [String!]
+  curAddr: String!
+  relay: String!
+  peerRelay: String!
+  rxBytes: Int64!
+  txBytes: Int64!
+  created: Time!
+  # Tailscale's zero timestamps represent an unknown time; gqlgen emits null.
+  lastWrite: Time
+  lastSeen: Time
+  lastHandshake: Time
+  online: Boolean!
+  exitNode: Boolean!
+  exitNodeOption: Boolean!
+  active: Boolean!
+  peerAPIURL: [String!]!
+  taildropTarget: Int!
+  noFileSharingReason: String!
+  # Capability values can be null or arbitrary JSON, not just booleans.
+  capMap: Map
+  inNetworkMap: Boolean!
+  inMagicSock: Boolean!
+  inEngine: Boolean!
+  keyExpiry: Time
+}
+
+type TailscaleStatus {
+  version: String!
+  tun: Boolean!
+  backendState: String!
+  haveNodeKey: Boolean!
+  authURL: String!
+  tailscaleIPs: [String!]!
+  health: [String!]!
+  magicDnsSuffix: String!
+  currentTailnet: Tailnet
+  certDomains: [String!]
+  extraRecords: [TailscaleDNSRecord!]
+  clientVersion: TailscaleClientVersion
+  self: TailscalePeer
+  peers: [TailscalePeer!]!
 }
 
 type TailscaleClient {
@@ -26,14 +112,6 @@ type Query {
   user: User!
   tailscaleClient: TailscaleClient
   tailscaleStatus: TailscaleStatus!
-}
-
-type TailscaleStatus {
-  backendState: String!
-  connected: Boolean!
-  needsLogin: Boolean!
-  tailnet: String!
-  ips: [String!]!
 }
 
 input ChangePassword {
