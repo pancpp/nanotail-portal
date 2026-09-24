@@ -13,6 +13,8 @@ import {
   Wifi,
   Zap,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useTailscale } from '../tailscale'
 
 const peers = [
   { name: 'workstation', address: '100.82.14.7', os: 'Linux', online: true },
@@ -21,20 +23,24 @@ const peers = [
 ]
 
 export default function OverviewPage() {
+  const { status, statusError } = useTailscale()
+  const connected = Boolean(status?.connected && !statusError)
+  const label = statusError ? 'Unavailable' : !status ? 'Checking…' : connected ? 'Connected' :
+    status.needsLogin ? 'Needs setup' : status.backendState === 'Stopped' ? 'Stopped' : 'Not connected'
   return (
     <>
       <section className="page-heading">
         <div>
           <div className="eyebrow eyebrow--light">
             <span className="eyebrow__dot" />
-            Device online
+            nanotail portal
           </div>
           <h1>Good to see you.</h1>
           <p>Here’s what’s happening on your private network.</p>
         </div>
         <div className="integration-note">
           <SlidersHorizontal size={16} />
-          Live status integration is next
+          Connection is live · other panels are previews
         </div>
       </section>
 
@@ -42,23 +48,23 @@ export default function OverviewPage() {
         <article className="status-card status-card--primary">
           <div className="status-card__topline">
             <span className="status-icon"><Wifi size={20} /></span>
-            <span className="status-pill"><i /> Connected</span>
+            <span className={`status-pill${connected ? '' : ' connection-muted'}`}><i /> {label}</span>
           </div>
           <div className="status-card__body">
             <span>Tailscale status</span>
-            <strong>Network is healthy</strong>
-            <p>nanotail.tailnet</p>
+            <strong>{connected ? 'Connected to your tailnet' : label}</strong>
+            <p>{!statusError && status?.tailnet ? status.tailnet : 'No active tailnet connection'}</p>
           </div>
           <div className="status-card__footer">
-            <span>100.84.17.23</span>
-            <button type="button">View details <ChevronRight size={15} /></button>
+            <span>{!statusError && status?.ips.length ? status.ips.join(', ') : 'No Tailscale address'}</span>
+            <Link to="/settings">Settings <ChevronRight size={15} /></Link>
           </div>
         </article>
 
         <article className="status-card">
           <div className="status-card__topline">
             <span className="status-icon status-icon--violet"><Route size={20} /></span>
-            <span className="quiet-label">ROUTING</span>
+            <span className="quiet-label">ROUTING PREVIEW</span>
           </div>
           <div className="status-card__body">
             <span>Exit node</span>
@@ -73,7 +79,7 @@ export default function OverviewPage() {
         <article className="status-card">
           <div className="status-card__topline">
             <span className="status-icon status-icon--amber"><KeyRound size={20} /></span>
-            <span className="quiet-label">SECURITY</span>
+            <span className="quiet-label">SECURITY PREVIEW</span>
           </div>
           <div className="status-card__body">
             <span>Node key</span>
@@ -88,7 +94,7 @@ export default function OverviewPage() {
         <article className="panel peers-panel">
           <div className="panel__header">
             <div>
-              <span className="panel__eyebrow">TAILNET</span>
+              <span className="panel__eyebrow">SAMPLE TAILNET</span>
               <h2>Recent peers</h2>
             </div>
             <span className="peer-count"><Users size={15} /> {peers.length} devices</span>
@@ -125,7 +131,7 @@ export default function OverviewPage() {
               <span className="panel__eyebrow">LAST 24 HOURS</span>
               <h2>Network activity</h2>
             </div>
-            <span className="activity-live"><i /> Live</span>
+            <span className="activity-live">Preview</span>
           </div>
 
           <div className="traffic-total">

@@ -16,9 +16,29 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, passwords model.C
 	return r.changePassword(ctx, passwords)
 }
 
+// SetTailscaleCredential is the resolver for the setTailscaleCredential field.
+func (r *mutationResolver) SetTailscaleCredential(ctx context.Context, credential model.TailscaleCredential) (bool, error) {
+	return r.setTailscaleCredential(ctx, credential)
+}
+
+// ClearTailscaleCredential is the resolver for the clearTailscaleCredential field.
+func (r *mutationResolver) ClearTailscaleCredential(ctx context.Context) (bool, error) {
+	return r.clearTailscaleCredential(ctx)
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 	return r.user(ctx)
+}
+
+// TailscaleClient is the resolver for the tailscaleClient field.
+func (r *queryResolver) TailscaleClient(ctx context.Context) (*model.TailscaleClient, error) {
+	return r.tailscaleClient(ctx)
+}
+
+// TailscaleStatus is the resolver for the tailscaleStatus field.
+func (r *queryResolver) TailscaleStatus(ctx context.Context) (*model.TailscaleStatus, error) {
+	return r.tailscaleStatus(ctx)
 }
 
 // Mutation returns MutationResolver implementation.

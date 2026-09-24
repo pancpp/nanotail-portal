@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   CircleGauge,
+  BookOpen,
   Cpu,
   LogOut,
   Menu,
@@ -13,21 +14,35 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth'
 import Brand from '../components/Brand'
+import { shouldPromptForTailscale } from '../api'
+import { useTailscale } from '../tailscale'
+import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 
 const navItems = [
   { label: 'Overview', icon: CircleGauge, path: '/' },
   { label: 'Network', icon: Network },
   { label: 'Access control', icon: ShieldCheck },
   { label: 'Settings', icon: Settings, path: '/settings' },
+  { label: 'Setup guide', icon: BookOpen, path: '/tailscale-setup' },
 ]
 
 export default function DashboardPage() {
   const { logout } = useAuth()
+  const { status, client, statusError, clientError, refreshing, refresh } = useTailscale()
   const { pathname } = useLocation()
-  const pageTitle = pathname === '/settings' ? 'Settings' : 'Overview'
+  const pageTitle = pathname === '/settings' ? 'Settings' : pathname === '/tailscale-setup' ? 'Setup guide' : 'Overview'
   const [menuOpen, setMenuOpen] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [lastUpdated, setLastUpdated] = useState('Just now')
+  const [promptOpen, setPromptOpen] = useState(false)
+  const [promptDismissed, setPromptDismissed] = useState(false)
+  const needsSetup = shouldPromptForTailscale(status, statusError)
+  const connectionLabel = statusError ? 'Status unavailable' : !status ? 'Checking Tailscale…' :
+    status.connected ? 'Connected' : status.needsLogin ? 'Needs setup' : status.backendState === 'Stopped' ? 'Stopped' : 'Not connected'
+
+  useEffect(() => {
+    if (needsSetup && client !== undefined && !clientError && !promptDismissed && pathname === '/') setPromptOpen(true)
+  }, [needsSetup, client, clientError, promptDismissed, pathname])
+
+  function closePrompt() { setPromptOpen(false); setPromptDismissed(true) }
 
   useEffect(() => {
     if (!menuOpen) return
@@ -38,14 +53,6 @@ export default function DashboardPage() {
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [menuOpen])
-
-  function refreshStatus() {
-    setRefreshing(true)
-    window.setTimeout(() => {
-      setRefreshing(false)
-      setLastUpdated('Just now')
-    }, 650)
-  }
 
   return (
     <div className="dashboard-shell">
@@ -73,7 +80,7 @@ export default function DashboardPage() {
           <span className="device-chip__icon"><Cpu size={18} /></span>
           <span>
             <strong>nanotail</strong>
-            <small><i /> Online</small>
+            <small className={!status?.connected || statusError ? 'connection-muted' : ''}><i /> {connectionLabel}</small>
           </span>
         </div>
 
@@ -132,11 +139,12 @@ export default function DashboardPage() {
           </div>
           {pathname === '/' && (
             <div className="topbar__actions">
-              <span className="updated-at">Updated {lastUpdated}</span>
+              <span className="updated-at">Auto-refresh every 30s</span>
               <button
                 className="secondary-button"
                 type="button"
-                onClick={refreshStatus}
+                aria-label="Refresh Tailscale status"
+                onClick={() => { void refresh() }}
                 disabled={refreshing}
               >
                 <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
@@ -147,9 +155,16 @@ export default function DashboardPage() {
         </header>
 
         <main className="dashboard-content">
+          {statusError && <div className="connection-notice connection-notice--error" role="status"><strong>Tailscale status unavailable</strong>
+            <p>{statusError}</p><p>This does not mean your credentials are missing.</p>
+            <button className="secondary-button" disabled={refreshing} onClick={() => { void refresh() }}>Retry status</button></div>}
+          {needsSetup && <div className="connection-notice" role="status"><strong>This device is not signed in to a tailnet.</strong>
+            <p>{client?.hasClientSecret ? 'Credentials are saved. Saving alone does not connect the device.' : 'Add your OAuth client ID and secret to prepare the device for setup.'}</p>
+            <div className="credential-links"><Link to="/settings">Manage credentials</Link><Link to="/tailscale-setup">Read the setup guide</Link></div></div>}
           <Outlet />
         </main>
       </div>
+      {promptOpen && needsSetup && pathname === '/' && <TailscaleSetupPrompt onClose={closePrompt} />}
     </div>
   )
 }

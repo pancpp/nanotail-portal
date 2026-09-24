@@ -6,6 +6,11 @@ import {
   isSessionError,
   loginRequest,
   tokenExpiry,
+  tailscaleStatusRequest,
+  tailscaleClientRequest,
+  setTailscaleCredentialRequest,
+  clearTailscaleCredentialRequest,
+  shouldPromptForTailscale,
 } from '../src/api.ts'
 
 function jwt(payload = {}) {
@@ -25,6 +30,77 @@ test('JWT expiry supports current tokens and rejects malformed, expired, or lega
   ]) {
     assert.equal(tokenExpiry(token, 100_000), null)
   }
+})
+
+test('credential query never requests or retains the saved secret', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: {
+    tailscaleClient: { clientId: 'client', hasClientSecret: true, updateTime: '2026-09-23T00:00:00Z', clientSecret: 'must-not-retain' },
+  } }))
+  const client = await tailscaleClientRequest(jwt())
+  assert.deepEqual(client, { clientId: 'client', hasClientSecret: true, updateTime: '2026-09-23T00:00:00Z' })
+  assert.equal(JSON.parse(fetch.mock.calls[0].arguments[1].body).query.includes('clientSecret'), false)
+  fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleClient: null } }))
+  assert.equal(await tailscaleClientRequest(jwt()), null)
+})
+
+test('credentials use GraphQL variables; retaining a secret omits it', async (t) => {
+  const token = jwt()
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { setTailscaleCredential: true } }))
+  await setTailscaleCredentialRequest(token, { clientId: ' client ', clientSecret: ' test-secret ' })
+  const [url, options] = fetch.mock.calls[0].arguments
+  const body = JSON.parse(options.body)
+  assert.equal(url, '/api/v1/query')
+  assert.equal(options.headers.Authorization, `Bearer ${token}`)
+  assert.equal(body.operationName, 'SetTailscaleCredential')
+  assert.deepEqual(body.variables, { credential: { clientId: 'client', clientSecret: 'test-secret' } })
+  assert.equal(body.query.includes('test-secret'), false)
+  await setTailscaleCredentialRequest(token, { clientId: 'client', clientSecret: '' })
+  assert.deepEqual(JSON.parse(fetch.mock.calls[1].arguments[1].body).variables, { credential: { clientId: 'client' } })
+})
+
+test('credential input validation avoids sending invalid data', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch')
+  for (const credential of [
+    { clientId: ' ' }, { clientId: 'client id' }, { clientId: 'x'.repeat(513) },
+    { clientId: 'client', clientSecret: 'line\nbreak' }, { clientId: 'client', clientSecret: 'x'.repeat(4097) },
+  ]) await assert.rejects(setTailscaleCredentialRequest(jwt(), credential), /valid client ID/)
+  assert.equal(fetch.mock.callCount(), 0)
+})
+
+test('credential mutations require explicit success and preserve GraphQL errors', async (t) => {
+  for (const [field, request] of [
+    ['setTailscaleCredential', () => setTailscaleCredentialRequest(jwt(), { clientId: 'client', clientSecret: 'secret' })],
+    ['clearTailscaleCredential', () => clearTailscaleCredentialRequest(jwt())],
+  ]) {
+    await t.test(field, async (t) => {
+      const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { [field]: true } }))
+      await request()
+      for (const payload of [{ data: { [field]: false } }, { data: {} }, null, { data: { [field]: true }, errors: {} }]) {
+        fetch.mock.mockImplementation(async () => Response.json(payload))
+        await assert.rejects(request())
+      }
+      fetch.mock.mockImplementation(async () => Response.json({ data: { [field]: true }, errors: [{ message: 'Internal Server Error' }] }))
+      await assert.rejects(request(), { name: 'ApiError', status: 200, message: 'Internal Server Error' })
+      fetch.mock.mockImplementation(async () => Response.json({ message: 'invalid jwt' }, { status: 401 }))
+      await assert.rejects(request(), (error) => isSessionError(error))
+    })
+  }
+})
+
+test('status failures and stopped/offline devices do not trigger a credential prompt', async (t) => {
+  const status = { backendState: 'NeedsLogin', connected: false, needsLogin: true, tailnet: '', ips: [] }
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { tailscaleStatus: status } }))
+  assert.deepEqual(await tailscaleStatusRequest(jwt()), status)
+  assert.equal(shouldPromptForTailscale(status, ''), true)
+  assert.equal(shouldPromptForTailscale(status, 'Status unavailable'), false)
+  assert.equal(shouldPromptForTailscale(null, ''), false)
+  for (const backendState of ['Running', 'Stopped', 'Starting', 'NeedsMachineAuth']) {
+    assert.equal(shouldPromptForTailscale({ ...status, backendState, needsLogin: false }, ''), false)
+  }
+  fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleStatus: { connected: false } } }))
+  await assert.rejects(tailscaleStatusRequest(jwt()), /valid Tailscale status/)
+  fetch.mock.mockImplementation(async () => { throw new TypeError('Failed to fetch') })
+  await assert.rejects(tailscaleStatusRequest(jwt()), /Failed to fetch/)
 })
 
 test('login posts credentials to /api/login and reads token', async (t) => {

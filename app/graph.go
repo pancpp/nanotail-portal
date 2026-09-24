@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
@@ -14,12 +15,19 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
+	"github.com/pancpp/nanotail-portal/conf"
+	"github.com/pancpp/nanotail-portal/tailscale"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 func newGraphQLServer() *handler.Server {
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	timeout, err := time.ParseDuration(conf.GetString("tailscale_timeout"))
+	if err != nil || timeout <= 0 {
+		timeout = 15 * time.Second
+	}
+	client := tailscale.NewClient(conf.GetString("tailscale_binary"), conf.GetString("tailscale_socket"), timeout, nil)
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Tailscale: client}}))
 	srv.SetErrorPresenter(presentGraphQLError)
 
 	srv.AddTransport(transport.Options{})
@@ -38,7 +46,8 @@ func presentGraphQLError(ctx context.Context, err error) *gqlerror.Error {
 	if presented == nil {
 		return nil
 	}
-	if errors.Is(err, auth.ErrUnauthorized) || errors.Is(err, graph.ErrInvalidPassword) {
+	if errors.Is(err, auth.ErrUnauthorized) || errors.Is(err, graph.ErrInvalidPassword) ||
+		errors.Is(err, graph.ErrInvalidCredential) || errors.Is(err, graph.ErrTailscaleAdmin) || errors.Is(err, graph.ErrTailscaleStatus) {
 		return presented
 	}
 	switch presented.Extensions["code"] {

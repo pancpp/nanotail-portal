@@ -14,8 +14,26 @@ type User {
   updateTime: Time!
 }
 
+type TailscaleClient {
+  id: Int64!
+  clientId: String!
+  hasClientSecret: Boolean!
+  createTime: Time!
+  updateTime: Time!
+}
+
 type Query {
   user: User!
+  tailscaleClient: TailscaleClient
+  tailscaleStatus: TailscaleStatus!
+}
+
+type TailscaleStatus {
+  backendState: String!
+  connected: Boolean!
+  needsLogin: Boolean!
+  tailnet: String!
+  ips: [String!]!
 }
 
 input ChangePassword {
@@ -23,6 +41,14 @@ input ChangePassword {
   newpassword: String!
 }
 
+input TailscaleCredential {
+  clientId: String!
+  "Omit to retain the saved secret when the client ID is unchanged."
+  clientSecret: String
+}
+
 type Mutation {
   changePassword(passwords: ChangePassword!): Boolean!
+  setTailscaleCredential(credential: TailscaleCredential!): Boolean!
+  clearTailscaleCredential: Boolean!
 }

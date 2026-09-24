@@ -2,7 +2,10 @@ package tailscale
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	"mime"
 	"net/http"
 
 	"github.com/labstack/echo/v5"
@@ -33,7 +36,7 @@ func (client *Client) Register(g *echo.Group) {
 	})
 	g.PATCH("/config", func(c *echo.Context) error {
 		var req ConfigUpdate
-		if err := api.DecodeJSON(c, &req); err != nil {
+		if err := decodeConfig(c, &req); err != nil {
 			return err
 		}
 		if err := client.UpdateConfig(c.Request().Context(), req); err != nil {
@@ -53,6 +56,24 @@ func (client *Client) Register(g *echo.Group) {
 		}
 		return c.NoContent(http.StatusNoContent)
 	})
+}
+
+func decodeConfig(c *echo.Context, config *ConfigUpdate) error {
+	mediaType, _, err := mime.ParseMediaType(c.Request().Header.Get("Content-Type"))
+	if err != nil || mediaType != "application/json" {
+		return echo.NewHTTPError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+	}
+	body := http.MaxBytesReader(c.Response(), c.Request().Body, 64<<10)
+	defer body.Close()
+	decoder := json.NewDecoder(body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(config); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid configuration JSON")
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return echo.NewHTTPError(http.StatusBadRequest, "Expected one JSON object")
+	}
+	return nil
 }
 
 func httpError(err error) error {

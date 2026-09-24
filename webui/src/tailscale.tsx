@@ -1,0 +1,93 @@
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useAuth } from './auth'
+import {
+  clearTailscaleCredentialRequest, isSessionError, setTailscaleCredentialRequest,
+  tailscaleClientRequest, tailscaleStatusRequest,
+  type TailscaleClient, type TailscaleCredential, type TailscaleStatus,
+} from './api'
+
+interface TailscaleContextValue {
+  status: TailscaleStatus | null
+  client: TailscaleClient | null | undefined
+  statusError: string
+  clientError: string
+  refreshing: boolean
+  refresh: () => Promise<void>
+  save: (credential: TailscaleCredential) => Promise<void>
+  clear: () => Promise<void>
+}
+
+const TailscaleContext = createContext<TailscaleContextValue | null>(null)
+
+export function TailscaleProvider({ children }: { children: ReactNode }) {
+  const { accessToken, logout } = useAuth()
+  const [status, setStatus] = useState<TailscaleStatus | null>(null)
+  const [client, setClient] = useState<TailscaleClient | null>()
+  const [statusError, setStatusError] = useState('')
+  const [clientError, setClientError] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+  const pending = useRef<AbortController | null>(null)
+
+  const refresh = useCallback(async () => {
+    if (!accessToken) return
+    pending.current?.abort()
+    const controller = new AbortController()
+    pending.current = controller
+    setRefreshing(true)
+    await Promise.all([
+      tailscaleStatusRequest(accessToken, controller.signal).then((value) => {
+        if (!controller.signal.aborted) { setStatus(value); setStatusError('') }
+      }).catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        if (isSessionError(error)) logout()
+        setStatusError(error instanceof Error ? error.message : 'Unable to read Tailscale status.')
+      }),
+      tailscaleClientRequest(accessToken, controller.signal).then((value) => {
+        if (!controller.signal.aborted) { setClient(value); setClientError('') }
+      }).catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        if (isSessionError(error)) logout()
+        setClientError(error instanceof Error ? error.message : 'Unable to load credential settings.')
+      }),
+    ])
+    if (!controller.signal.aborted) setRefreshing(false)
+  }, [accessToken, logout])
+
+  useEffect(() => {
+    void refresh()
+    const interval = window.setInterval(() => { void refresh() }, 30_000)
+    return () => { window.clearInterval(interval); pending.current?.abort() }
+  }, [refresh])
+
+  async function save(credential: TailscaleCredential) {
+    if (!accessToken) throw new Error('Please sign in again.')
+    try {
+      await setTailscaleCredentialRequest(accessToken, credential)
+      pending.current?.abort()
+      setClient({ clientId: credential.clientId.trim(), hasClientSecret: true, updateTime: new Date().toISOString() })
+      setClientError('')
+      void refresh()
+    } catch (error) { if (isSessionError(error)) logout(); throw error }
+  }
+
+  async function clear() {
+    if (!accessToken) throw new Error('Please sign in again.')
+    try {
+      await clearTailscaleCredentialRequest(accessToken)
+      pending.current?.abort()
+      setClient(null)
+      setClientError('')
+      void refresh()
+    } catch (error) { if (isSessionError(error)) logout(); throw error }
+  }
+
+  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, refreshing, refresh, save, clear }}>
+    {children}
+  </TailscaleContext.Provider>
+}
+
+export function useTailscale() {
+  const context = useContext(TailscaleContext)
+  if (!context) throw new Error('useTailscale must be used inside TailscaleProvider')
+  return context
+}

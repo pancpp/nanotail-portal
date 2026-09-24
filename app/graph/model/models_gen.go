@@ -17,6 +17,28 @@ type Mutation struct {
 type Query struct {
 }
 
+type TailscaleClient struct {
+	ID              int       `json:"id"`
+	ClientID        string    `json:"clientId"`
+	HasClientSecret bool      `json:"hasClientSecret"`
+	CreateTime      time.Time `json:"createTime"`
+	UpdateTime      time.Time `json:"updateTime"`
+}
+
+type TailscaleCredential struct {
+	ClientID string `json:"clientId"`
+	// Omit to retain the saved secret when the client ID is unchanged.
+	ClientSecret *string `json:"clientSecret,omitempty"`
+}
+
+type TailscaleStatus struct {
+	BackendState string   `json:"backendState"`
+	Connected    bool     `json:"connected"`
+	NeedsLogin   bool     `json:"needsLogin"`
+	Tailnet      string   `json:"tailnet"`
+	Ips          []string `json:"ips"`
+}
+
 type User struct {
 	ID         int       `json:"id"`
 	Username   string    `json:"username"`

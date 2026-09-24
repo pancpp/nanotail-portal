@@ -24,7 +24,7 @@ func TestGraphQLErrorPresenter(t *testing.T) {
 	if got := presentGraphQLError(ctx, nil); got != nil {
 		t.Fatalf("nil error became %v", got)
 	}
-	for _, expected := range []error{auth.ErrUnauthorized, graph.ErrInvalidPassword} {
+	for _, expected := range []error{auth.ErrUnauthorized, graph.ErrInvalidPassword, graph.ErrInvalidCredential, graph.ErrTailscaleAdmin, graph.ErrTailscaleStatus} {
 		wrapped := &gqlerror.Error{Err: fmt.Errorf("resolver: %w", expected), Message: expected.Error()}
 		for _, err := range []error{expected, fmt.Errorf("resolver: %w", expected), wrapped, fmt.Errorf("execution: %w", wrapped)} {
 			got := presentGraphQLError(ctx, err)

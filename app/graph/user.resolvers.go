@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/pancpp/nanotail-portal/app/auth"
@@ -49,5 +50,22 @@ func (r *mutationResolver) changePassword(ctx context.Context, passwords model.C
 }
 
 func (r *queryResolver) user(ctx context.Context) (*model.User, error) {
-	return nil, nil
+	ctxVal := queryContextValue(ctx)
+	db := database.DB()
+
+	// Select info from DB
+	user := &database.User{PID: ctxVal.UserPID}
+	if err := db.NewSelect().Model(user).WherePK().Scan(ctx); err != nil {
+		log.Println("(user) select from DB err:", err)
+		return nil, err
+	}
+
+	// Create model.User
+	return &model.User{
+		ID:         int(user.PID),
+		Username:   user.Username,
+		Role:       user.Role,
+		CreateTime: user.CreateTime,
+		UpdateTime: user.UpdateTime,
+	}, nil
 }

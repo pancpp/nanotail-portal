@@ -62,9 +62,9 @@ authentication, `/status` returns `backend_state` and `auth_url` when available.
 Initial Tailscale enrollment is still performed with the CLI. Disconnecting or
 changing routing can interrupt access to the portal through Tailscale.
 
-The WebUI login uses these backend sessions. Its dashboard still contains the
-original sample network data; wiring the dashboard and settings controls to the
-new Tailscale APIs is a separate frontend step.
+The WebUI shows live connection status and manages OAuth credentials through
+GraphQL. Other dashboard panels still show clearly labeled sample data; their
+live integration is a separate step.
 
 ## API
 
@@ -77,7 +77,7 @@ Login and JWT middleware errors use `{"message":"..."}`; GraphQL responses use
 | --- | --- | --- |
 | GET | `/api/health` | Public portal liveness; does not indicate Tailscale health |
 | POST | `/api/login` | Public login with `username` and `password`; returns a JWT in `token` |
-| POST | `/api/v1/query` | Authenticated GraphQL endpoint, including the password-change mutation |
+| POST | `/api/v1/query` | Authenticated GraphQL for password changes, Tailscale status, and OAuth credentials |
 | GET | `/api/system` | Hostname, OS, architecture, portal uptime and build metadata |
 | GET | `/api/tailscale/status` | State, self, peers, health messages and traffic counters |
 | GET | `/api/tailscale/peers` | Sorted peer array |
@@ -123,6 +123,25 @@ with HTTP 401. Subsequent logins must use the new password. Concurrent valid
 password changes are last-write-wins; the update matches the user ID only.
 Internal failures are logged on the server and exposed only as
 `Internal Server Error`; expected authentication and validation errors remain readable.
+
+### Tailscale credential setup
+
+The WebUI checks the device's `tailscaleStatus` GraphQL query and offers an OAuth
+credential dialog when Tailscale reports `NeedsLogin`. Settings lets portal
+administrators save, replace, or remove the device-wide client ID and secret.
+The setup guide at `/#/tailscale-setup` includes a link to the Tailscale Trust
+credentials console and explains the OAuth client creation process.
+
+The `tailscaleClient` query returns safe metadata (`clientId`, `hasClientSecret`,
+and timestamps), or `null` before setup. `setTailscaleCredential` accepts
+`{clientId, clientSecret}`; omit the secret to retain it for the same ID.
+`clearTailscaleCredential` removes the local credentials. Secrets and cached
+tokens are never returned by GraphQL. Saving does not validate the credentials,
+connect the device, or switch tailnets; removing does not revoke the remote client.
+
+Apply the new migration with `./nanotail-portal db migrate` before using this
+feature. Credentials are stored unencrypted in the device's SQLite database;
+restrict access to that file and its backups and use trusted HTTPS for the WebUI.
 
 A configuration PATCH may include `hostname`, `accept_dns`, `accept_routes`,
 `shields_up`, `exit_node`, `exit_node_allow_lan_access`, `advertise_routes`, and

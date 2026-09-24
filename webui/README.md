@@ -48,5 +48,31 @@ GraphQL errors are displayed even on HTTP 200. An incorrect current password
 does not sign the user out; an HTTP 401 from JWT middleware does.
 Successful changes keep the current session because existing JWTs are not revoked.
 
-The dashboard's network data remains illustrative. Tailscale routes are not yet
-registered by the backend; connecting those panels is a separate step.
+## Tailscale credentials
+
+The dashboard reads `tailscaleStatus` through GraphQL every 30 seconds. A device
+in `NeedsLogin` prompts once per page session for its OAuth client ID and
+secret. Stopped devices, pending machine approval, and unavailable status do not
+trigger credential prompts. Reloading the page may show the prompt again;
+ordinary status refreshes do not. Settings and the setup guide remain available.
+
+Settings supports saving, replacing, and removing credentials using
+`setTailscaleCredential` and `clearTailscaleCredential`. These operations require
+a portal administrator. The `tailscaleClient` query returns `null` before setup,
+or the client ID, `hasClientSecret`, and timestamp; it never returns the secret.
+Leave the secret blank to retain it for the same client ID. Changing IDs requires
+a matching new secret. Removing credentials only removes the local copy.
+
+Saving does not validate credentials, enroll the device, or switch tailnets.
+Secrets are held only in form memory until submission/unmount, never in browser
+storage. They are stored in the device's SQLite database without at-rest
+encryption: protect the database/backups and serve the portal over trusted HTTPS.
+
+The guide at `/#/tailscale-setup` links to the official
+[Trust credentials console](https://console.tailscale.com/admin/settings/trust-credentials)
+and [OAuth client documentation](https://tailscale.com/docs/features/oauth-clients).
+It explains the `auth_keys` permission and device tags for future enrollment.
+
+Apply the new database migration with `./nanotail-portal db migrate` before
+using credential settings (run `db init` first on a new installation).
+Connection status is live; other overview panels are clearly marked previews.

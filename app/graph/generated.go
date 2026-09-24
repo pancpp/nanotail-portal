@@ -39,11 +39,31 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		ChangePassword func(childComplexity int, passwords model.ChangePassword) int
+		ChangePassword           func(childComplexity int, passwords model.ChangePassword) int
+		ClearTailscaleCredential func(childComplexity int) int
+		SetTailscaleCredential   func(childComplexity int, credential model.TailscaleCredential) int
 	}
 
 	Query struct {
-		User func(childComplexity int) int
+		TailscaleClient func(childComplexity int) int
+		TailscaleStatus func(childComplexity int) int
+		User            func(childComplexity int) int
+	}
+
+	TailscaleClient struct {
+		ClientID        func(childComplexity int) int
+		CreateTime      func(childComplexity int) int
+		HasClientSecret func(childComplexity int) int
+		ID              func(childComplexity int) int
+		UpdateTime      func(childComplexity int) int
+	}
+
+	TailscaleStatus struct {
+		BackendState func(childComplexity int) int
+		Connected    func(childComplexity int) int
+		Ips          func(childComplexity int) int
+		NeedsLogin   func(childComplexity int) int
+		Tailnet      func(childComplexity int) int
 	}
 
 	User struct {
@@ -61,9 +81,13 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	ChangePassword(ctx context.Context, passwords model.ChangePassword) (bool, error)
+	SetTailscaleCredential(ctx context.Context, credential model.TailscaleCredential) (bool, error)
+	ClearTailscaleCredential(ctx context.Context) (bool, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context) (*model.User, error)
+	TailscaleClient(ctx context.Context) (*model.TailscaleClient, error)
+	TailscaleStatus(ctx context.Context) (*model.TailscaleStatus, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -95,13 +119,104 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ChangePassword(childComplexity, args["passwords"].(model.ChangePassword)), true
+	case "Mutation.clearTailscaleCredential":
+		if e.ComplexityRoot.Mutation.ClearTailscaleCredential == nil {
+			break
+		}
 
+		return e.ComplexityRoot.Mutation.ClearTailscaleCredential(childComplexity), true
+	case "Mutation.setTailscaleCredential":
+		if e.ComplexityRoot.Mutation.SetTailscaleCredential == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setTailscaleCredential_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetTailscaleCredential(childComplexity, args["credential"].(model.TailscaleCredential)), true
+
+	case "Query.tailscaleClient":
+		if e.ComplexityRoot.Query.TailscaleClient == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.TailscaleClient(childComplexity), true
+	case "Query.tailscaleStatus":
+		if e.ComplexityRoot.Query.TailscaleStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.TailscaleStatus(childComplexity), true
 	case "Query.user":
 		if e.ComplexityRoot.Query.User == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Query.User(childComplexity), true
+
+	case "TailscaleClient.clientId":
+		if e.ComplexityRoot.TailscaleClient.ClientID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClient.ClientID(childComplexity), true
+	case "TailscaleClient.createTime":
+		if e.ComplexityRoot.TailscaleClient.CreateTime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClient.CreateTime(childComplexity), true
+	case "TailscaleClient.hasClientSecret":
+		if e.ComplexityRoot.TailscaleClient.HasClientSecret == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClient.HasClientSecret(childComplexity), true
+	case "TailscaleClient.id":
+		if e.ComplexityRoot.TailscaleClient.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClient.ID(childComplexity), true
+	case "TailscaleClient.updateTime":
+		if e.ComplexityRoot.TailscaleClient.UpdateTime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClient.UpdateTime(childComplexity), true
+
+	case "TailscaleStatus.backendState":
+		if e.ComplexityRoot.TailscaleStatus.BackendState == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.BackendState(childComplexity), true
+	case "TailscaleStatus.connected":
+		if e.ComplexityRoot.TailscaleStatus.Connected == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.Connected(childComplexity), true
+	case "TailscaleStatus.ips":
+		if e.ComplexityRoot.TailscaleStatus.Ips == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.Ips(childComplexity), true
+	case "TailscaleStatus.needsLogin":
+		if e.ComplexityRoot.TailscaleStatus.NeedsLogin == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.NeedsLogin(childComplexity), true
+	case "TailscaleStatus.tailnet":
+		if e.ComplexityRoot.TailscaleStatus.Tailnet == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.Tailnet(childComplexity), true
 
 	case "User.createTime":
 		if e.ComplexityRoot.User.CreateTime == nil {
@@ -143,6 +258,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputChangePassword,
+		ec.unmarshalInputTailscaleCredential,
 	)
 	first := true
 
@@ -236,6 +352,38 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // childFields_* functions provide shared child field context lookups.
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
+
+func (ec *executionContext) childFields_TailscaleClient(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_TailscaleClient_id(ctx, field)
+	case "clientId":
+		return ec.fieldContext_TailscaleClient_clientId(ctx, field)
+	case "hasClientSecret":
+		return ec.fieldContext_TailscaleClient_hasClientSecret(ctx, field)
+	case "createTime":
+		return ec.fieldContext_TailscaleClient_createTime(ctx, field)
+	case "updateTime":
+		return ec.fieldContext_TailscaleClient_updateTime(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TailscaleClient", field.Name)
+}
+
+func (ec *executionContext) childFields_TailscaleStatus(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "backendState":
+		return ec.fieldContext_TailscaleStatus_backendState(ctx, field)
+	case "connected":
+		return ec.fieldContext_TailscaleStatus_connected(ctx, field)
+	case "needsLogin":
+		return ec.fieldContext_TailscaleStatus_needsLogin(ctx, field)
+	case "tailnet":
+		return ec.fieldContext_TailscaleStatus_tailnet(ctx, field)
+	case "ips":
+		return ec.fieldContext_TailscaleStatus_ips(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TailscaleStatus", field.Name)
+}
 
 func (ec *executionContext) childFields_User(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
@@ -383,6 +531,20 @@ func (ec *executionContext) field_Mutation_changePassword_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_setTailscaleCredential_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "credential",
+		func(ctx context.Context, v any) (model.TailscaleCredential, error) {
+			return ec.unmarshalNTailscaleCredential2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleCredential(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["credential"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -501,6 +663,73 @@ func (ec *executionContext) fieldContext_Mutation_changePassword(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_setTailscaleCredential(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setTailscaleCredential(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetTailscaleCredential(ctx, fc.Args["credential"].(model.TailscaleCredential))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setTailscaleCredential(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setTailscaleCredential_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_clearTailscaleCredential(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_clearTailscaleCredential(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().ClearTailscaleCredential(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_clearTailscaleCredential(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Mutation", field, true, true, errors.New("field of type Boolean does not have child fields"))
+}
+
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -528,6 +757,70 @@ func (ec *executionContext) fieldContext_Query_user(_ context.Context, field gra
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_User(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_tailscaleClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_tailscaleClient(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().TailscaleClient(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscaleClient) graphql.Marshaler {
+			return ec.marshalOTailscaleClient2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleClient(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Query_tailscaleClient(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleClient(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_tailscaleStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_tailscaleStatus(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().TailscaleStatus(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscaleStatus) graphql.Marshaler {
+			return ec.marshalNTailscaleStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_tailscaleStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleStatus(ctx, field)
 		},
 	}
 	return fc, nil
@@ -607,6 +900,236 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 		},
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _TailscaleClient_id(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClient) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClient_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt642int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClient_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClient", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClient_clientId(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClient) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClient_clientId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClientID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClient_clientId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClient", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClient_hasClientSecret(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClient) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClient_hasClientSecret(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.HasClientSecret, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClient_hasClientSecret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClient", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClient_createTime(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClient) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClient_createTime(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CreateTime, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClient_createTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClient", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClient_updateTime(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClient) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClient_updateTime(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UpdateTime, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClient_updateTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClient", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_backendState(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_backendState(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.BackendState, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_backendState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_connected(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_connected(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Connected, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_connected(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_needsLogin(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_needsLogin(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.NeedsLogin, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_needsLogin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_tailnet(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_tailnet(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Tailnet, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_tailnet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_ips(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_ips(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Ips, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_ips(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -1820,6 +2343,43 @@ func (ec *executionContext) unmarshalInputChangePassword(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTailscaleCredential(ctx context.Context, obj any) (model.TailscaleCredential, error) {
+	var it model.TailscaleCredential
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clientId", "clientSecret"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clientId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientID = data
+		case "clientSecret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientSecret"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientSecret = data
+		}
+	}
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -1851,6 +2411,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "changePassword":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_changePassword(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setTailscaleCredential":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setTailscaleCredential(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clearTailscaleCredential":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_clearTailscaleCredential(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -1918,6 +2492,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "tailscaleClient":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tailscaleClient(ctx, field)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "tailscaleStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tailscaleStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -1931,6 +2549,122 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			})
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var tailscaleClientImplementors = []string{"TailscaleClient"}
+
+func (ec *executionContext) _TailscaleClient(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleClient) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailscaleClientImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TailscaleClient")
+		case "id":
+			out.Values[i] = ec._TailscaleClient_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clientId":
+			out.Values[i] = ec._TailscaleClient_clientId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hasClientSecret":
+			out.Values[i] = ec._TailscaleClient_hasClientSecret(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createTime":
+			out.Values[i] = ec._TailscaleClient_createTime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateTime":
+			out.Values[i] = ec._TailscaleClient_updateTime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var tailscaleStatusImplementors = []string{"TailscaleStatus"}
+
+func (ec *executionContext) _TailscaleStatus(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailscaleStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TailscaleStatus")
+		case "backendState":
+			out.Values[i] = ec._TailscaleStatus_backendState(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "connected":
+			out.Values[i] = ec._TailscaleStatus_connected(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "needsLogin":
+			out.Values[i] = ec._TailscaleStatus_needsLogin(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tailnet":
+			out.Values[i] = ec._TailscaleStatus_tailnet(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ips":
+			out.Values[i] = ec._TailscaleStatus_ips(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -2456,6 +3190,50 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNTailscaleCredential2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleCredential(ctx context.Context, v any) (model.TailscaleCredential, error) {
+	res, err := ec.unmarshalInputTailscaleCredential(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTailscaleStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleStatus(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TailscaleStatus(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {
 	res, err := graphql.UnmarshalTime(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2668,6 +3446,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTailscaleClient2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleClient(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleClient) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TailscaleClient(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

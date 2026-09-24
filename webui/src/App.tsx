@@ -4,6 +4,8 @@ import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import OverviewPage from './pages/OverviewPage'
 import SettingsPage from './pages/SettingsPage'
+import TailscaleSetupPage from './pages/TailscaleSetupPage'
+import { TailscaleProvider } from './tailscale'
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
@@ -34,9 +36,10 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<DashboardPage />}>
+        <Route path="/" element={<TailscaleProvider><DashboardPage /></TailscaleProvider>}>
           <Route index element={<OverviewPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="tailscale-setup" element={<TailscaleSetupPage />} />
         </Route>
       </Route>
 

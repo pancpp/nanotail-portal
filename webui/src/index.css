@@ -1561,6 +1561,56 @@ input:focus-visible {
   }
 }
 
+/* Tailscale credential setup */
+a:focus-visible, dialog:focus-visible {
+  outline: 3px solid #27c283;
+  outline-offset: 4px;
+}
+
+.credential-form { max-width: 660px; padding: 24px; }
+.credential-intro { margin: 0 0 16px; color: var(--muted); font-size: 17px; line-height: 1.6; }
+.credential-links { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; }
+.credential-form > .credential-links { margin-bottom: 24px; }
+.credential-links a, .setup-guide a, .status-card__footer a { display: inline-flex; align-items: center; gap: 7px; color: var(--green-dark); font-size: 16px; line-height: 1.5; text-underline-offset: 4px; }
+.credential-form input { min-height: 48px; font-size: 17px; }
+.credential-form .password-help { font-size: 16px; }
+.credential-state { color: var(--muted); font-size: 15px; }
+.connection-notice { padding: 20px 24px; margin-bottom: 26px; border: 1px solid #c4dece; border-radius: 14px; background: #edf8f1; font-size: 17px; line-height: 1.5; }
+.connection-notice p { margin: 8px 0 12px; }
+.connection-notice--error { border-color: #efd5aa; background: #fff9ec; }
+.connection-muted { color: #7b7567; }
+.connection-muted i { background: #a49a82 !important; box-shadow: none !important; }
+.setup-dialog { width: min(600px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 0; color: var(--ink); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 28px 100px #071a1350; }
+.setup-dialog::backdrop { background: #071a137a; backdrop-filter: blur(4px); }
+.setup-dialog .panel__header { gap: 16px; }
+.setup-dialog h2 { line-height: 1.3; }
+.setup-dialog__description { padding: 0 24px; margin: 22px 0 0; font-size: 17px; line-height: 1.6; color: var(--muted); }
+.setup-dialog__footer { padding: 0 24px 24px; }
+.setup-dialog .secondary-button, .credential-form .secondary-button, .setup-guide .secondary-button { min-height: 42px; height: auto; width: auto; padding: 10px 14px; font-size: 16px; }
+.danger-action { color: #a43939; }
+.credential-form > .danger-action { margin-top: 20px; font-size: 16px; }
+.remove-confirmation { margin-top: 20px; padding: 16px; border: 1px solid #eccaca; border-radius: 12px; font-size: 16px; line-height: 1.5; }
+.setup-guide { padding: clamp(20px, 4vw, 40px); max-width: 900px; font-size: 18px; line-height: 1.65; }
+.guide-summary { display: flex; align-items: flex-start; gap: 14px; padding: 18px; background: var(--soft-green); border-radius: 12px; }
+.guide-summary svg { flex-shrink: 0; margin-top: 6px; color: var(--green-dark); }
+.guide-summary p { margin: 0; }
+.guide-steps { padding-left: 28px; margin: 28px 0; }
+.guide-steps li { padding: 0 0 20px 8px; }
+.guide-steps li::marker { font-weight: 750; color: var(--green-dark); }
+.setup-guide h2 { margin: 0 0 8px; font-size: 23px; line-height: 1.3; letter-spacing: -0.5px; }
+.setup-guide p { margin: 8px 0 14px; color: #56665c; }
+.setup-guide code { font-size: 16px; overflow-wrap: anywhere; }
+.guide-safety { padding: 22px; border-radius: 12px; background: #fff8eb; border: 1px solid #ecdbb8; }
+.guide-sources { margin-top: 24px; }
+
+@media (max-width: 600px) {
+  .credential-state { max-width: 100px; text-align: right; }
+  .credential-form { padding: 20px 16px; }
+  .setup-dialog__description { padding-inline: 16px; }
+  .setup-dialog h2 { font-size: 22px; }
+  .setup-guide { font-size: 17px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

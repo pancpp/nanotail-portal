@@ -19,6 +19,7 @@ import {
 const TOKEN_STORAGE_KEY = 'nanotail_access_token'
 
 interface AuthContextValue {
+  accessToken: string | null
   isAuthenticated: boolean
   login: (credentials: LoginCredentials) => Promise<void>
   changePassword: (passwords: PasswordChange) => Promise<void>
@@ -106,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken, logout])
 
   const value = useMemo(
-    () => ({ isAuthenticated: Boolean(accessToken), login, changePassword, logout }),
+    () => ({ accessToken, isAuthenticated: Boolean(accessToken), login, changePassword, logout }),
     [accessToken, login, changePassword, logout],
   )
 

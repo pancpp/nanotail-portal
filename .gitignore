@@ -3,16 +3,9 @@
 .claude/
 .codex/
 .vscode/
+logs/
 
 nanotail-portal
 nanotail-portal.arm64
-nanotail-portal.yml
-nanotail-portal.sqlite3
-# Keep existing local runtime files out of version control after the rename.
-fairnet-portal
-fairnet-portal.arm64
-fairnet-portal.yml
-fairnet-portal.sqlite3
-/data/
-/logs/
-/dist/
+nanotail.yml
+nanotail.sqlite3
