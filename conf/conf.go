@@ -46,7 +46,7 @@ func init() {
 	// server settings
 	v.SetDefault("http_listen_addr", "127.0.0.1:7080")
 	v.SetDefault("log_dir", "logs")
-	v.SetDefault("enable_console_log", true)
+	v.SetDefault("enable_console_log", false)
 	v.SetDefault("database", "nanotail.sqlite3")
 	v.SetDefault("tailscale_binary", "/usr/bin/tailscale")
 	v.SetDefault("tailscale_socket", "")
