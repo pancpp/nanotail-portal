@@ -12,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/pancpp/nanotail-portal/activityled"
 	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
 	"github.com/pancpp/nanotail-portal/conf"
@@ -27,6 +28,7 @@ type Runtime struct {
 	stopCollector context.CancelFunc
 	collectorDone chan struct{}
 	serverErrors  chan error
+	ledDone       chan struct{}
 }
 
 func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error) {
@@ -67,12 +69,24 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 		stopCollector: stopCollector,
 		collectorDone: make(chan struct{}),
 		serverErrors:  make(chan error, 1),
+		ledDone:       make(chan struct{}),
 	}
 
 	// One collector per portal process, independent of logged-in browsers.
 	go func() {
 		defer close(runtime.collectorDone)
 		traffic.NewRecorder(device.NewTrafficReader(), traffic.NewStore(database.DB())).Run(collectorCtx)
+	}()
+	// A separate, lightweight sampler keeps LED response independent of the
+	// minute-based history recorder. Failure only disables the indicator.
+	enableTrafficLED := conf.GetBool("vpn_traffic_led")
+	go func() {
+		defer close(runtime.ledDone)
+		if enableTrafficLED {
+			if err := activityled.Run(collectorCtx, device.NewTrafficReader()); err != nil {
+				log.Printf("(VPN traffic LED) disabled: %v", err)
+			}
+		}
 	}()
 
 	// Start echo server
@@ -96,10 +110,17 @@ func (r *Runtime) Shutdown(ctx context.Context) error {
 	}
 	select {
 	case <-r.collectorDone:
-		return nil
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+	if r.ledDone != nil {
+		select {
+		case <-r.ledDone:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
 }
 
 func jwtMiddleware() echo.MiddlewareFunc {

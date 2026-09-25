@@ -54,7 +54,9 @@ func init() {
 	v.SetDefault("tailscale_binary", "/usr/bin/tailscale")
 	v.SetDefault("tailscale_socket", "")
 	v.SetDefault("tailscale_timeout", "15s")
+	v.SetDefault("vpn_traffic_led", true)
 	v.SetEnvPrefix("NANOTAIL")
+	v.MustBindEnv("vpn_traffic_led")
 
 	// set config path
 	v.SetConfigFile(configFile)

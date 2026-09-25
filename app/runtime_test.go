@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -49,4 +51,40 @@ func TestRuntimeShutdownDrainsActiveRequestAndCollector(t *testing.T) {
 	if err := <-stopped; err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestRuntimeShutdownWaitsForLED(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		workerCtx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		collectorDone, ledDone := make(chan struct{}), make(chan struct{})
+		close(collectorDone)
+		runtime := &Runtime{server: &http.Server{}, stopCollector: cancel, collectorDone: collectorDone, ledDone: ledDone}
+		done := make(chan error, 1)
+		go func() { done <- runtime.Shutdown(t.Context()) }()
+		<-workerCtx.Done()
+		synctest.Wait()
+		select {
+		case err := <-done:
+			t.Fatalf("shutdown returned before LED restoration: %v", err)
+		default:
+		}
+		close(ledDone)
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestRuntimeShutdownLEDDeadline(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		defer cancel()
+		collectorDone := make(chan struct{})
+		close(collectorDone)
+		runtime := &Runtime{server: &http.Server{}, stopCollector: func() {}, collectorDone: collectorDone, ledDone: make(chan struct{})}
+		if err := runtime.Shutdown(ctx); !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("shutdown = %v", err)
+		}
+	})
 }

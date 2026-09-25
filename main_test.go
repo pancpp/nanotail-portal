@@ -73,6 +73,9 @@ esac
 				cmd := exec.Command(binary)
 				cmd.Dir = dir
 				cmd.Env = append(os.Environ(), "NANOTAIL_TEST_CALLS="+filepath.Join(dir, "commands"), fmt.Sprintf("NANOTAIL_TEST_LOGOUT_FAIL=%v", failLogout))
+				// This survives factory reset/re-exec and prevents integration
+				// tests on supported boards from touching physical LEDs.
+				cmd.Env = append(cmd.Env, "NANOTAIL_VPN_TRAFFIC_LED=false")
 				cmd.Stdout, cmd.Stderr = output, output
 				if err := cmd.Start(); err != nil {
 					t.Fatal(err)

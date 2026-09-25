@@ -397,6 +397,53 @@ reset the baseline to prevent misleading rates. Polling pauses in hidden tabs,
 stops when leaving the overview/signing out, and times out requests after five
 seconds. Errors clear stale data, retry automatically, and offer a retry button.
 
+#### VPN activity LED
+
+On **NanoPi Zero2**, the portal automatically uses **LED1** for combined VPN
+receive/transmit activity. The separate SYS LED is left untouched. Board detection
+uses the device-tree compatible string, not just the presence of an LED name.
+The adapter supports the vendor kernel's `user_led` and upstream kernel's
+`green:status` sysfs layouts, corresponding to GPIO4_PB1 in the
+[vendor device tree](https://github.com/friendlyarm/kernel-rockchip/blob/nanopi6-v6.1.y/arch/arm64/boot/dts/rockchip/rk3528-nanopi-rev01.dts)
+and [upstream device tree](https://github.com/torvalds/linux/blob/master/arch/arm64/boot/dts/rockchip/rk3528-nanopi-zero2.dts).
+
+A backend worker samples the same `tailscale0` counters every 250 ms, independently
+of browsers and the history recorder. More traffic produces faster 50 ms flashes:
+
+| Combined RX + TX rate | Flashes per second |
+| --- | --- |
+| Idle or unavailable | Off |
+| Greater than zero, below 16 KiB/s | 1 |
+| 16 KiB/s to below 128 KiB/s | 2 |
+| 128 KiB/s to below 1 MiB/s | 4 |
+| 1 MiB/s to below 8 MiB/s | 8 |
+| 8 MiB/s or more | 10 |
+
+These are approximate visual throughput tiers, not per-packet flashes or a
+connection-status indicator. Missing interfaces and counter resets clear the
+baseline; blinking resumes after two valid samples. Userspace-networking mode
+without `tailscale0` has no activity indication.
+
+Unsupported boards and missing LEDs are a no-op. The service user needs write
+access to LED1's sysfs attributes; permission/LED failures disable only this
+worker and are logged, without interrupting the portal or VPN. Restart the portal
+after correcting a hardware/permission problem. No packages, GPIO exports, or
+persistent OS LED settings are changed.
+
+The worker temporarily takes over the LED and restores its brightness, trigger,
+and supported trigger parameters on graceful shutdown, including factory reset.
+The standard `none`, `default-on`, `timer`, and `heartbeat` triggers are supported;
+other active triggers are left unchanged to avoid disrupting another service.
+See the [Linux LED interface documentation](https://docs.kernel.org/leds/leds-class.html).
+Avoid another service controlling LED1 concurrently. Forced termination or power
+loss cannot run the restoration step.
+
+Enabled by default; set `vpn_traffic_led: false` in `nanotail.yml` or
+`NANOTAIL_VPN_TRAFFIC_LED=false` in the service environment to opt out.
+For new hardware, implement `activityled.Platform` and `activityled.LED` and add
+an exact board match to detection. Platform adapters select the indicator and
+handle its interface; traffic sampling and blink timing stay hardware-independent.
+
 #### Persistent 24-hour history and total traffic
 
 The history and totals tables are initialized or upgraded automatically before
