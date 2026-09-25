@@ -22,7 +22,8 @@ func (r *queryResolver) tailscaleRouting(ctx context.Context) (*model.TailscaleR
 		BackendState: routing.BackendState, AdvertiseExitNode: routing.AdvertiseExitNode,
 		SubnetRoutes: append([]string{}, routing.SubnetRoutes...), UsingExitNode: routing.UsingExitNode,
 		SubnetDefaultsPending: routing.SubnetDefaultsPending,
-		SnatEnabled:           routing.SNATEnabled, Health: append([]string{}, routing.Health...),
+		RouteApprovalState:    routing.Approval.State, RouteApprovalMessage: routing.Approval.Message,
+		SnatEnabled: routing.SNATEnabled, Health: append([]string{}, routing.Health...),
 		LanInterface: "eth0", DefaultSubnetRoutes: []string{},
 		LanWarning: "Unable to detect the local LAN. Enter subnet routes manually.",
 	}

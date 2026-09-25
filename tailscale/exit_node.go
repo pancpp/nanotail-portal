@@ -71,9 +71,9 @@ func (c *Client) EnsureExitNode(ctx context.Context) error {
 // retry reads fresh state first, so an uncertain write is not blindly repeated.
 func (c *Client) MaintainRouting(ctx context.Context) {
 	maintainExitNode(ctx, func(ctx context.Context) error {
-		return errors.Join(c.EnsureExitNode(ctx), c.EnsureSubnetDefaults(ctx))
+		return errors.Join(c.EnsureExitNode(ctx), c.EnsureSubnetDefaults(ctx), c.EnsureRouteApproval(ctx))
 	}, func(err error) {
-		log.Printf("(routing) unable to ensure advertisements: %v", err)
+		log.Printf("(routing) unable to ensure advertisements or approval: %v", err)
 	})
 }
 

@@ -36,7 +36,7 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
     try {
       await save({ clientId, clientSecret: secret || undefined })
       setSecret(''); setShowSecret(false)
-      setSuccess('Credentials saved on this device. They have not been validated, and saving does not connect to a tailnet.')
+      setSuccess('Credentials saved. The portal will automatically approve this device’s advertised exit node and subnet routes. Check Tailnet approval for the result; saving does not sign in or switch tailnets.')
       onSaved?.()
     } catch (error) { setError(error instanceof Error ? error.message : 'Unable to save credentials.') }
     finally { setWorking(null) }
@@ -48,13 +48,13 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
     try {
       await clear()
       setClientId(''); setSecret(''); setShowSecret(false); setConfirmRemove(false)
-      setSuccess('Saved credentials removed. The Tailscale OAuth client has not been revoked, and the device was not disconnected.')
+      setSuccess('Saved credentials removed. Automatic OAuth approval has stopped. Existing route approvals remain; the OAuth client has not been revoked and the device was not disconnected.')
     } catch (error) { setError(error instanceof Error ? error.message : 'Unable to remove credentials.') }
     finally { setWorking(null) }
   }
 
   return <form className="login-form credential-form" onSubmit={submit} aria-busy={busy}>
-    <p className="credential-intro">Use an OAuth client from your tailnet—not your portal password or a Tailscale auth key.</p>
+    <p className="credential-intro">Use an OAuth client from this device’s tailnet with devices:routes write permission. Saving enables automatic approval of this device’s advertised exit node and subnet routes.</p>
     <div className="credential-links">
       <a href={TAILSCALE_CREDENTIALS_URL} target="_blank" rel="noopener noreferrer">Create OAuth credentials <ExternalLink size={16} /></a>
       <Link to="/tailscale-setup" onClick={onGuide}><BookOpen size={16} /> Step-by-step guide</Link>
@@ -82,7 +82,7 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
         Remove credentials <Trash2 size={17} />
       </button>
     </div>
-    <p className="password-help">Save only: this does not join or switch tailnets. Use a trusted HTTPS connection when entering secrets.</p>
+    <p className="password-help">This does not join or switch tailnets. Use a trusted HTTPS connection when entering secrets. Saved secrets and API tokens are never sent back to the browser.</p>
     {confirmRemove && <div className="remove-confirmation" id={`${id}-remove`} role="group" aria-label="Confirm credential removal">
       <p>Remove the saved client ID and secret from this device? This does not disconnect Tailscale or revoke the OAuth client in Tailscale.</p>
       <div className="credential-links">

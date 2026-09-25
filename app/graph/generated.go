@@ -198,6 +198,8 @@ type ComplexityRoot struct {
 		Ipv6Forwarding        func(childComplexity int) int
 		LanInterface          func(childComplexity int) int
 		LanWarning            func(childComplexity int) int
+		RouteApprovalMessage  func(childComplexity int) int
+		RouteApprovalState    func(childComplexity int) int
 		SnatEnabled           func(childComplexity int) int
 		SubnetDefaultsPending func(childComplexity int) int
 		SubnetRoutes          func(childComplexity int) int
@@ -1035,6 +1037,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TailscaleRouting.LanWarning(childComplexity), true
+	case "TailscaleRouting.routeApprovalMessage":
+		if e.ComplexityRoot.TailscaleRouting.RouteApprovalMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.RouteApprovalMessage(childComplexity), true
+	case "TailscaleRouting.routeApprovalState":
+		if e.ComplexityRoot.TailscaleRouting.RouteApprovalState == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.RouteApprovalState(childComplexity), true
 	case "TailscaleRouting.snatEnabled":
 		if e.ComplexityRoot.TailscaleRouting.SnatEnabled == nil {
 			break
@@ -1561,6 +1575,10 @@ func (ec *executionContext) childFields_TailscalePeer(ctx context.Context, field
 
 func (ec *executionContext) childFields_TailscaleRouting(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
+	case "routeApprovalState":
+		return ec.fieldContext_TailscaleRouting_routeApprovalState(ctx, field)
+	case "routeApprovalMessage":
+		return ec.fieldContext_TailscaleRouting_routeApprovalMessage(ctx, field)
 	case "backendState":
 		return ec.fieldContext_TailscaleRouting_backendState(ctx, field)
 	case "advertiseExitNode":
@@ -4763,6 +4781,52 @@ func (ec *executionContext) _TailscalePeer_keyExpiry(ctx context.Context, field 
 }
 func (ec *executionContext) fieldContext_TailscalePeer_keyExpiry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_routeApprovalState(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_routeApprovalState(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RouteApprovalState, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_routeApprovalState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_routeApprovalMessage(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_routeApprovalMessage(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RouteApprovalMessage, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_routeApprovalMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _TailscaleRouting_backendState(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
@@ -8059,6 +8123,16 @@ func (ec *executionContext) _TailscaleRouting(ctx context.Context, sel ast.Selec
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("TailscaleRouting")
+		case "routeApprovalState":
+			out.Values[i] = ec._TailscaleRouting_routeApprovalState(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "routeApprovalMessage":
+			out.Values[i] = ec._TailscaleRouting_routeApprovalMessage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "backendState":
 			out.Values[i] = ec._TailscaleRouting_backendState(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

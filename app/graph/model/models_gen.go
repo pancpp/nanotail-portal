@@ -199,11 +199,14 @@ type TailscalePeer struct {
 	KeyExpiry           *time.Time     `json:"keyExpiry,omitempty"`
 }
 
-// This device's routing advertisements and host readiness; not route approval or end-to-end reachability.
+// This device's routing advertisements, cached OAuth approval, and host readiness; not end-to-end reachability.
 type TailscaleRouting struct {
-	BackendState      string   `json:"backendState"`
-	AdvertiseExitNode bool     `json:"advertiseExitNode"`
-	SubnetRoutes      []string `json:"subnetRoutes"`
+	// DISABLED (no credentials), PENDING, APPROVED, or ERROR. Reads never trigger approval.
+	RouteApprovalState   string   `json:"routeApprovalState"`
+	RouteApprovalMessage string   `json:"routeApprovalMessage"`
+	BackendState         string   `json:"backendState"`
+	AdvertiseExitNode    bool     `json:"advertiseExitNode"`
+	SubnetRoutes         []string `json:"subnetRoutes"`
 	// Local LAN advertisement defaults are enabled and waiting for first-time setup.
 	SubnetDefaultsPending bool `json:"subnetDefaultsPending"`
 	// Legacy use of another exit node. Applying routing settings clears it.

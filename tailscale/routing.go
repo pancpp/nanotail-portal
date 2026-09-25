@@ -23,6 +23,7 @@ type Routing struct {
 	UsingExitNode         bool
 	SNATEnabled           bool
 	Health                []string
+	Approval              RouteApproval
 }
 
 func (c *Client) Routing(ctx context.Context) (Routing, error) {
@@ -45,6 +46,7 @@ func (c *Client) Routing(ctx context.Context) (Routing, error) {
 		SubnetRoutes: nonNil(prefs.AdvertiseRoutes), UsingExitNode: prefs.ExitNodeID != "" || prefs.ExitNode != "",
 		SNATEnabled: prefs.SNATEnabled, Health: nonNil(status.Health),
 		SubnetDefaultsPending: pending && len(prefs.AdvertiseRoutes) == 0,
+		Approval:              c.routeApprovalStatus(ctx, status, prefs),
 	}, nil
 }
 

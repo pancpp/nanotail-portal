@@ -115,7 +115,11 @@ or the client ID, `hasClientSecret`, and timestamp; it never returns the secret.
 Leave the secret blank to retain it for the same client ID. Changing IDs requires
 a matching new secret. Removing credentials only removes the local copy.
 
-Saving does not validate credentials, enroll the device, or switch tailnets.
+Saving enables background OAuth approval for this device's advertised exit node
+and subnet routes. It confirms storage, not completed approval; check **Tailnet
+approval** for pending/confirmed/error status. It does not enroll the device or
+switch tailnets. Removing credentials stops automatic approval and clears cached
+tokens, but does not revoke existing approvals or the remote OAuth client.
 Secrets are held only in form memory until submission/unmount, never in browser
 storage. They are stored in the device's SQLite database without at-rest
 encryption: protect the database/backups and serve the portal over trusted HTTPS.
@@ -123,34 +127,35 @@ encryption: protect the database/backups and serve the portal over trusted HTTPS
 The guide at `/#/tailscale-setup` links to the official
 [Trust credentials console](https://console.tailscale.com/admin/settings/trust-credentials)
 and [OAuth client documentation](https://tailscale.com/docs/features/oauth-clients).
-It explains the `auth_keys` permission and device tags for future enrollment.
+It explains the `devices:routes` write permission required for route approval.
+`auth_keys` alone is not sufficient.
 
 The backend initializes the database and applies pending migrations before
 serving requests, including the credentials table on a new installation.
 Connection status, peers, node-key expiry, device status, network activity,
 and routing settings are live.
 
-## Exit-node routing
+## Exit-node and subnet routing
 
-**Overview → Routing → Configure** opens **Access control**, with the
-current exit node, approved peer choices, and a local-LAN access checkbox.
-Routing preferences refresh every 30 seconds and with **Refresh status**. The
-form reads them again on entering the tab; background updates do not overwrite edits.
-Offline nodes cannot be newly selected. A missing or offline current node can
-still be cleared by choosing **None — use local gateway**. Read failures show
-Unavailable rather than claiming traffic uses the local gateway.
+**Overview → Configure** opens **Access control**. This device always advertises
+itself as an exit node; it cannot select another exit node. Subnet advertisements
+default to the local LAN and can be edited or disabled with the administrator-only
+`setRouting` mutation. Changes require acknowledgement of the connectivity warning.
+Only an error-free `true` result confirms local preferences, not cloud approval.
+After an uncertain routing mutation, reload settings before retrying.
 
-The form sends the administrator-only GraphQL `setExitNode` mutation with a
-stable peer ID and an explicit LAN-access boolean. LAN access defaults on when
-selecting a node from the local-gateway mode. Changes require confirmation of
-the connection warning. Only an error-free `true` result confirms saved
-preferences; after an error, reload settings before retrying. Network failures
-may mean the change already applied, and are never automatically retried.
+With saved OAuth credentials, the backend approves this device's current
+advertisements independently of open browsers. **Tailnet approval** displays
+`routeApprovalState` and `routeApprovalMessage` from the routing query.
+Cloud approval updates through the existing 30-second status refresh without
+overwriting subnet drafts. The Overview distinguishes advertisements, pending
+approval, confirmed approval, and errors. Successful cloud approval still
+requires OS forwarding, suitable access rules, and client configuration.
 
-This controls nanotail's own exit-node selection, not exit-node advertising or
-forwarding other LAN devices' traffic. Tailscale persists the settings; the
-portal database is not used. The form links to the official exit-node setup
-guide when another device needs to be configured/approved first.
+Missing credentials leave manual approval or auto-approvers available. Existing
+cloud approvals are preserved; disabling subnet advertisement does not revoke
+them. The backend rechecks approvals periodically and can restore a manually
+revoked approval while that route is still advertised and credentials are saved.
 
 ## Tailnet connection
 

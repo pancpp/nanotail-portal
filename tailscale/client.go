@@ -43,6 +43,7 @@ type Client struct {
 	keyRenewal     *keyRenewalAttempt
 	subnetDefaults SubnetDefaultsStore
 	detectSubnets  func(context.Context) ([]string, error)
+	approval       *routeApproval
 }
 
 func NewClient(binary, socket string, timeout time.Duration, runner Runner) *Client {

@@ -5,6 +5,7 @@ import { routingSummary, routingDraft, forwardingWarnings } from '../src/routing
 import { canonicalSubnetRoutes, parseSubnetRouteText } from '../src/subnetRoutes.ts'
 
 const settings = (overrides = {}) => ({
+  routeApprovalState: 'DISABLED', routeApprovalMessage: 'Use manual approval or auto-approvers.',
   backendState: 'Running', advertiseExitNode: false, subnetDefaultsPending: false, subnetRoutes: [], usingExitNode: false,
   snatEnabled: true, health: [], lanInterface: 'eth0', defaultSubnetRoutes: ['192.168.42.0/24'],
   lanWarning: '', ipv4Forwarding: true, ipv6Forwarding: true, ...overrides,
@@ -21,7 +22,8 @@ test('routing query is authenticated, cancellable, and validates the response in
   assert.match(body.query, /defaultSubnetRoutes/); assert.doesNotMatch(body.query, /exitNodes/)
   controller.abort(); assert.equal(options.signal.aborted, true)
   const invalid = [null, {}, settings({ subnetRoutes: [null] }), settings({ advertiseExitNode: 'true' }),
-    settings({ ipv4Forwarding: 1 }), settings({ defaultSubnetRoutes: '192.168.0.0/24' }), settings({ health: [1] })]
+    settings({ ipv4Forwarding: 1 }), settings({ defaultSubnetRoutes: '192.168.0.0/24' }), settings({ health: [1] }),
+    settings({ routeApprovalState: 'UNKNOWN' }), settings({ routeApprovalMessage: null })]
   for (const field of Object.keys(settings())) { const value = settings(); delete value[field]; invalid.push(value) }
   for (const value of invalid) {
     fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleRouting: value } }))
@@ -119,4 +121,17 @@ test('overview describes advertisements, not approval, and distinguishes disable
   assert.match(routingSummary(settings({ usingExitNode: true }), '').detail, /another exit node/)
   assert.equal(forwardingWarnings(settings({ ipv6Forwarding: false }), false, ['192.168.1.0/24']).length, 0)
   assert.equal(forwardingWarnings(settings({ ipv6Forwarding: null }), true, []).length, 1)
+})
+
+test('overview distinguishes OAuth approval from advertisements and reachability', () => {
+  const advertised = settings({ advertiseExitNode: true, subnetRoutes: ['192.168.42.0/24'] })
+  for (const kind of ['exit', 'subnet']) {
+    for (const [state, title] of [['PENDING', 'Approval pending'], ['APPROVED', 'Approved'], ['ERROR', 'Approval unconfirmed']]) {
+      assert.equal(routingSummary({ ...advertised, routeApprovalState: state }, '', kind).title, title)
+    }
+    assert.equal(routingSummary({ ...advertised, routeApprovalState: 'APPROVED', backendState: 'Stopped' }, '', kind).title, 'Paused')
+    assert.equal(routingSummary({ ...advertised, routeApprovalState: 'APPROVED', ipv4Forwarding: false }, '', kind).title, 'Needs OS setup')
+    assert.equal(routingSummary({ ...advertised, routeApprovalState: 'APPROVED' }, 'offline', kind).title, 'Unavailable')
+  }
+  assert.equal(routingSummary(settings({ routeApprovalState: 'APPROVED' }), '', 'subnet').title, 'Not advertised')
 })

@@ -431,6 +431,8 @@ export async function tailscaleStatusRequest(token: string, signal?: AbortSignal
 }
 
 export interface TailscaleRouting {
+  routeApprovalState: 'DISABLED' | 'PENDING' | 'APPROVED' | 'ERROR'
+  routeApprovalMessage: string
   backendState: string
   advertiseExitNode: boolean
   subnetDefaultsPending: boolean
@@ -495,12 +497,14 @@ export async function tailscaleRoutingRequest(token: string, signal?: AbortSigna
     tailscaleRouting {
       backendState advertiseExitNode subnetRoutes subnetDefaultsPending usingExitNode snatEnabled health
       lanInterface defaultSubnetRoutes lanWarning ipv4Forwarding ipv6Forwarding
+      routeApprovalState routeApprovalMessage
     }
   }`, {}, signal ? AbortSignal.any([signal, timeout]) : timeout, 'routing')
   const value: unknown = data.tailscaleRouting
   const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(item => typeof item === 'string')
   const forwarding = (v: unknown) => v === null || typeof v === 'boolean'
   if (!isRecord(value) || typeof value.backendState !== 'string' || !value.backendState ||
+    !['DISABLED', 'PENDING', 'APPROVED', 'ERROR'].includes(value.routeApprovalState as string) || typeof value.routeApprovalMessage !== 'string' ||
     typeof value.subnetDefaultsPending !== 'boolean' || typeof value.advertiseExitNode !== 'boolean' || typeof value.usingExitNode !== 'boolean' ||
     typeof value.snatEnabled !== 'boolean' || !strings(value.subnetRoutes) || !strings(value.health) ||
     !strings(value.defaultSubnetRoutes) || typeof value.lanInterface !== 'string' || typeof value.lanWarning !== 'string' ||

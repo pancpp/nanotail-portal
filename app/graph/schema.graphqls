@@ -182,8 +182,11 @@ type NetworkActivityHistory {
   totals: NetworkActivityTotals!
 }
 
-"This device's routing advertisements and host readiness; not route approval or end-to-end reachability."
+"This device's routing advertisements, cached OAuth approval, and host readiness; not end-to-end reachability."
 type TailscaleRouting {
+	"DISABLED (no credentials), PENDING, APPROVED, or ERROR. Reads never trigger approval."
+	routeApprovalState: String!
+	routeApprovalMessage: String!
   backendState: String!
   advertiseExitNode: Boolean!
   subnetRoutes: [String!]!

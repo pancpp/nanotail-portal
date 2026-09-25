@@ -134,7 +134,7 @@ and checks the saved preference afterward. It does not reset DNS, routing, or
 login settings; see the [Tailscale CLI reference](https://tailscale.com/docs/reference/tailscale-cli#down).
 Initial sign-in and expired-key reauthentication are available through the
 Overview's browser sign-in guide. Device approval may still be required in the
-tailnet admin console; saved OAuth credentials are still storage-only.
+tailnet admin console; OAuth route approval does not authorize or enroll devices.
 
 The form requires acknowledgment that connectivity may be interrupted. Keep
 LAN or console access available to re-enable Tailscale after disconnecting.
@@ -230,12 +230,34 @@ The UI surfaces Tailscale health warnings and warns if existing subnet SNAT is
 disabled; it does not rewrite those settings.
 
 **Advertised** means saved local intent, not approved, active, or reachable.
-Approve the exit node and subnet routes in the Tailscale admin console (unless
-covered by auto-approvers), allow the traffic in tailnet access rules, and select
+With saved OAuth credentials granting `devices:routes` write permission, the
+portal automatically approves this device's exit node and advertised subnets.
+**Tailnet approval** in Access control and the Overview cards distinguish
+pending, confirmed, and failed OAuth approval. Without credentials, approve
+routes in the Tailscale admin console or configure auto-approvers.
+Allow the traffic in tailnet access rules, and select
 the exit node or accept subnet routes on client devices. See the official
 [exit-node guide](https://tailscale.com/docs/features/exit-nodes) and
 [subnet-router guide](https://tailscale.com/docs/features/subnet-routers).
-The portal does not change remote approval/policy or other clients.
+The portal does not change tailnet policy, device authorization, or other clients.
+
+Approval runs in the background after the startup/10-second advertisement check,
+including after saving credentials, applying routes, and recovering sign-in.
+It requests an OAuth token scoped to `devices:routes`, addresses only the local
+daemon's stable self ID, waits for the control plane to report the advertisements,
+and verifies approval with a fresh read. Tokens stay in memory and are refreshed
+before expiry; HTTP redirects and upstream diagnostic bodies are not exposed.
+Failures retry after a minute, always reading existing approvals before writing.
+Successful approvals are rechecked every five minutes. New credentials, node
+identity, or advertisements trigger an earlier check. Cloud failures do not undo
+local routing changes or prevent the portal from starting.
+
+Approval is additive: existing approvals (including pre-approved routes) are
+preserved. Disabling a subnet withdraws its local advertisement; it does not
+revoke its cloud approval. Removing credentials stops automatic approval and
+clears cached tokens, without revoking existing approvals. An administrator's
+manual revocation of an actively advertised route can be re-approved at the
+next check while OAuth credentials remain configured.
 
 Keep local access available: changing roles or removing advertisements can
 disconnect this browser, SSH, and other clients. Unknown outcomes require a fresh
@@ -614,8 +636,16 @@ The `tailscaleClient` query returns safe metadata (`clientId`, `hasClientSecret`
 and timestamps), or `null` before setup. `setTailscaleCredential` accepts
 `{clientId, clientSecret}`; omit the secret to retain it for the same ID.
 `clearTailscaleCredential` removes the local credentials. Secrets and cached
-tokens are never returned by GraphQL. Saving does not validate the credentials,
-connect the device, or switch tailnets; removing does not revoke the remote client.
+tokens are never returned by GraphQL. Saving queues automatic approval of current
+advertisements; the mutation confirms storage, not successful OAuth authentication
+or approval. Check Tailnet approval for the result. Saving does not connect the
+device or switch tailnets; removing does not revoke the remote client.
+
+Create the OAuth client in the same tailnet with `devices:routes` write permission
+(not just `auth_keys`). This scope can manage routes across that tailnet, although
+the portal only targets its own device. Do not grant unrelated permissions.
+See [Tailscale's scope reference](https://tailscale.com/docs/reference/trust-credentials)
+and [OAuth client documentation](https://tailscale.com/docs/features/oauth-clients).
 
 The credentials table is initialized or upgraded automatically at startup.
 Credentials are stored unencrypted in the device's SQLite database;

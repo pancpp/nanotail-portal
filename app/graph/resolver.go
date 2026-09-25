@@ -56,14 +56,19 @@ type TailscaleKeyRenewer interface {
 	CancelNodeKeyRenewal(context.Context, string) (tailscale.KeyRenewal, error)
 }
 
+type OAuthCredentialWriter interface {
+	UpdateOAuthCredentials(context.Context, func(context.Context) error) error
+}
+
 type Resolver struct {
-	Tailscale      TailscaleStatusReader
-	Device         DeviceStatusReader
-	DeviceConfig   DeviceIPConfigurator
-	Traffic        NetworkActivityReader
-	Routing        TailscaleRouter
-	RoutingHost    RoutingHostReader
-	TrafficHistory NetworkHistoryReader
-	Connection     TailscaleConnector
-	KeyRenewer     TailscaleKeyRenewer
+	CredentialWriter OAuthCredentialWriter
+	Tailscale        TailscaleStatusReader
+	Device           DeviceStatusReader
+	DeviceConfig     DeviceIPConfigurator
+	Traffic          NetworkActivityReader
+	Routing          TailscaleRouter
+	RoutingHost      RoutingHostReader
+	TrafficHistory   NetworkHistoryReader
+	Connection       TailscaleConnector
+	KeyRenewer       TailscaleKeyRenewer
 }

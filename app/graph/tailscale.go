@@ -56,27 +56,29 @@ func (r *mutationResolver) setTailscaleCredential(ctx context.Context, credentia
 		strings.ContainsFunc(id+secret, func(r rune) bool { return unicode.IsSpace(r) || unicode.IsControl(r) }) {
 		return false, ErrInvalidCredential
 	}
-	err := database.DB().RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		// A portal manages one device-wide OAuth client. Never return its secret.
-		if secret == "" {
-			saved := &database.TailscaleClient{PID: 1}
-			if err := tx.NewSelect().Model(saved).WherePK().Scan(ctx); err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
+	err := r.updateOAuthCredentials(ctx, func(ctx context.Context) error {
+		return database.DB().RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+			// A portal manages one device-wide OAuth client. Never return its secret.
+			if secret == "" {
+				saved := &database.TailscaleClient{PID: 1}
+				if err := tx.NewSelect().Model(saved).WherePK().Scan(ctx); err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						return ErrInvalidCredential
+					}
+					return err
+				}
+				if saved.ClientID != id || saved.ClientSecret == "" {
 					return ErrInvalidCredential
 				}
-				return err
+				secret = saved.ClientSecret
 			}
-			if saved.ClientID != id || saved.ClientSecret == "" {
-				return ErrInvalidCredential
-			}
-			secret = saved.ClientSecret
-		}
-		client := &database.TailscaleClient{PID: 1, ClientID: id, ClientSecret: secret, UpdateTime: time.Now().UTC()}
-		_, err := tx.NewInsert().Model(client).On("CONFLICT (pid) DO UPDATE").
-			Set("client_id = EXCLUDED.client_id").Set("client_secret = EXCLUDED.client_secret").
-			Set("update_time = EXCLUDED.update_time").
-			Set("api_token_id = ''").Set("api_token = ''").Set("auth_key_id = ''").Set("auth_key = ''").Exec(ctx)
-		return err
+			client := &database.TailscaleClient{PID: 1, ClientID: id, ClientSecret: secret, UpdateTime: time.Now().UTC()}
+			_, err := tx.NewInsert().Model(client).On("CONFLICT (pid) DO UPDATE").
+				Set("client_id = EXCLUDED.client_id").Set("client_secret = EXCLUDED.client_secret").
+				Set("update_time = EXCLUDED.update_time").
+				Set("api_token_id = ''").Set("api_token = ''").Set("auth_key_id = ''").Set("auth_key = ''").Exec(ctx)
+			return err
+		})
 	})
 	return err == nil, err
 }
@@ -102,8 +104,18 @@ func (r *mutationResolver) clearTailscaleCredential(ctx context.Context) (bool, 
 	if err := requireTailscaleAdmin(ctx); err != nil {
 		return false, err
 	}
-	_, err := database.DB().NewDelete().Model((*database.TailscaleClient)(nil)).Where("pid = ?", 1).Exec(ctx)
+	err := r.updateOAuthCredentials(ctx, func(ctx context.Context) error {
+		_, err := database.DB().NewDelete().Model((*database.TailscaleClient)(nil)).Where("pid = ?", 1).Exec(ctx)
+		return err
+	})
 	return err == nil, err
+}
+
+func (r *mutationResolver) updateOAuthCredentials(ctx context.Context, update func(context.Context) error) error {
+	if r.CredentialWriter != nil {
+		return r.CredentialWriter.UpdateOAuthCredentials(ctx, update)
+	}
+	return update(ctx)
 }
 
 func (r *queryResolver) tailscaleStatus(ctx context.Context) (*model.TailscaleStatus, error) {

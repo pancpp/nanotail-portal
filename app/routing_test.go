@@ -146,9 +146,13 @@ func TestSetRoutingGraphQL(t *testing.T) {
 }
 
 func TestRoutingGraphQLRead(t *testing.T) {
-	query := `{tailscaleRouting{backendState advertiseExitNode subnetRoutes subnetDefaultsPending usingExitNode snatEnabled health lanInterface defaultSubnetRoutes lanWarning ipv4Forwarding ipv6Forwarding}}`
+	query := `{tailscaleRouting{backendState advertiseExitNode subnetRoutes subnetDefaultsPending usingExitNode snatEnabled health lanInterface defaultSubnetRoutes lanWarning ipv4Forwarding ipv6Forwarding routeApprovalState routeApprovalMessage}}`
 	mock := &routingMock{value: tailscale.Routing{BackendState: "Running", AdvertiseExitNode: true, SubnetRoutes: []string{"192.168.42.0/24"}, SNATEnabled: true}}
+	mock.value.Approval = tailscale.RouteApproval{State: "APPROVED", Message: "Tailscale confirmed approval"}
 	result := routingGraphQL(t, mock, 1, query, nil)
+	if !strings.Contains(string(result["data"]), `"routeApprovalState":"APPROVED"`) || !strings.Contains(string(result["data"]), `"routeApprovalMessage":"Tailscale confirmed approval"`) {
+		t.Fatalf("approval metadata missing: %s", result)
+	}
 	for _, want := range []string{`"advertiseExitNode":true`, `"defaultSubnetRoutes":["192.168.42.0/24"]`, `"ipv4Forwarding":true`, `"health":[]`} {
 		if len(result["errors"]) != 0 || !strings.Contains(string(result["data"]), want) {
 			t.Fatalf("%s", result)

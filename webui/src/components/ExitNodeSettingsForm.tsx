@@ -8,7 +8,7 @@ import { useTailscale } from '../tailscale'
 
 export default function ExitNodeSettingsForm() {
   const { accessToken, logout } = useAuth()
-  const { refresh } = useTailscale()
+  const { refresh, routing: liveRouting, routingError } = useTailscale()
   const pending = useRef<AbortController | null>(null)
   const submitting = useRef(false)
   const mounted = useRef(false)
@@ -60,6 +60,7 @@ export default function ExitNodeSettingsForm() {
   const changed = !!routing && (routing.subnetDefaultsPending || !routing.advertiseExitNode || routing.usingExitNode ||
     JSON.stringify(routes) !== JSON.stringify([...routing.subnetRoutes].sort()))
   const warnings = routing ? forwardingWarnings(routing, true, routes) : []
+  const approval = liveRouting ?? routing
   function edited() { setAcknowledged(false); setSaved(false) }
 
   async function submit(event: FormEvent) {
@@ -90,7 +91,7 @@ export default function ExitNodeSettingsForm() {
       <p className="credential-intro">Use this device as an internet gateway and a gateway to your local LAN for other tailnet devices. Only portal administrators can apply changes.</p>
       {loading && <p role="status">Loading routing settings…</p>}
       {error && <div className="form-error" role="alert">{error}</div>}
-      {saved && <p className="form-success" role="status">Routing advertisements saved. Verify approval and access rules in the Tailscale admin console before use.</p>}
+      {saved && <p className="form-success" role="status">Routing advertisements saved. OAuth approval runs automatically when credentials are configured; check Tailnet approval below.</p>}
       {routing && !loading && <>
         <fieldset className="routing-section" disabled={busy || needsReload}>
           <legend><Route size={18} /> Exit node</legend>
@@ -129,7 +130,14 @@ export default function ExitNodeSettingsForm() {
           {!routing.snatEnabled && <p className="lan-warning">Subnet SNAT is disabled. Verify return routes and exit-node compatibility; this portal preserves the existing SNAT setting.</p>}
           {!!routing.health.length && <ul className="routing-health">{routing.health.map((message, index) => <li key={index}>{message}</li>)}</ul>}
         </div>
-        <p className="password-help">Approve this device’s exit node and subnet routes in the <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">Tailscale admin console ↗</a>, unless auto-approvers already cover them. Tailnet access rules and client settings must also allow their use.</p>
+        <div className="routing-readiness routing-approval" aria-live="polite">
+          <strong>Tailnet approval · {routingError ? 'Unavailable' : approval?.routeApprovalState === 'APPROVED' ? 'Approved' : approval?.routeApprovalState === 'ERROR' ? 'Needs attention' : approval?.routeApprovalState === 'DISABLED' ? 'Manual or policy-based' : 'Pending'}</strong>
+          <p className={approval?.routeApprovalState === 'ERROR' || routingError ? 'form-error' : 'password-help'}>
+            {routingError ? 'Unable to refresh approval status. Reload settings to check again.' : approval?.routeApprovalMessage}
+          </p>
+          <p className="password-help">Saved OAuth credentials automatically approve this device’s advertised exit node and subnets using devices:routes write permission. Approval runs in the background, including after startup or sign-in. This status is for saved advertisements, not unsaved edits.</p>
+          <p className="password-help">Without OAuth credentials, approve routes in the <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">Tailscale admin console ↗</a> or configure auto-approvers. Tailnet access rules and client settings must still allow their use.</p>
+        </div>
         {routing.backendState !== 'Running' && <p className="lan-warning">Tailscale is not running. Connect it before advertising routes. You can still remove subnet advertisements. The exit-node setting remains enabled.</p>}
         {routing.usingExitNode && <p className="lan-warning">This device still has another exit node selected. The portal will clear that selection automatically to enforce this device’s exit-node role.</p>}
         <div className="lan-warning" id="routing-warning">Advertising routes can expose your LAN to permitted tailnet devices. Changing subnet routes may disconnect this browser, SSH, or other clients. Keep local access available. Changes are not automatically reverted.</div>

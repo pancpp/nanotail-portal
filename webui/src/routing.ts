@@ -26,6 +26,9 @@ export function routingSummary(routing: TailscaleRouting | null, error: string, 
   const warnings = forwardingWarnings(routing, kind === 'exit', kind === 'subnet' ? routing.subnetRoutes : [])
   if (warnings.length) return { title: 'Needs OS setup', detail: warnings.join(' ') }
   if (!routing.snatEnabled) return { title: 'Check routing', detail: 'SNAT is disabled · verify upstream/return routes before use' }
+  if (routing.routeApprovalState === 'APPROVED') return { title: 'Approved', detail: 'Tailscale approval confirmed · access rules and client settings still apply' }
+  if (routing.routeApprovalState === 'PENDING') return { title: 'Approval pending', detail: routing.routeApprovalMessage }
+  if (routing.routeApprovalState === 'ERROR') return { title: 'Approval unconfirmed', detail: routing.routeApprovalMessage }
   return { title: 'Advertised', detail: kind === 'exit'
     ? 'This device offers internet access · verify tailnet approval'
     : 'Subnet routes advertised · verify tailnet approval and access rules' }
