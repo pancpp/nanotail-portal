@@ -274,6 +274,8 @@ type Mutation {
   setExitNode(input: ExitNodeInput!): Boolean!
   "Admin only: resume or pause this device without logging out or changing routing preferences. May disconnect this browser."
   setTailscaleEnabled(enabled: Boolean!): Boolean!
+  "Admin only: log this device out of Tailscale. Disconnects the tailnet and requires sign-in again."
+  logoutTailscale: Boolean!
   "Admin only: prepare first-time sign-in or renewal without changing Tailscale. Sign in explicitly to begin, or cancel while READY."
   renewTailscaleNodeKey: TailscaleKeyRenewal!
   "Admin only: start the prepared attempt. May disconnect Tailscale; cannot be cancelled once started."

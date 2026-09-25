@@ -42,6 +42,7 @@ type NetworkHistoryReader interface {
 type TailscaleConnector interface {
 	Connection(context.Context) (tailscale.Connection, error)
 	SetEnabled(context.Context, bool) error
+	Logout(context.Context) error
 }
 
 type TailscaleKeyRenewer interface {

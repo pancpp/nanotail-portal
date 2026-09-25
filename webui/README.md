@@ -68,6 +68,10 @@ Opening the guide only reads status. A portal administrator acknowledges the
 instructions, chooses **Prepare sign-in**, and then **Sign in to Tailscale** to
 authorize the device in a new browser tab. No OAuth client ID/secret is needed.
 The existing cancellable prepare/start flow is shared with node-key renewal.
+Use the top-right X to close the sign-in panel; it has no **Check status** or
+**Close** buttons. After an error, reopen sign-in from Overview to check status
+before retrying. Status is read on opening, and progress updates automatically
+while sign-in is pending.
 First-time login reports `SIGNED_IN` only after a usable node key and `Running`
 state are reported, displaying **Signed in to Tailscale successfully**, refreshing
 the overview and stopping polling. It does not claim an existing key was renewed.
@@ -77,7 +81,7 @@ and `self` can be `null` before login. The overview uses `tailscaleIPs` and the
 live `peers` list, including device names, addresses, operating systems, and
 online state. Unavailable status hides stale connection and peer information.
 
-Network supports saving, replacing, and removing credentials using
+Access control supports saving, replacing, and removing credentials using
 `setTailscaleCredential` and `clearTailscaleCredential`. These operations require
 a portal administrator. The `tailscaleClient` query returns `null` before setup,
 or the client ID, `hasClientSecret`, and timestamp; it never returns the secret.
@@ -124,8 +128,9 @@ guide when another device needs to be configured/approved first.
 ## Tailnet connection
 
 **Overview → Tailscale status → Configure** opens **Network**, which also
-contains LAN IPv4 settings and OAuth credentials. **Settings** retains Change
-password. All sidebar tabs support direct links and active navigation states.
+contains LAN IPv4 settings. OAuth credentials are in **Access control**, below
+exit-node configuration. **Settings** retains Change password. All sidebar tabs
+support direct links and active navigation states.
 
 **Network → Tailnet connection** reads `tailscaleConnection` on entry and with
 **Reload connection**. On/Off reflects the saved `enabled` preference rather
@@ -141,6 +146,14 @@ turn it on. There is no optimistic success state or automatic write retry.
 Loading/read failures disable the control; rejected, timed-out, or disconnected
 writes require reloading current settings before another attempt. The form
 prevents duplicate submissions, and reads are canceled when leaving the tab.
+
+The **Log out of Tailscale** button in the same panel uses the local-access
+acknowledgement and sends the administrator-only `logoutTailscale` mutation.
+It runs `tailscale logout`, disconnecting the device and requiring sign-in again
+from Overview. Portal login and saved OAuth credentials are retained. Logout
+clears pending renewal state and links, refreshes device status, and reloads the
+connection panel. Only confirmed success displays the logged-out message;
+uncertain outcomes require **Reload connection** before another attempt.
 
 ## Node key expiry
 

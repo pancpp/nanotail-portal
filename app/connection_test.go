@@ -18,10 +18,11 @@ import (
 )
 
 type connectionMock struct {
-	value   tailscale.Connection
-	err     error
-	calls   int
-	enabled bool
+	value       tailscale.Connection
+	err         error
+	calls       int
+	enabled     bool
+	logoutCalls int
 }
 
 func (m *connectionMock) Connection(context.Context) (tailscale.Connection, error) {
@@ -30,6 +31,11 @@ func (m *connectionMock) Connection(context.Context) (tailscale.Connection, erro
 func (m *connectionMock) SetEnabled(_ context.Context, enabled bool) error {
 	m.calls++
 	m.enabled = enabled
+	return m.err
+}
+
+func (m *connectionMock) Logout(context.Context) error {
+	m.logoutCalls++
 	return m.err
 }
 
@@ -63,7 +69,7 @@ func connectionGraphQL(t *testing.T, connector graph.TailscaleConnector, pid int
 func TestConnectionHTTPAuthentication(t *testing.T) {
 	e := newTestApp(t)
 	for _, token := range []string{"", "Bearer invalid"} {
-		for _, query := range []string{`{ tailscaleConnection { enabled backendState canEnable } }`, `mutation { setTailscaleEnabled(enabled:false) }`} {
+		for _, query := range []string{`{ tailscaleConnection { enabled backendState canEnable } }`, `mutation { setTailscaleEnabled(enabled:false) }`, `mutation { logoutTailscale }`} {
 			body, _ := json.Marshal(map[string]string{"query": query})
 			w := appRequest(e, http.MethodPost, "/api/v1/query", string(body), token)
 			if w.Code != http.StatusUnauthorized {

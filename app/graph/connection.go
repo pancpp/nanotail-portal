@@ -31,3 +31,14 @@ func (r *mutationResolver) setTailscaleEnabled(ctx context.Context, enabled bool
 	err := r.Connection.SetEnabled(ctx, enabled)
 	return err == nil, err
 }
+
+func (r *mutationResolver) logoutTailscale(ctx context.Context) (bool, error) {
+	if err := requireAdmin(ctx, ErrConnectionAdmin); err != nil {
+		return false, err
+	}
+	if r.Connection == nil {
+		return false, tailscale.ErrConnectionUnavailable
+	}
+	err := r.Connection.Logout(ctx)
+	return err == nil, err
+}

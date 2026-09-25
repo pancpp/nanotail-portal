@@ -466,6 +466,17 @@ export async function setTailscaleEnabledRequest(token: string, enabled: boolean
   } finally { clearTimeout(timer) }
 }
 
+export async function logoutTailscaleRequest(token: string): Promise<void> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'LogoutTailscale', `mutation LogoutTailscale {
+      logoutTailscale
+    }`, {}, controller.signal, 'Tailscale logout')
+    if (data.logoutTailscale !== true) throw new Error('The server did not confirm Tailscale logout. Reload connection settings before retrying.')
+  } finally { clearTimeout(timer) }
+}
+
 export interface ExitNodeInput {
   exitNodeID: string
   allowLANAccess: boolean

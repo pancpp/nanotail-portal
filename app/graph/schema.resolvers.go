@@ -41,6 +41,11 @@ func (r *mutationResolver) SetTailscaleEnabled(ctx context.Context, enabled bool
 	return r.setTailscaleEnabled(ctx, enabled)
 }
 
+// LogoutTailscale is the resolver for the logoutTailscale field.
+func (r *mutationResolver) LogoutTailscale(ctx context.Context) (bool, error) {
+	return r.logoutTailscale(ctx)
+}
+
 // RenewTailscaleNodeKey is the resolver for the renewTailscaleNodeKey field.
 func (r *mutationResolver) RenewTailscaleNodeKey(ctx context.Context) (*model.TailscaleKeyRenewal, error) {
 	return r.renewTailscaleNodeKey(ctx)

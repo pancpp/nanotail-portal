@@ -64,6 +64,7 @@ func presentGraphQLError(ctx context.Context, err error) *gqlerror.Error {
 		errors.Is(err, tailscale.ErrRoutingAdvertised) || errors.Is(err, tailscale.ErrRoutingApply) ||
 		errors.Is(err, graph.ErrConnectionAdmin) || errors.Is(err, tailscale.ErrConnectionUnavailable) ||
 		errors.Is(err, tailscale.ErrConnectionLogin) || errors.Is(err, tailscale.ErrConnectionApply) ||
+		errors.Is(err, tailscale.ErrLogoutApply) ||
 		errors.Is(err, graph.ErrKeyRenewalAdmin) || errors.Is(err, tailscale.ErrKeyRenewalUnavailable) ||
 		errors.Is(err, tailscale.ErrKeyRenewalUnconfigured) || errors.Is(err, tailscale.ErrKeyRenewalStart) ||
 		errors.Is(err, tailscale.ErrKeyRenewalURL) || errors.Is(err, tailscale.ErrKeyRenewalChanged) ||

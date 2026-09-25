@@ -1691,7 +1691,7 @@ input:focus-visible {
 }
 
 /* Tailscale credential setup */
-.lan-settings, .tailnet-settings { margin-bottom: 18px; }
+.lan-settings, .tailnet-settings, .routing-settings { margin-bottom: 18px; }
 .tailnet-state { color: var(--muted); font-size: 17px; }
 .lan-form select { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font: inherit; }
 .lan-form select:focus-visible { outline: 3px solid #27c283; outline-offset: 2px; }

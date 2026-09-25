@@ -64,9 +64,9 @@ changing routing can interrupt access to the portal through Tailscale.
 
 The WebUI shows live connection, peer, node-key, device, routing, and VPN traffic
 data through GraphQL. It also manages OAuth credentials, LAN IPv4 settings, and
-the exit node used by this device. **Network** contains LAN IPv4 settings, the
-tailnet connection control, and OAuth credentials; **Access control** contains
-exit-node configuration. **Settings** contains portal account settings.
+the exit node used by this device. **Network** contains LAN IPv4 settings and
+the tailnet connection control; **Access control** contains exit-node
+configuration and OAuth credentials. **Settings** contains portal account settings.
 
 ### Tailnet connection
 
@@ -88,6 +88,17 @@ The form requires acknowledgment that connectivity may be interrupted. Keep
 LAN or console access available to re-enable Tailscale after disconnecting.
 Command/request timeouts do not imply rollback. Unknown outcomes require a
 fresh read before another attempt; mutations are never retried automatically.
+
+**Network → Tailnet connection → Log out of Tailscale** signs this device out
+using the administrator-only `logoutTailscale` mutation and bare
+[`tailscale logout`](https://tailscale.com/docs/reference/tailscale-cli#logout).
+Use the existing local-access acknowledgement before clicking it. Logout
+disconnects Tailscale and requires a new sign-in from Overview; the portal
+session and saved OAuth credentials are retained. The backend serializes logout
+with other device changes, invalidates old renewal attempts, and verifies the
+logged-out state before reporting success. The WebUI clears stale renewal links
+and refreshes connection status. If confirmation is lost, reload connection
+settings over the LAN before retrying; logout is never automatically retried.
 
 ### Exit-node routing
 
@@ -188,7 +199,9 @@ When Tailscale reports `NeedsLogin`, entering **Overview** automatically opens a
 browser sign-in guide. This works for first-time setup and expired logins, with
 no OAuth client credentials required. Confirm the instructions, choose
 **Prepare sign-in**, then **Sign in to Tailscale** and authorize the device in
-the new tab. Opening the popup never starts authentication on its own. Closing
+the new tab. Opening the popup never starts authentication on its own. Use the
+top-right X to close the sign-in panel; it has no **Check status** or **Close**
+buttons. Reopening it checks status automatically. Closing
 suppresses the prompt until the next Overview visit; **Sign in to Tailscale**
 also reopens it manually. Paused/offline devices and status errors do not prompt.
 First-time login shows **Signed in to Tailscale successfully** only after
@@ -413,7 +426,7 @@ and HTTPS needs a certificate valid for the new address.
 ### Tailscale credential setup
 
 The WebUI offers browser sign-in when Tailscale reports `NeedsLogin`.
-OAuth credentials remain optional, separate settings: Network lets portal
+OAuth credentials remain optional, separate settings: Access control lets portal
 administrators save, replace, or remove the device-wide client ID and secret.
 The setup guide at `/#/tailscale-setup` includes a link to the Tailscale Trust
 credentials console and explains the OAuth client creation process.

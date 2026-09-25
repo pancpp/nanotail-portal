@@ -13,7 +13,7 @@ export function renewalFeedback(snapshot: NodeKeyRenewalSnapshot, signIn = false
   }
   if (snapshot.cancelling) return { state: 'waiting', title: signIn ? 'Cancelling sign-in…' : 'Cancelling renewal…', description: 'Waiting for backend confirmation. Tailscale has not been changed.' }
   if (snapshot.preparing) return { state: 'waiting', title: signIn ? 'Preparing sign-in…' : 'Preparing renewal…', description: 'Authentication will start only after you choose Sign in.' }
-  if (snapshot.value?.state === 'READY') return { state: 'ready', title: 'Ready to sign in', description: signIn ? 'Choose Sign in to connect, or Close to cancel.' : 'Choose Sign in to renew, or close the panel to cancel.' }
+  if (snapshot.value?.state === 'READY') return { state: 'ready', title: 'Ready to sign in', description: signIn ? 'Choose Sign in to connect, or close the panel to cancel.' : 'Choose Sign in to renew, or close the panel to cancel.' }
   if (snapshot.value?.state === 'CANCELLED') return { state: 'cancelled', title: signIn ? 'Sign-in cancelled' : 'Renewal cancelled', description: 'The request was cancelled without changing Tailscale.' }
   if (snapshot.starting || snapshot.pending) {
     let description = signIn ? 'Checking sign-in status…' : 'Checking renewal status…'

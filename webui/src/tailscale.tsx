@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useAuth } from './auth'
 import { useNodeKeyRenewal } from './useNodeKeyRenewal'
 import {
-  clearTailscaleCredentialRequest, isSessionError, setTailscaleCredentialRequest,
+  clearTailscaleCredentialRequest, isSessionError, logoutTailscaleRequest, setTailscaleCredentialRequest,
   tailscaleClientRequest, tailscaleStatusRequest,
   type TailscaleClient, type TailscaleCredential, type TailscaleStatus,
   tailscaleRoutingRequest, type TailscaleRouting,
@@ -19,6 +19,7 @@ interface TailscaleContextValue {
   refresh: () => Promise<void>
   save: (credential: TailscaleCredential) => Promise<void>
   clear: () => Promise<void>
+  logoutTailnet: () => Promise<void>
   keyRenewalActive: boolean
   keyRenewal: ReturnType<typeof useNodeKeyRenewal>
   setKeyRenewalDialogOpen: (open: boolean) => void
@@ -101,7 +102,19 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
     } catch (error) { if (isSessionError(error)) logout(); throw error }
   }
 
-  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, routing, routingError, refreshing, refresh, save, clear, keyRenewalActive, keyRenewal, setKeyRenewalDialogOpen }}>
+  async function logoutTailnet() {
+    if (!accessToken) throw new Error('Please sign in again.')
+    keyRenewal.reset()
+    try {
+      await logoutTailscaleRequest(accessToken)
+    } catch (error) { if (isSessionError(error)) logout(); throw error }
+    finally {
+      keyRenewal.reset()
+      void refresh()
+    }
+  }
+
+  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, routing, routingError, refreshing, refresh, save, clear, logoutTailnet, keyRenewalActive, keyRenewal, setKeyRenewalDialogOpen }}>
     {children}
   </TailscaleContext.Provider>
 }

@@ -5,7 +5,7 @@ import NodeKeyRenewalStatus from './NodeKeyRenewalStatus'
 
 export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onClose: () => void, signIn?: boolean }) {
   const { keyRenewal, setKeyRenewalDialogOpen } = useTailscale()
-  const { value, busy, preparing, cancelling, pending, error, popupBlocked, checkStatus, renew, startSignIn, close } = keyRenewal
+  const { value, busy, preparing, pending, error, popupBlocked, checkStatus, renew, startSignIn, close } = keyRenewal
   const dialog = useRef<HTMLDialogElement>(null)
   const [acknowledged, setAcknowledged] = useState(false)
   const signedIn = signIn && ['SIGNED_IN', 'COMPLETE'].includes(value?.state ?? '')
@@ -73,7 +73,7 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
         {popupBlocked && pending && <p>Your browser blocked the sign-in tab. Use Open sign-in page when the link is ready.</p>}
         {value?.state === 'IDLE' && <p>{value.canRenew ? 'You can prepare a new sign-in request below. Opening this panel does not change the device.' : 'Tailscale is not ready for sign-in. Check the device status and try again.'}</p>}
       </div>
-      {error && <div className="form-error" role="alert"><p>{error}</p><p>If access was interrupted, reconnect using the device’s LAN address. {signIn ? 'Check status before making another request.' : 'Use the top-right X to close this panel, then reopen Renew to check status before making another request.'} Only portal administrators can sign this device in.</p></div>}
+      {error && <div className="form-error" role="alert"><p>{error}</p><p>If access was interrupted, reconnect using the device’s LAN address. Use the top-right X to close this panel, then {signIn ? 'reopen sign-in from Overview' : 'reopen Renew'} to check status before making another request. Only portal administrators can sign this device in.</p></div>}
       {value?.canRenew && value.state !== 'STARTING' && !signedIn && <>
         <label className="lan-acknowledgement"><input type="checkbox" checked={acknowledged} disabled={busy} onChange={event => setAcknowledged(event.target.checked)} />
           <span>{signIn ? 'I want to connect this device to my tailnet and can access the portal over the LAN.' : 'I can reconnect over the LAN and understand that I must sign in to Tailscale again.'}</span>
@@ -83,12 +83,8 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
         </button>
       </>}
     </div>
-    {(signIn || pending) && <div className="setup-dialog__footer credential-links">
-      {signIn && <>
-        <button type="button" className="secondary-button" disabled={busy} onClick={() => { void checkStatus() }}>Check status</button>
-        <button type="button" className="secondary-button renewal-close" disabled={busy} onClick={() => { void requestClose() }}>{cancelling ? 'Cancelling…' : 'Close'}</button>
-      </>}
-      {pending && <p className="renewal-help">{value?.state === 'READY' || preparing ? 'Closing this panel cancels the prepared request. The device stays unchanged.' : 'After Sign in has started, closing this dialog keeps the completion checks running.'}</p>}
+    {pending && <div className="setup-dialog__footer credential-links">
+      <p className="renewal-help">{value?.state === 'READY' || preparing ? 'Closing this panel cancels the prepared request. The device stays unchanged.' : 'After Sign in has started, closing this dialog keeps the completion checks running.'}</p>
     </div>}
   </dialog>
 }

@@ -144,5 +144,17 @@ export function useNodeKeyRenewal(token: string | null, logout: () => void, refr
     }
   }, [snapshot, checkStatus])
 
-  return { ...snapshot, popupBlocked, checkStatus, renew, startSignIn, close }
+  const reset = useCallback(() => {
+    request.current?.abort()
+    request.current = null
+    latest.current = null
+    unresolved.current = false
+    committed.current = false
+    lastState.current = null
+    closeBlankWindow()
+    setPopupBlocked(false)
+    setSnapshot({ value: null, pending: false, busy: false, starting: false, preparing: false, cancelling: false, error: '' })
+  }, [closeBlankWindow])
+
+  return { ...snapshot, popupBlocked, checkStatus, renew, startSignIn, close, reset }
 }

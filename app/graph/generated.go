@@ -60,6 +60,7 @@ type ComplexityRoot struct {
 		CancelTailscaleNodeKeyRenewal func(childComplexity int, attemptID string) int
 		ChangePassword                func(childComplexity int, passwords model.ChangePassword) int
 		ClearTailscaleCredential      func(childComplexity int) int
+		LogoutTailscale               func(childComplexity int) int
 		RenewTailscaleNodeKey         func(childComplexity int) int
 		SetDeviceIP                   func(childComplexity int, deviceIP *model.DeviceIP) int
 		SetExitNode                   func(childComplexity int, input model.ExitNodeInput) int
@@ -241,6 +242,7 @@ type MutationResolver interface {
 	SetDeviceIP(ctx context.Context, deviceIP *model.DeviceIP) (bool, error)
 	SetExitNode(ctx context.Context, input model.ExitNodeInput) (bool, error)
 	SetTailscaleEnabled(ctx context.Context, enabled bool) (bool, error)
+	LogoutTailscale(ctx context.Context) (bool, error)
 	RenewTailscaleNodeKey(ctx context.Context) (*model.TailscaleKeyRenewal, error)
 	BeginTailscaleNodeKeyRenewal(ctx context.Context, attemptID string) (*model.TailscaleKeyRenewal, error)
 	CancelTailscaleNodeKeyRenewal(ctx context.Context, attemptID string) (*model.TailscaleKeyRenewal, error)
@@ -399,6 +401,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ClearTailscaleCredential(childComplexity), true
+	case "Mutation.logoutTailscale":
+		if e.ComplexityRoot.Mutation.LogoutTailscale == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Mutation.LogoutTailscale(childComplexity), true
 	case "Mutation.renewTailscaleNodeKey":
 		if e.ComplexityRoot.Mutation.RenewTailscaleNodeKey == nil {
 			break
@@ -2428,6 +2436,29 @@ func (ec *executionContext) fieldContext_Mutation_setTailscaleEnabled(ctx contex
 		return fc, err
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_logoutTailscale(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_logoutTailscale(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().LogoutTailscale(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_logoutTailscale(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Mutation", field, true, true, errors.New("field of type Boolean does not have child fields"))
 }
 
 func (ec *executionContext) _Mutation_renewTailscaleNodeKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6791,6 +6822,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "setTailscaleEnabled":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setTailscaleEnabled(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "logoutTailscale":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_logoutTailscale(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

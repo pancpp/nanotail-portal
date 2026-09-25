@@ -15,11 +15,11 @@ export default function TailscaleSetupPage() {
         <li><h2>Choose limited permissions</h2><p>For future device enrollment, select <strong>Auth keys → Write</strong> (<code>auth_keys</code>) and an existing device tag, for example <code>tag:nanotail</code>. Enrollment must use a tag allowed by this client. Avoid granting “All” access.</p>
           <p>Saving credentials in this portal does not yet use these permissions or enroll the device. Ask your tailnet administrator if you need a tag or permission.</p></li>
         <li><h2>Copy both values</h2><p>Select <strong>Generate credential</strong>. Copy the <strong>client ID</strong> and <strong>client secret</strong> before closing the result. Tailscale will not show that secret again.</p></li>
-        <li><h2>Save them in nanotail</h2><p>Open Network, paste both values, and choose <strong>Save credentials</strong>. Saving stores them on this device; it does not validate them or enroll the device in a tailnet. For browser-based sign-in without OAuth credentials, use <Link to="/">Overview</Link>. Network also lets you turn an already enrolled device’s connection on or off.</p>
-          <Link className="secondary-button" to="/network">Go to credential settings</Link></li>
+        <li><h2>Save them in nanotail</h2><p>Open Access control, paste both values, and choose <strong>Save credentials</strong>. Saving stores them on this device; it does not validate them or enroll the device in a tailnet. For browser-based sign-in without OAuth credentials, use <Link to="/">Overview</Link>. Network lets you turn an already enrolled device’s connection on or off.</p>
+          <Link className="secondary-button" to="/access-control">Go to credential settings</Link></li>
       </ol>
       <aside className="guide-safety"><h2>Keep the secret private</h2><p>Use trusted HTTPS when entering it. Never share it in screenshots, URLs, or support messages. Protect the device’s database and backups: stored credentials are not encrypted at rest.</p>
-        <p>Lost or exposed secret? Create a replacement in Tailscale, update Network, then revoke the old credential in the admin console. Removing it from nanotail only deletes the local copy.</p></aside>
+        <p>Lost or exposed secret? Create a replacement in Tailscale, update Access control, then revoke the old credential in the admin console. Removing it from nanotail only deletes the local copy.</p></aside>
       <div className="credential-links guide-sources">
         <a href="https://tailscale.com/docs/features/oauth-clients" target="_blank" rel="noopener noreferrer">Official OAuth client guide <ExternalLink size={16} /></a>
         <a href="https://tailscale.com/docs/reference/trust-credentials" target="_blank" rel="noopener noreferrer">Scopes and permissions <ExternalLink size={16} /></a>
