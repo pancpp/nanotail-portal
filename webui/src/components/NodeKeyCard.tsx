@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { KeyRound, RefreshCw } from 'lucide-react'
-import { nodeKeyStatus } from '../nodeKey'
+import { nodeKeyExpiryDisabled, nodeKeyRenewDisabled, nodeKeyStatus } from '../nodeKey'
 import { useTailscale } from '../tailscale'
 import NodeKeyRenewalStatus from './NodeKeyRenewalStatus'
 
@@ -31,8 +31,8 @@ export default function NodeKeyCard({ onRenew }: { onRenew: () => void }) {
     {key.state === 'expired' && <p className="node-key-warning">Reauthenticate this device to restore access.</p>}
     <NodeKeyRenewalStatus snapshot={keyRenewal} compact signIn={status?.backendState === 'NeedsLogin' && !status.haveNodeKey} />
     <button type="button" className="status-card__configure node-key-renew" onClick={onRenew}
-      disabled={!keyRenewalActive && (statusError !== '' || !status ||
-        (status.backendState !== 'NeedsLogin' && key.state === 'unavailable'))}>
+      title={nodeKeyExpiryDisabled(status) ? 'Renewal is disabled because node-key expiry is disabled.' : undefined}
+      disabled={nodeKeyRenewDisabled(status, statusError, keyRenewalActive)}>
       Renew <RefreshCw size={16} />
     </button>
   </article>

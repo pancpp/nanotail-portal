@@ -63,7 +63,7 @@ type ComplexityRoot struct {
 		LogoutTailscale               func(childComplexity int) int
 		RenewTailscaleNodeKey         func(childComplexity int) int
 		SetDeviceIP                   func(childComplexity int, deviceIP *model.DeviceIP) int
-		SetExitNode                   func(childComplexity int, input model.ExitNodeInput) int
+		SetRouting                    func(childComplexity int, input model.RoutingInput) int
 		SetTailscaleCredential        func(childComplexity int, credential model.TailscaleCredential) int
 		SetTailscaleEnabled           func(childComplexity int, enabled bool) int
 	}
@@ -190,12 +190,18 @@ type ComplexityRoot struct {
 	}
 
 	TailscaleRouting struct {
-		AdvertiseExitNode func(childComplexity int) int
-		AllowLANAccess    func(childComplexity int) int
-		BackendState      func(childComplexity int) int
-		ExitNodeID        func(childComplexity int) int
-		ExitNodeIP        func(childComplexity int) int
-		ExitNodes         func(childComplexity int) int
+		AdvertiseExitNode     func(childComplexity int) int
+		BackendState          func(childComplexity int) int
+		DefaultSubnetRoutes   func(childComplexity int) int
+		Health                func(childComplexity int) int
+		Ipv4Forwarding        func(childComplexity int) int
+		Ipv6Forwarding        func(childComplexity int) int
+		LanInterface          func(childComplexity int) int
+		LanWarning            func(childComplexity int) int
+		SnatEnabled           func(childComplexity int) int
+		SubnetDefaultsPending func(childComplexity int) int
+		SubnetRoutes          func(childComplexity int) int
+		UsingExitNode         func(childComplexity int) int
 	}
 
 	TailscaleStatus struct {
@@ -240,7 +246,7 @@ type MutationResolver interface {
 	SetTailscaleCredential(ctx context.Context, credential model.TailscaleCredential) (bool, error)
 	ClearTailscaleCredential(ctx context.Context) (bool, error)
 	SetDeviceIP(ctx context.Context, deviceIP *model.DeviceIP) (bool, error)
-	SetExitNode(ctx context.Context, input model.ExitNodeInput) (bool, error)
+	SetRouting(ctx context.Context, input model.RoutingInput) (bool, error)
 	SetTailscaleEnabled(ctx context.Context, enabled bool) (bool, error)
 	LogoutTailscale(ctx context.Context) (bool, error)
 	RenewTailscaleNodeKey(ctx context.Context) (*model.TailscaleKeyRenewal, error)
@@ -424,17 +430,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.SetDeviceIP(childComplexity, args["deviceIP"].(*model.DeviceIP)), true
-	case "Mutation.setExitNode":
-		if e.ComplexityRoot.Mutation.SetExitNode == nil {
+	case "Mutation.setRouting":
+		if e.ComplexityRoot.Mutation.SetRouting == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_setExitNode_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_setRouting_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.SetExitNode(childComplexity, args["input"].(model.ExitNodeInput)), true
+		return e.ComplexityRoot.Mutation.SetRouting(childComplexity, args["input"].(model.RoutingInput)), true
 	case "Mutation.setTailscaleCredential":
 		if e.ComplexityRoot.Mutation.SetTailscaleCredential == nil {
 			break
@@ -987,36 +993,72 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TailscaleRouting.AdvertiseExitNode(childComplexity), true
-	case "TailscaleRouting.allowLANAccess":
-		if e.ComplexityRoot.TailscaleRouting.AllowLANAccess == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TailscaleRouting.AllowLANAccess(childComplexity), true
 	case "TailscaleRouting.backendState":
 		if e.ComplexityRoot.TailscaleRouting.BackendState == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TailscaleRouting.BackendState(childComplexity), true
-	case "TailscaleRouting.exitNodeID":
-		if e.ComplexityRoot.TailscaleRouting.ExitNodeID == nil {
+	case "TailscaleRouting.defaultSubnetRoutes":
+		if e.ComplexityRoot.TailscaleRouting.DefaultSubnetRoutes == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TailscaleRouting.ExitNodeID(childComplexity), true
-	case "TailscaleRouting.exitNodeIP":
-		if e.ComplexityRoot.TailscaleRouting.ExitNodeIP == nil {
+		return e.ComplexityRoot.TailscaleRouting.DefaultSubnetRoutes(childComplexity), true
+	case "TailscaleRouting.health":
+		if e.ComplexityRoot.TailscaleRouting.Health == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TailscaleRouting.ExitNodeIP(childComplexity), true
-	case "TailscaleRouting.exitNodes":
-		if e.ComplexityRoot.TailscaleRouting.ExitNodes == nil {
+		return e.ComplexityRoot.TailscaleRouting.Health(childComplexity), true
+	case "TailscaleRouting.ipv4Forwarding":
+		if e.ComplexityRoot.TailscaleRouting.Ipv4Forwarding == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TailscaleRouting.ExitNodes(childComplexity), true
+		return e.ComplexityRoot.TailscaleRouting.Ipv4Forwarding(childComplexity), true
+	case "TailscaleRouting.ipv6Forwarding":
+		if e.ComplexityRoot.TailscaleRouting.Ipv6Forwarding == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.Ipv6Forwarding(childComplexity), true
+	case "TailscaleRouting.lanInterface":
+		if e.ComplexityRoot.TailscaleRouting.LanInterface == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.LanInterface(childComplexity), true
+	case "TailscaleRouting.lanWarning":
+		if e.ComplexityRoot.TailscaleRouting.LanWarning == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.LanWarning(childComplexity), true
+	case "TailscaleRouting.snatEnabled":
+		if e.ComplexityRoot.TailscaleRouting.SnatEnabled == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.SnatEnabled(childComplexity), true
+	case "TailscaleRouting.subnetDefaultsPending":
+		if e.ComplexityRoot.TailscaleRouting.SubnetDefaultsPending == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.SubnetDefaultsPending(childComplexity), true
+	case "TailscaleRouting.subnetRoutes":
+		if e.ComplexityRoot.TailscaleRouting.SubnetRoutes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.SubnetRoutes(childComplexity), true
+	case "TailscaleRouting.usingExitNode":
+		if e.ComplexityRoot.TailscaleRouting.UsingExitNode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.UsingExitNode(childComplexity), true
 
 	case "TailscaleStatus.authURL":
 		if e.ComplexityRoot.TailscaleStatus.AuthURL == nil {
@@ -1169,7 +1211,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputChangePassword,
 		ec.unmarshalInputDeviceIP,
-		ec.unmarshalInputExitNodeInput,
+		ec.unmarshalInputRoutingInput,
 		ec.unmarshalInputTailscaleCredential,
 	)
 	first := true
@@ -1521,16 +1563,28 @@ func (ec *executionContext) childFields_TailscaleRouting(ctx context.Context, fi
 	switch field.Name {
 	case "backendState":
 		return ec.fieldContext_TailscaleRouting_backendState(ctx, field)
-	case "exitNodeID":
-		return ec.fieldContext_TailscaleRouting_exitNodeID(ctx, field)
-	case "exitNodeIP":
-		return ec.fieldContext_TailscaleRouting_exitNodeIP(ctx, field)
-	case "allowLANAccess":
-		return ec.fieldContext_TailscaleRouting_allowLANAccess(ctx, field)
 	case "advertiseExitNode":
 		return ec.fieldContext_TailscaleRouting_advertiseExitNode(ctx, field)
-	case "exitNodes":
-		return ec.fieldContext_TailscaleRouting_exitNodes(ctx, field)
+	case "subnetRoutes":
+		return ec.fieldContext_TailscaleRouting_subnetRoutes(ctx, field)
+	case "subnetDefaultsPending":
+		return ec.fieldContext_TailscaleRouting_subnetDefaultsPending(ctx, field)
+	case "usingExitNode":
+		return ec.fieldContext_TailscaleRouting_usingExitNode(ctx, field)
+	case "snatEnabled":
+		return ec.fieldContext_TailscaleRouting_snatEnabled(ctx, field)
+	case "health":
+		return ec.fieldContext_TailscaleRouting_health(ctx, field)
+	case "lanInterface":
+		return ec.fieldContext_TailscaleRouting_lanInterface(ctx, field)
+	case "defaultSubnetRoutes":
+		return ec.fieldContext_TailscaleRouting_defaultSubnetRoutes(ctx, field)
+	case "lanWarning":
+		return ec.fieldContext_TailscaleRouting_lanWarning(ctx, field)
+	case "ipv4Forwarding":
+		return ec.fieldContext_TailscaleRouting_ipv4Forwarding(ctx, field)
+	case "ipv6Forwarding":
+		return ec.fieldContext_TailscaleRouting_ipv6Forwarding(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TailscaleRouting", field.Name)
 }
@@ -1757,12 +1811,12 @@ func (ec *executionContext) field_Mutation_setDeviceIP_args(ctx context.Context,
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_setExitNode_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_setRouting_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
-		func(ctx context.Context, v any) (model.ExitNodeInput, error) {
-			return ec.unmarshalNExitNodeInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐExitNodeInput(ctx, v)
+		func(ctx context.Context, v any) (model.RoutingInput, error) {
+			return ec.unmarshalNRoutingInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐRoutingInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -2350,17 +2404,17 @@ func (ec *executionContext) fieldContext_Mutation_setDeviceIP(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_setExitNode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_setRouting(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Mutation_setExitNode(ctx, field)
+			return ec.fieldContext_Mutation_setRouting(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().SetExitNode(ctx, fc.Args["input"].(model.ExitNodeInput))
+			return ec.Resolvers.Mutation().SetRouting(ctx, fc.Args["input"].(model.RoutingInput))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
@@ -2370,7 +2424,7 @@ func (ec *executionContext) _Mutation_setExitNode(ctx context.Context, field gra
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_Mutation_setExitNode(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_setRouting(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -2387,7 +2441,7 @@ func (ec *executionContext) fieldContext_Mutation_setExitNode(ctx context.Contex
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_setExitNode_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_setRouting_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4734,75 +4788,6 @@ func (ec *executionContext) fieldContext_TailscaleRouting_backendState(_ context
 	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _TailscaleRouting_exitNodeID(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_TailscaleRouting_exitNodeID(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ExitNodeID, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_TailscaleRouting_exitNodeID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _TailscaleRouting_exitNodeIP(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_TailscaleRouting_exitNodeIP(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ExitNodeIP, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_TailscaleRouting_exitNodeIP(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _TailscaleRouting_allowLANAccess(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_TailscaleRouting_allowLANAccess(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.AllowLANAccess, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
-			return ec.marshalNBoolean2bool(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_TailscaleRouting_allowLANAccess(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
-}
-
 func (ec *executionContext) _TailscaleRouting_advertiseExitNode(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4826,36 +4811,234 @@ func (ec *executionContext) fieldContext_TailscaleRouting_advertiseExitNode(_ co
 	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
-func (ec *executionContext) _TailscaleRouting_exitNodes(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+func (ec *executionContext) _TailscaleRouting_subnetRoutes(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_TailscaleRouting_exitNodes(ctx, field)
+			return ec.fieldContext_TailscaleRouting_subnetRoutes(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.ExitNodes, nil
+			return obj.SubnetRoutes, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []*model.TailscalePeer) graphql.Marshaler {
-			return ec.marshalNTailscalePeer2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeerᚄ(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
 		},
 		true,
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_TailscaleRouting_exitNodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TailscaleRouting",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_TailscalePeer(ctx, field)
+func (ec *executionContext) fieldContext_TailscaleRouting_subnetRoutes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_subnetDefaultsPending(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_subnetDefaultsPending(ctx, field)
 		},
-	}
-	return fc, nil
+		func(ctx context.Context) (any, error) {
+			return obj.SubnetDefaultsPending, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_subnetDefaultsPending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_usingExitNode(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_usingExitNode(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UsingExitNode, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_usingExitNode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_snatEnabled(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_snatEnabled(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SnatEnabled, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_snatEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_health(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_health(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Health, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_health(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_lanInterface(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_lanInterface(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LanInterface, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_lanInterface(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_defaultSubnetRoutes(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_defaultSubnetRoutes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultSubnetRoutes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_defaultSubnetRoutes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_lanWarning(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_lanWarning(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LanWarning, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_lanWarning(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_ipv4Forwarding(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_ipv4Forwarding(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Ipv4Forwarding, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *bool) graphql.Marshaler {
+			return ec.marshalOBoolean2ᚖbool(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_ipv4Forwarding(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_ipv6Forwarding(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_ipv6Forwarding(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Ipv6Forwarding, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *bool) graphql.Marshaler {
+			return ec.marshalOBoolean2ᚖbool(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_ipv6Forwarding(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
 func (ec *executionContext) _TailscaleStatus_version(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
@@ -6579,8 +6762,8 @@ func (ec *executionContext) unmarshalInputDeviceIP(ctx context.Context, obj any)
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputExitNodeInput(ctx context.Context, obj any) (model.ExitNodeInput, error) {
-	var it model.ExitNodeInput
+func (ec *executionContext) unmarshalInputRoutingInput(ctx context.Context, obj any) (model.RoutingInput, error) {
+	var it model.RoutingInput
 	if obj == nil {
 		return it, nil
 	}
@@ -6590,27 +6773,20 @@ func (ec *executionContext) unmarshalInputExitNodeInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"exitNodeID", "allowLANAccess"}
+	fieldsInOrder := [...]string{"subnetRoutes"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "exitNodeID":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("exitNodeID"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "subnetRoutes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subnetRoutes"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.ExitNodeID = data
-		case "allowLANAccess":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowLANAccess"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.AllowLANAccess = data
+			it.SubnetRoutes = data
 		}
 	}
 	return it, nil
@@ -6812,9 +6988,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "setExitNode":
+		case "setRouting":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_setExitNode(ctx, field)
+				return ec._Mutation_setRouting(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -7888,29 +8064,59 @@ func (ec *executionContext) _TailscaleRouting(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "exitNodeID":
-			out.Values[i] = ec._TailscaleRouting_exitNodeID(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "exitNodeIP":
-			out.Values[i] = ec._TailscaleRouting_exitNodeIP(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "allowLANAccess":
-			out.Values[i] = ec._TailscaleRouting_allowLANAccess(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "advertiseExitNode":
 			out.Values[i] = ec._TailscaleRouting_advertiseExitNode(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "exitNodes":
-			out.Values[i] = ec._TailscaleRouting_exitNodes(ctx, field, obj)
+		case "subnetRoutes":
+			out.Values[i] = ec._TailscaleRouting_subnetRoutes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subnetDefaultsPending":
+			out.Values[i] = ec._TailscaleRouting_subnetDefaultsPending(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "usingExitNode":
+			out.Values[i] = ec._TailscaleRouting_usingExitNode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "snatEnabled":
+			out.Values[i] = ec._TailscaleRouting_snatEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "health":
+			out.Values[i] = ec._TailscaleRouting_health(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lanInterface":
+			out.Values[i] = ec._TailscaleRouting_lanInterface(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "defaultSubnetRoutes":
+			out.Values[i] = ec._TailscaleRouting_defaultSubnetRoutes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lanWarning":
+			out.Values[i] = ec._TailscaleRouting_lanWarning(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ipv4Forwarding":
+			out.Values[i] = ec._TailscaleRouting_ipv4Forwarding(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "ipv6Forwarding":
+			out.Values[i] = ec._TailscaleRouting_ipv6Forwarding(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
 		default:
@@ -8571,11 +8777,6 @@ func (ec *executionContext) marshalNDeviceStatus2ᚖgithubᚗcomᚋpancppᚋnano
 	return ec._DeviceStatus(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNExitNodeInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐExitNodeInput(ctx context.Context, v any) (model.ExitNodeInput, error) {
-	res, err := ec.unmarshalInputExitNodeInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -8688,6 +8889,11 @@ func (ec *executionContext) marshalNNetworkActivityTotals2ᚖgithubᚗcomᚋpanc
 		return graphql.Null
 	}
 	return ec._NetworkActivityTotals(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRoutingInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐRoutingInput(ctx context.Context, v any) (model.RoutingInput, error) {
+	res, err := ec.unmarshalInputRoutingInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {

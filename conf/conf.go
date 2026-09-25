@@ -57,6 +57,7 @@ func init() {
 	v.SetDefault("vpn_traffic_led", true)
 	v.SetEnvPrefix("NANOTAIL")
 	v.MustBindEnv("vpn_traffic_led")
+	v.MustBindEnv("tailscale_binary")
 
 	// set config path
 	v.SetConfigFile(configFile)

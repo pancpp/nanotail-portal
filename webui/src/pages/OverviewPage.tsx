@@ -74,6 +74,7 @@ export default function OverviewPage() {
         </article>
 
         <RoutingCard />
+        <RoutingCard kind="subnet" />
 
         <NodeKeyCard onRenew={() => openDialog(nodeKeyDialogMode(status))} />
       </section>

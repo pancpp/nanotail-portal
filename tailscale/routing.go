@@ -4,25 +4,25 @@ import (
 	"context"
 	"errors"
 	"net/netip"
-	"strings"
+	"slices"
 )
 
 var (
-	ErrRoutingUnavailable = errors.New("Unable to read routing settings. Check that tailscaled is running and the portal can access it")
-	ErrExitNodeInvalid    = errors.New("Select an online, approved exit node from this tailnet, or choose the local gateway")
-	ErrRoutingStopped     = errors.New("Connect this device to Tailscale before selecting an exit node")
-	ErrRoutingAdvertised  = errors.New("This device advertises itself as an exit node and cannot use another exit node at the same time")
-	ErrRoutingApply       = errors.New("Unable to confirm the routing change. It may already have applied. Check connectivity, daemon permissions, and current routing settings before retrying")
+	ErrRoutingUnavailable  = errors.New("Unable to read routing settings. Check that tailscaled is running and the portal can access it")
+	ErrSubnetRoutesInvalid = errors.New("Enter up to 64 unique, canonical IPv4 or IPv6 subnet CIDRs, such as 192.168.1.0/24. Default, loopback, link-local, multicast, and Tailscale address ranges are not subnet routes")
+	ErrRoutingStopped      = errors.New("Connect this device to Tailscale before advertising an exit node or subnet routes")
+	ErrRoutingApply        = errors.New("Unable to confirm the routing change. It may already have applied. Check connectivity, daemon permissions, and current routing settings before retrying")
 )
 
-// Routing exposes only the preferences needed by the exit-node UI, never keys.
+// Routing describes this device's advertisements, not approval or reachability.
 type Routing struct {
-	BackendState      string
-	ExitNodeID        string
-	ExitNodeIP        string
-	AllowLANAccess    bool
-	AdvertiseExitNode bool
-	ExitNodes         []Peer
+	BackendState          string
+	AdvertiseExitNode     bool
+	SubnetRoutes          []string
+	SubnetDefaultsPending bool
+	UsingExitNode         bool
+	SNATEnabled           bool
+	Health                []string
 }
 
 func (c *Client) Routing(ctx context.Context) (Routing, error) {
@@ -36,28 +36,51 @@ func (c *Client) Routing(ctx context.Context) (Routing, error) {
 	if err != nil {
 		return Routing{}, ErrRoutingUnavailable
 	}
-	result := Routing{
-		BackendState: status.BackendState, ExitNodeID: prefs.ExitNodeID, ExitNodeIP: prefs.ExitNode,
-		AllowLANAccess: prefs.ExitNodeAllowLANAccess, AdvertiseExitNode: prefs.AdvertiseExitNode,
-		ExitNodes: []Peer{},
+	pending, err := c.subnetDefaultsPending(ctx)
+	if err != nil {
+		return Routing{}, err
 	}
-	for _, peer := range status.Peers {
-		if peer.ExitNodeOption && peer.ID != "" {
-			result.ExitNodes = append(result.ExitNodes, peer)
-		}
-		// Older daemons may store an address instead of the stable node ID.
-		if result.ExitNodeID == "" && prefs.ExitNode != "" && peerHasIP(peer, prefs.ExitNode) {
-			result.ExitNodeID = peer.ID
-		}
+	return Routing{
+		BackendState: status.BackendState, AdvertiseExitNode: hasExitNodeRoutes(prefs),
+		SubnetRoutes: nonNil(prefs.AdvertiseRoutes), UsingExitNode: prefs.ExitNodeID != "" || prefs.ExitNode != "",
+		SNATEnabled: prefs.SNATEnabled, Health: nonNil(status.Health),
+		SubnetDefaultsPending: pending && len(prefs.AdvertiseRoutes) == 0,
+	}, nil
+}
+
+// ValidateSubnetRoutes normalizes spelling/order but refuses host bits, default
+// routes, duplicates, and special ranges. Routes are never passed through a shell.
+func ValidateSubnetRoutes(routes []string) ([]string, error) {
+	if len(routes) > 64 {
+		return nil, ErrSubnetRoutesInvalid
 	}
+	result := make([]string, 0, len(routes))
+	seen := make(map[netip.Prefix]bool)
+	for _, value := range routes {
+		prefix, err := netip.ParsePrefix(value)
+		if err != nil || prefix.Bits() == 0 || prefix != prefix.Masked() ||
+			prefix.Addr().Is4In6() || !prefix.Addr().IsGlobalUnicast() || seen[prefix] {
+			return nil, ErrSubnetRoutesInvalid
+		}
+		for _, reserved := range []string{"0.0.0.0/8", "240.0.0.0/4", "100.64.0.0/10", "fd7a:115c:a1e0::/48", "127.0.0.0/8", "169.254.0.0/16", "224.0.0.0/4", "fe80::/10", "ff00::/8", "::ffff:0:0/96"} {
+			if prefix.Overlaps(netip.MustParsePrefix(reserved)) {
+				return nil, ErrSubnetRoutesInvalid
+			}
+		}
+		seen[prefix] = true
+		result = append(result, prefix.String())
+	}
+	slices.Sort(result)
 	return result, nil
 }
 
-// SetExitNode serializes validation, the partial update, and readback with other
-// portal mutations. It never starts Tailscale or changes unrelated preferences.
-func (c *Client) SetExitNode(ctx context.Context, id string, allowLAN bool) error {
-	if len(id) > 256 || strings.TrimSpace(id) != id || (id == "" && allowLAN) {
-		return ErrExitNodeInvalid
+// SetRouting replaces subnet advertisements, always advertises an exit node, and clears
+// legacy exit-node use in the same command. It does not start Tailscale, change
+// DNS/SNAT/firewall preferences, or configure the host's IP forwarding.
+func (c *Client) SetRouting(ctx context.Context, routes []string) error {
+	routes, err := ValidateSubnetRoutes(routes)
+	if err != nil {
+		return err
 	}
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
@@ -67,69 +90,43 @@ func (c *Client) SetExitNode(ctx context.Context, id string, allowLAN bool) erro
 	case <-ctx.Done():
 		return ErrRoutingUnavailable
 	}
-	address := ""
-	var selected Peer
-	if id != "" {
-		routing, err := c.Routing(ctx)
+	// Subnet withdrawal remains possible while stopped. The mandatory exit-node
+	// preference stays enabled; this does not start or reconnect Tailscale.
+	if len(routes) > 0 {
+		status, err := c.Status(ctx)
 		if err != nil {
-			return err
+			return ErrRoutingUnavailable
 		}
-		if routing.BackendState != "Running" {
+		if status.BackendState != "Running" {
 			return ErrRoutingStopped
 		}
-		if routing.AdvertiseExitNode {
-			return ErrRoutingAdvertised
-		}
-		for _, peer := range routing.ExitNodes {
-			if peer.ID != id || !peer.Online {
-				continue
-			}
-			selected = peer
-			for _, candidate := range peer.IPs {
-				ip, err := netip.ParseAddr(candidate)
-				if err == nil && ip.IsGlobalUnicast() && ip.Zone() == "" {
-					address = ip.String()
-					break
-				}
-			}
-			break
-		}
-		if address == "" {
-			return ErrExitNodeInvalid
-		}
 	}
-	args, err := (ConfigUpdate{ExitNode: &address, ExitNodeAllowLANAccess: &allowLAN}).args()
+	if err := c.claimSubnetChoice(ctx); err != nil {
+		return err
+	}
+	return c.applyRouting(ctx, routes)
+}
+
+// applyRouting requires the mutation lock and already-validated subnet routes.
+func (c *Client) applyRouting(ctx context.Context, routes []string) error {
+	address, allowLAN, advertiseExitNode := "", false, true
+	args, err := (ConfigUpdate{
+		ExitNode: &address, ExitNodeAllowLANAccess: &allowLAN,
+		AdvertiseExitNode: &advertiseExitNode, AdvertiseRoutes: &routes,
+	}).args()
 	if err != nil {
-		return ErrExitNodeInvalid
+		return ErrSubnetRoutesInvalid
 	}
-	// We already hold the mutation lock; do not call UpdateConfig here.
 	if _, err := c.run(ctx, args...); err != nil {
 		return ErrRoutingApply
 	}
 	prefs, err := c.Config(ctx)
-	if err != nil || prefs.ExitNodeAllowLANAccess != allowLAN {
+	if err != nil {
 		return ErrRoutingApply
 	}
-	if id == "" {
-		if prefs.ExitNodeID != "" || prefs.ExitNode != "" {
-			return ErrRoutingApply
-		}
-	} else if prefs.ExitNodeID != id && !(prefs.ExitNodeID == "" && peerHasIP(selected, prefs.ExitNode)) {
+	actual, err := ValidateSubnetRoutes(prefs.AdvertiseRoutes)
+	if err != nil || !slices.Equal(actual, routes) || !exitNodeConfigured(prefs) {
 		return ErrRoutingApply
 	}
 	return nil
-}
-
-func peerHasIP(peer Peer, address string) bool {
-	ip, err := netip.ParseAddr(address)
-	if err != nil {
-		return false
-	}
-	for _, candidate := range peer.IPs {
-		other, err := netip.ParseAddr(candidate)
-		if err == nil && ip == other {
-			return true
-		}
-	}
-	return false
 }

@@ -1,3 +1,5 @@
+import { canonicalSubnetRoutes } from './subnetRoutes.ts'
+
 export interface LoginCredentials {
   username: string
   password: string
@@ -430,11 +432,17 @@ export async function tailscaleStatusRequest(token: string, signal?: AbortSignal
 
 export interface TailscaleRouting {
   backendState: string
-  exitNodeID: string
-  exitNodeIP: string
-  allowLANAccess: boolean
   advertiseExitNode: boolean
-  exitNodes: TailscalePeer[]
+  subnetDefaultsPending: boolean
+  subnetRoutes: string[]
+  usingExitNode: boolean
+  snatEnabled: boolean
+  health: string[]
+  lanInterface: string
+  defaultSubnetRoutes: string[]
+  lanWarning: string
+  ipv4Forwarding: boolean | null
+  ipv6Forwarding: boolean | null
 }
 
 export interface TailscaleConnection {
@@ -477,39 +485,41 @@ export async function logoutTailscaleRequest(token: string): Promise<void> {
   } finally { clearTimeout(timer) }
 }
 
-export interface ExitNodeInput {
-  exitNodeID: string
-  allowLANAccess: boolean
+export interface RoutingInput {
+  subnetRoutes: string[]
 }
 
 export async function tailscaleRoutingRequest(token: string, signal?: AbortSignal): Promise<TailscaleRouting> {
   const timeout = AbortSignal.timeout(20_000)
   const data = await graphQLRequest(token, 'TailscaleRouting', `query TailscaleRouting {
     tailscaleRouting {
-      backendState exitNodeID exitNodeIP allowLANAccess advertiseExitNode
-      exitNodes { id hostName dnsName os tailscaleIPs online }
+      backendState advertiseExitNode subnetRoutes subnetDefaultsPending usingExitNode snatEnabled health
+      lanInterface defaultSubnetRoutes lanWarning ipv4Forwarding ipv6Forwarding
     }
   }`, {}, signal ? AbortSignal.any([signal, timeout]) : timeout, 'routing')
   const value: unknown = data.tailscaleRouting
-  if (!isRecord(value) || typeof value.backendState !== 'string' || typeof value.exitNodeID !== 'string' ||
-    typeof value.exitNodeIP !== 'string' || typeof value.allowLANAccess !== 'boolean' ||
-    typeof value.advertiseExitNode !== 'boolean' || !Array.isArray(value.exitNodes) ||
-    !value.exitNodes.every(isTailscalePeer)) throw new Error('The server did not return valid routing settings.')
+  const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(item => typeof item === 'string')
+  const forwarding = (v: unknown) => v === null || typeof v === 'boolean'
+  if (!isRecord(value) || typeof value.backendState !== 'string' || !value.backendState ||
+    typeof value.subnetDefaultsPending !== 'boolean' || typeof value.advertiseExitNode !== 'boolean' || typeof value.usingExitNode !== 'boolean' ||
+    typeof value.snatEnabled !== 'boolean' || !strings(value.subnetRoutes) || !strings(value.health) ||
+    !strings(value.defaultSubnetRoutes) || typeof value.lanInterface !== 'string' || typeof value.lanWarning !== 'string' ||
+    !forwarding(value.ipv4Forwarding) || !forwarding(value.ipv6Forwarding)) {
+    throw new Error('The server did not return valid routing settings.')
+  }
   return value as unknown as TailscaleRouting
 }
 
-export async function setExitNodeRequest(token: string, input: ExitNodeInput): Promise<void> {
-  if (typeof input.exitNodeID !== 'string' || input.exitNodeID.length > 256 || input.exitNodeID.trim() !== input.exitNodeID ||
-    typeof input.allowLANAccess !== 'boolean' || (!input.exitNodeID && input.allowLANAccess)) {
-    throw new Error('Choose an exit node, or the local gateway with LAN access unchecked.')
-  }
+export async function setRoutingRequest(token: string, input: RoutingInput): Promise<void> {
+  if (!input || 'advertiseExitNode' in input) throw new Error('Exit-node advertising is always enabled; only subnet routes can be configured.')
+  const normalized = { subnetRoutes: canonicalSubnetRoutes(input.subnetRoutes) }
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 60_000)
   try {
-    const data = await graphQLRequest(token, 'SetExitNode', `mutation SetExitNode($input: ExitNodeInput!) {
-      setExitNode(input: $input)
-    }`, { input }, controller.signal, 'routing')
-    if (data.setExitNode !== true) throw new Error('The server did not confirm the routing change. Check the device before retrying.')
+    const data = await graphQLRequest(token, 'SetRouting', `mutation SetRouting($input: RoutingInput!) {
+      setRouting(input: $input)
+    }`, { input: normalized }, controller.signal, 'routing')
+    if (data.setRouting !== true) throw new Error('The server did not confirm the routing change. Reload settings before retrying.')
   } finally { clearTimeout(timer) }
 }
 

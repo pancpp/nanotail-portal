@@ -40,7 +40,9 @@ type Client struct {
 	runner    Runner
 	mutations chan struct{}
 	// Protected by mutations; authentication URLs are never retained here.
-	keyRenewal *keyRenewalAttempt
+	keyRenewal     *keyRenewalAttempt
+	subnetDefaults SubnetDefaultsStore
+	detectSubnets  func(context.Context) ([]string, error)
 }
 
 func NewClient(binary, socket string, timeout time.Duration, runner Runner) *Client {
@@ -245,6 +247,8 @@ type Config struct {
 	ExitNodeAllowLANAccess bool     `json:"exit_node_allow_lan_access"`
 	AdvertiseRoutes        []string `json:"advertise_routes"`
 	AdvertiseExitNode      bool     `json:"advertise_exit_node"`
+	SNATEnabled            bool     `json:"snat_enabled"`
+	exitRoutes             []string
 }
 
 func (c *Client) Config(ctx context.Context) (Config, error) {
@@ -263,6 +267,7 @@ func (c *Client) Config(ctx context.Context) (Config, error) {
 		CorpDNS, RouteAll, ShieldsUp, ExitNodeAllowLANAccess bool
 		ExitNodeIP, ExitNodeID                               string
 		AdvertiseRoutes                                      []string
+		NoSNAT                                               bool
 	}
 	if err := json.Unmarshal(data, &raw); err != nil || raw.WantRunning == nil {
 		return Config{}, ErrInvalidOutput
@@ -272,10 +277,12 @@ func (c *Client) Config(ctx context.Context) (Config, error) {
 		AcceptRoutes: raw.RouteAll, ShieldsUp: raw.ShieldsUp, ExitNode: raw.ExitNodeIP,
 		ExitNodeID:             raw.ExitNodeID,
 		ExitNodeAllowLANAccess: raw.ExitNodeAllowLANAccess, AdvertiseRoutes: []string{},
+		SNATEnabled: !raw.NoSNAT,
 	}
 	for _, route := range raw.AdvertiseRoutes {
 		if route == "0.0.0.0/0" || route == "::/0" {
 			result.AdvertiseExitNode = true
+			result.exitRoutes = append(result.exitRoutes, route)
 		} else {
 			result.AdvertiseRoutes = append(result.AdvertiseRoutes, route)
 		}
@@ -346,11 +353,17 @@ func (u ConfigUpdate) args() ([]string, error) {
 }
 
 func (c *Client) UpdateConfig(ctx context.Context, update ConfigUpdate) error {
+	// Even legacy configuration endpoints cannot change the appliance's role.
+	if (update.AdvertiseExitNode != nil && !*update.AdvertiseExitNode) ||
+		(update.ExitNode != nil && *update.ExitNode != "") ||
+		(update.ExitNodeAllowLANAccess != nil && *update.ExitNodeAllowLANAccess) {
+		return fmt.Errorf("%w: this device must advertise itself as an exit node and cannot use another exit node", ErrInvalidConfig)
+	}
 	args, err := update.args()
 	if err != nil {
 		return err
 	}
-	return c.mutate(ctx, args...)
+	return c.mutateWithSubnetChoice(ctx, update.AdvertiseRoutes != nil, args...)
 }
 
 func (c *Client) Up(ctx context.Context) error {
@@ -365,6 +378,10 @@ func (c *Client) Down(ctx context.Context) error {
 }
 
 func (c *Client) mutate(ctx context.Context, args ...string) error {
+	return c.mutateWithSubnetChoice(ctx, false, args...)
+}
+
+func (c *Client) mutateWithSubnetChoice(ctx context.Context, subnetChoice bool, args ...string) error {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 	select {
@@ -372,6 +389,11 @@ func (c *Client) mutate(ctx context.Context, args ...string) error {
 		defer func() { <-c.mutations }()
 	case <-ctx.Done():
 		return ctx.Err()
+	}
+	if subnetChoice {
+		if err := c.claimSubnetChoice(ctx); err != nil {
+			return err
+		}
 	}
 	_, err := c.run(ctx, args...)
 	return err

@@ -88,3 +88,26 @@ func TestRuntimeShutdownLEDDeadline(t *testing.T) {
 		}
 	})
 }
+
+func TestRuntimeShutdownWaitsForRouting(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		workerCtx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		collectorDone, routingDone := make(chan struct{}), make(chan struct{})
+		close(collectorDone)
+		runtime := &Runtime{server: &http.Server{}, stopCollector: cancel, collectorDone: collectorDone, routingDone: routingDone}
+		done := make(chan error, 1)
+		go func() { done <- runtime.Shutdown(t.Context()) }()
+		<-workerCtx.Done()
+		synctest.Wait()
+		select {
+		case err := <-done:
+			t.Fatalf("shutdown returned before routing worker stopped: %v", err)
+		default:
+		}
+		close(routingDone)
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	})
+}

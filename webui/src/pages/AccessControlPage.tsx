@@ -5,7 +5,7 @@ import { useTailscale } from '../tailscale'
 export default function AccessControlPage() {
   const { client, clientError, refresh } = useTailscale()
   return <>
-    <section className="page-heading"><div><h1>Access control</h1><p>Manage exit-node routing, local LAN access, and Tailscale OAuth credentials.</p></div></section>
+    <section className="page-heading"><div><h1>Access control</h1><p>Offer this device as an exit node, share LAN subnets, and manage Tailscale OAuth credentials.</p></div></section>
     <ExitNodeSettingsForm />
     <section className="panel credential-settings" aria-labelledby="credential-heading">
       <div className="panel__header"><div><span className="panel__eyebrow">TAILSCALE</span><h2 id="credential-heading">OAuth client credentials</h2></div>

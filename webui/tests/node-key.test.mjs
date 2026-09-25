@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { nodeKeyDialogMode, nodeKeyStatus } from '../src/nodeKey.ts'
+import { nodeKeyDialogMode, nodeKeyStatus, nodeKeyExpiryDisabled, nodeKeyRenewDisabled } from '../src/nodeKey.ts'
 
 const now = Date.parse('2026-09-24T12:00:00Z')
 function status(expiry, overrides = {}) {
@@ -81,4 +81,32 @@ test('key expiry is independent of connection state and handles timezone offsets
     const result = nodeKeyStatus(status('2026-09-25T05:00:00-07:00', { backendState, self: { online: false, keyExpiry: '2026-09-25T05:00:00-07:00' } }), '', now)
     assert.equal(result.label, '1 day remaining')
   }
+})
+
+test('disabled expiry disables Renew even while another renewal panel or attempt is active', () => {
+  for (const backendState of ['Running', 'Stopped', 'Starting', 'NeedsLogin']) {
+    for (const active of [false, true]) {
+      const value = status(null, { backendState })
+      assert.equal(nodeKeyExpiryDisabled(value), true)
+      assert.equal(nodeKeyRenewDisabled(value, '', active), true)
+      assert.equal(nodeKeyRenewDisabled(value, 'refresh failed', active), true)
+    }
+  }
+})
+
+test('expiry-enabled keys remain renewable and absent keys can still sign in', () => {
+  for (const expiry of ['2020-01-01T00:00:00Z', '2027-01-01T00:00:00Z']) {
+    assert.equal(nodeKeyExpiryDisabled(status(expiry)), false)
+    assert.equal(nodeKeyRenewDisabled(status(expiry)), false)
+  }
+  for (const self of [null, { keyExpiry: null }]) {
+    const fresh = status(null, { haveNodeKey: false, backendState: 'NeedsLogin', self })
+    assert.equal(nodeKeyExpiryDisabled(fresh), false)
+    assert.equal(nodeKeyRenewDisabled(fresh), false)
+  }
+  assert.equal(nodeKeyExpiryDisabled(null), false)
+  assert.equal(nodeKeyExpiryDisabled(status(null, { self: null })), false)
+  assert.equal(nodeKeyRenewDisabled(null), true)
+  assert.equal(nodeKeyRenewDisabled(status(null, { self: null })), true)
+  assert.equal(nodeKeyRenewDisabled(status('2027-01-01T00:00:00Z'), 'refresh failed'), true)
 })

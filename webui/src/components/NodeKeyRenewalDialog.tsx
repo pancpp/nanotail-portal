@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { ExternalLink, LoaderCircle, RefreshCw, X } from 'lucide-react'
 import { useTailscale } from '../tailscale'
+import { nodeKeyExpiryDisabled } from '../nodeKey'
 import NodeKeyRenewalStatus from './NodeKeyRenewalStatus'
 
 export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onClose: () => void, signIn?: boolean }) {
-  const { keyRenewal, setKeyRenewalDialogOpen } = useTailscale()
+  const { status, keyRenewal, setKeyRenewalDialogOpen } = useTailscale()
   const { value, busy, preparing, pending, error, popupBlocked, checkStatus, renew, startSignIn, close } = keyRenewal
   const dialog = useRef<HTMLDialogElement>(null)
   const [acknowledged, setAcknowledged] = useState(false)
   const signedIn = signIn && ['SIGNED_IN', 'COMPLETE'].includes(value?.state ?? '')
+  const renewalDisabled = nodeKeyExpiryDisabled(status)
 
   useEffect(() => {
     setKeyRenewalDialogOpen(true)
@@ -31,7 +33,7 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
   }, [error])
 
   function confirmRenewal() {
-    if (!value?.canRenew || !acknowledged || busy) return
+    if (renewalDisabled || !value?.canRenew || !acknowledged || busy) return
     setAcknowledged(false)
     void renew()
   }
@@ -48,6 +50,7 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
     </div>
     <p className="setup-dialog__description" id="renewal-description">{signedIn ? 'Your device is signed in. You can close this panel to view your tailnet status.' : signIn ? 'Sign this device in to Tailscale using your browser. Your portal account is separate from your Tailscale account. A client ID and client secret are not required for browser sign-in.' : 'Force a new Tailscale sign-in for this device. Existing routing preferences are preserved; saved OAuth credentials are not used.'}</p>
     <div className="credential-form lan-form">
+      {renewalDisabled && <p role="status">Node-key expiry is disabled for this device, so renewal is disabled.</p>}
       {signIn && !pending && !signedIn && !error && <ol className="signin-steps">
         <li>Confirm below and choose <strong>Prepare sign-in</strong>.</li>
         <li>Choose <strong>Sign in to Tailscale</strong>, then sign in and authorize this device in the new tab. Select the tailnet you want it to join.</li>
@@ -59,9 +62,9 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
         {preparing && <p role="status">Preparing the request. Tailscale has not been changed.</p>}
         {value?.state === 'READY' && <>
           <p>The request is ready. Tailscale authentication starts only when you choose Sign in. Closing this panel cancels this request without changing the device.</p>
-          <button type="button" className="secondary-button renewal-signin" disabled={busy} onClick={startSignIn}>Sign in to Tailscale <ExternalLink size={16} /></button>
+          <button type="button" className="secondary-button renewal-signin" disabled={busy || renewalDisabled} onClick={startSignIn}>Sign in to Tailscale <ExternalLink size={16} /></button>
         </>}
-        {value?.state === 'STARTING' && value.canRenew && <button type="button" className="secondary-button renewal-signin" disabled={busy} onClick={startSignIn}>Retry sign-in <ExternalLink size={16} /></button>}
+        {value?.state === 'STARTING' && value.canRenew && <button type="button" className="secondary-button renewal-signin" disabled={busy || renewalDisabled} onClick={startSignIn}>Retry sign-in <ExternalLink size={16} /></button>}
         {busy && !value && !pending && <p className="renewal-checking" role="status"><LoaderCircle size={20} className="spin" aria-hidden="true" /> Checking {signIn ? 'sign-in' : 'renewal'} status…</p>}
         {value?.state === 'AWAITING_LOGIN' && <>
           <p>Complete sign-in in a new tab, then return here. Keep this link private.</p>
@@ -71,10 +74,10 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
         </>}
         {value?.state === 'AWAITING_APPROVAL' && <p>Sign-in is waiting for device approval. Ask your tailnet administrator to approve this device in the <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">Tailscale admin console</a>.</p>}
         {popupBlocked && pending && <p>Your browser blocked the sign-in tab. Use Open sign-in page when the link is ready.</p>}
-        {value?.state === 'IDLE' && <p>{value.canRenew ? 'You can prepare a new sign-in request below. Opening this panel does not change the device.' : 'Tailscale is not ready for sign-in. Check the device status and try again.'}</p>}
+        {!renewalDisabled && value?.state === 'IDLE' && <p>{value.canRenew ? 'You can prepare a new sign-in request below. Opening this panel does not change the device.' : 'Tailscale is not ready for sign-in. Check the device status and try again.'}</p>}
       </div>
       {error && <div className="form-error" role="alert"><p>{error}</p><p>If access was interrupted, reconnect using the device’s LAN address. Use the top-right X to close this panel, then {signIn ? 'reopen sign-in from Overview' : 'reopen Renew'} to check status before making another request. Only portal administrators can sign this device in.</p></div>}
-      {value?.canRenew && value.state !== 'STARTING' && !signedIn && <>
+      {!renewalDisabled && value?.canRenew && value.state !== 'STARTING' && !signedIn && <>
         <label className="lan-acknowledgement"><input type="checkbox" checked={acknowledged} disabled={busy} onChange={event => setAcknowledged(event.target.checked)} />
           <span>{signIn ? 'I want to connect this device to my tailnet and can access the portal over the LAN.' : 'I can reconnect over the LAN and understand that I must sign in to Tailscale again.'}</span>
         </label>

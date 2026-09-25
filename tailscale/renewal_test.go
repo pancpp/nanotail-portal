@@ -20,7 +20,7 @@ type renewalFixture struct {
 
 func newRenewalFixture(t *testing.T) *renewalFixture {
 	t.Helper()
-	f := &renewalFixture{status: map[string]any{"BackendState": "Running", "HaveNodeKey": true, "Self": map[string]any{"PublicKey": "nodekey:old"}}}
+	f := &renewalFixture{status: map[string]any{"BackendState": "Running", "HaveNodeKey": true, "Self": map[string]any{"PublicKey": "nodekey:old", "KeyExpiry": time.Now().Add(time.Hour)}}}
 	f.client = NewClient("/usr/bin/tailscale", "/run/test.sock", time.Second, runnerFunc(func(ctx context.Context, binary string, args ...string) ([]byte, error) {
 		if _, ok := ctx.Deadline(); !ok {
 			t.Error("missing timeout")
@@ -110,7 +110,11 @@ func TestNodeKeyRenewalLifecycle(t *testing.T) {
 	f.status["Self"] = map[string]any{"PublicKey": "nodekey:new", "KeyExpiry": time.Now().Add(time.Hour)}
 	check("COMPLETE", true, "")
 	f.status["Self"] = map[string]any{"PublicKey": "nodekey:new", "KeyExpiry": nil}
-	check("COMPLETE", true, "")
+	check("COMPLETE", false, "")
+	if _, err := f.client.RenewNodeKey(t.Context()); !errors.Is(err, ErrKeyRenewalDisabled) {
+		t.Fatal(err)
+	}
+	f.status["Self"] = map[string]any{"PublicKey": "nodekey:new", "KeyExpiry": time.Now().Add(time.Hour)}
 	oldID := id
 	id = prepareRenewal(t, f)
 	if id == oldID || f.writes != 1 {

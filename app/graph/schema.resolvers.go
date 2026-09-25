@@ -31,9 +31,9 @@ func (r *mutationResolver) SetDeviceIP(ctx context.Context, deviceIP *model.Devi
 	return r.setDeviceIP(ctx, deviceIP)
 }
 
-// SetExitNode is the resolver for the setExitNode field.
-func (r *mutationResolver) SetExitNode(ctx context.Context, input model.ExitNodeInput) (bool, error) {
-	return r.setExitNode(ctx, input)
+// SetRouting is the resolver for the setRouting field.
+func (r *mutationResolver) SetRouting(ctx context.Context, input model.RoutingInput) (bool, error) {
+	return r.setRouting(ctx, input)
 }
 
 // SetTailscaleEnabled is the resolver for the setTailscaleEnabled field.

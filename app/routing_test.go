@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -14,28 +15,31 @@ import (
 	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
 	"github.com/pancpp/nanotail-portal/database"
+	"github.com/pancpp/nanotail-portal/device"
 	"github.com/pancpp/nanotail-portal/tailscale"
 )
 
 type routingMock struct {
-	value tailscale.Routing
-	err   error
-	calls int
-	id    string
-	allow bool
+	value  tailscale.Routing
+	err    error
+	calls  int
+	routes []string
 }
 
 func (m *routingMock) Routing(context.Context) (tailscale.Routing, error) { return m.value, m.err }
-func (m *routingMock) SetExitNode(_ context.Context, id string, allow bool) error {
+func (m *routingMock) SetRouting(_ context.Context, routes []string) error {
 	m.calls++
-	m.id = id
-	m.allow = allow
+	m.routes = routes
 	return m.err
 }
 
-func routingGraphQL(t *testing.T, router graph.TailscaleRouter, pid int64, query string, variables any) map[string]json.RawMessage {
+func routingGraphQL(t *testing.T, router graph.TailscaleRouter, pid int64, query string, variables any, hosts ...graph.RoutingHostReader) map[string]json.RawMessage {
 	t.Helper()
-	server := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Routing: router}}))
+	var host graph.RoutingHostReader = hostRoutingMock{}
+	if len(hosts) > 0 {
+		host = hosts[0]
+	}
+	server := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Routing: router, RoutingHost: host}}))
 	server.AddTransport(transport.POST{})
 	server.SetErrorPresenter(presentGraphQLError)
 	body, err := json.Marshal(map[string]any{"query": query, "variables": variables})
@@ -50,7 +54,7 @@ func routingGraphQL(t *testing.T, router graph.TailscaleRouter, pid int64, query
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	server.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
+	if w.Code != http.StatusOK && w.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("HTTP %d: %s", w.Code, w.Body.String())
 	}
 	var result map[string]json.RawMessage
@@ -63,7 +67,7 @@ func routingGraphQL(t *testing.T, router graph.TailscaleRouter, pid int64, query
 func TestRoutingHTTPAuthentication(t *testing.T) {
 	e := newTestApp(t)
 	for _, token := range []string{"", "Bearer invalid"} {
-		for _, query := range []string{`{ tailscaleRouting { exitNodeID } }`, `mutation { setExitNode(input: {exitNodeID:"", allowLANAccess:false}) }`} {
+		for _, query := range []string{`{ tailscaleRouting { advertiseExitNode subnetRoutes } }`, `mutation { setRouting(input: {subnetRoutes:[]}) }`} {
 			body, _ := json.Marshal(map[string]string{"query": query})
 			w := appRequest(e, http.MethodPost, "/api/v1/query", string(body), token)
 			if w.Code != http.StatusUnauthorized {
@@ -73,7 +77,20 @@ func TestRoutingHTTPAuthentication(t *testing.T) {
 	}
 }
 
-func TestSetExitNodeGraphQL(t *testing.T) {
+type hostRoutingMock struct{}
+
+type unavailableRoutingHost struct{}
+
+func (unavailableRoutingHost) RoutingStatus(context.Context) (device.RoutingStatus, error) {
+	return device.RoutingStatus{}, errors.New("private host details")
+}
+
+func (hostRoutingMock) RoutingStatus(context.Context) (device.RoutingStatus, error) {
+	enabled := true
+	return device.RoutingStatus{LANInterface: "eth0", DefaultSubnetRoutes: []string{"192.168.42.0/24"}, IPv4Forwarding: &enabled, IPv6Forwarding: &enabled}, nil
+}
+
+func TestSetRoutingGraphQL(t *testing.T) {
 	db := setupAuthDatabase(t, t.Context())
 	admin := &database.User{Username: "admin", Role: "admin"}
 	regular := &database.User{Username: "user", Role: "user"}
@@ -83,26 +100,24 @@ func TestSetExitNodeGraphQL(t *testing.T) {
 		}
 	}
 	for _, tc := range []struct {
-		name           string
-		pid            int64
-		id             string
-		allow, missing bool
-		err            error
-		want           string
-		calls          int
+		name    string
+		pid     int64
+		missing bool
+		err     error
+		want    string
+		calls   int
 	}{
-		{name: "select", pid: admin.PID, id: "exit-1", allow: true, calls: 1},
-		{name: "clear", pid: admin.PID, calls: 1},
+		{name: "advertise", pid: admin.PID, calls: 1},
 		{name: "regular user", pid: regular.PID, want: graph.ErrRoutingAdmin.Error()},
 		{name: "no identity", want: auth.ErrUnauthorized.Error()},
-		{name: "deleted identity", pid: 99999, want: auth.ErrUnauthorized.Error()},
+		{name: "deleted user", pid: 99999, want: auth.ErrUnauthorized.Error()},
 		{name: "no backend", pid: admin.PID, missing: true, want: tailscale.ErrRoutingUnavailable.Error()},
-		{name: "bad exit node", pid: admin.PID, err: tailscale.ErrExitNodeInvalid, want: tailscale.ErrExitNodeInvalid.Error(), calls: 1},
+		{name: "invalid routes", pid: admin.PID, err: tailscale.ErrSubnetRoutesInvalid, want: tailscale.ErrSubnetRoutesInvalid.Error(), calls: 1},
 		{name: "stopped", pid: admin.PID, err: tailscale.ErrRoutingStopped, want: tailscale.ErrRoutingStopped.Error(), calls: 1},
-		{name: "advertising", pid: admin.PID, err: tailscale.ErrRoutingAdvertised, want: tailscale.ErrRoutingAdvertised.Error(), calls: 1},
 		{name: "read failure", pid: admin.PID, err: tailscale.ErrRoutingUnavailable, want: tailscale.ErrRoutingUnavailable.Error(), calls: 1},
-		{name: "unknown write outcome", pid: admin.PID, err: tailscale.ErrRoutingApply, want: tailscale.ErrRoutingApply.Error(), calls: 1},
-		{name: "internal details masked", pid: admin.PID, err: errors.New("private node key"), want: "Internal Server Error", calls: 1},
+		{name: "unknown outcome", pid: admin.PID, err: tailscale.ErrRoutingApply, want: tailscale.ErrRoutingApply.Error(), calls: 1},
+		{name: "choice storage failure", pid: admin.PID, err: tailscale.ErrRoutingPersistence, want: tailscale.ErrRoutingPersistence.Error(), calls: 1},
+		{name: "internal error", pid: admin.PID, err: errors.New("secret"), want: "Internal Server Error", calls: 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			mock := &routingMock{err: tc.err}
@@ -110,11 +125,10 @@ func TestSetExitNodeGraphQL(t *testing.T) {
 			if tc.missing {
 				router = nil
 			}
-			result := routingGraphQL(t, router, tc.pid, `mutation SetExitNode($input: ExitNodeInput!) { setExitNode(input:$input) }`, map[string]any{
-				"input": map[string]any{"exitNodeID": tc.id, "allowLANAccess": tc.allow},
-			})
+			routes := []string{"192.168.42.0/24"}
+			result := routingGraphQL(t, router, tc.pid, `mutation SetRouting($input: RoutingInput!) {setRouting(input:$input)}`, map[string]any{"input": map[string]any{"subnetRoutes": routes}})
 			if mock.calls != tc.calls {
-				t.Fatalf("calls=%d want=%d", mock.calls, tc.calls)
+				t.Fatalf("calls %d want %d", mock.calls, tc.calls)
 			}
 			if tc.want != "" {
 				var errs []struct{ Message string }
@@ -122,34 +136,46 @@ func TestSetExitNodeGraphQL(t *testing.T) {
 					t.Fatal(err)
 				}
 				if len(errs) != 1 || errs[0].Message != tc.want || string(result["data"]) != "null" {
-					t.Fatalf("result=%s", result)
+					t.Fatalf("%s", result)
 				}
-			} else if len(result["errors"]) != 0 || string(result["data"]) != `{"setExitNode":true}` || mock.id != tc.id || mock.allow != tc.allow {
-				t.Fatalf("result=%s mock=%+v", result, mock)
+			} else if len(result["errors"]) != 0 || string(result["data"]) != `{"setRouting":true}` || !reflect.DeepEqual(mock.routes, routes) {
+				t.Fatalf("%s %+v", result, mock)
 			}
 		})
 	}
 }
 
 func TestRoutingGraphQLRead(t *testing.T) {
-	query := `{ tailscaleRouting { backendState exitNodeID exitNodeIP allowLANAccess advertiseExitNode exitNodes { id hostName dnsName os tailscaleIPs online } } }`
-	mock := &routingMock{value: tailscale.Routing{BackendState: "Running", ExitNodeID: "exit-1", AllowLANAccess: true,
-		ExitNodes: []tailscale.Peer{{ID: "exit-1", Hostname: "exit-one", IPs: []string{"100.64.0.2"}, Online: true}},
-	}}
+	query := `{tailscaleRouting{backendState advertiseExitNode subnetRoutes subnetDefaultsPending usingExitNode snatEnabled health lanInterface defaultSubnetRoutes lanWarning ipv4Forwarding ipv6Forwarding}}`
+	mock := &routingMock{value: tailscale.Routing{BackendState: "Running", AdvertiseExitNode: true, SubnetRoutes: []string{"192.168.42.0/24"}, SNATEnabled: true}}
 	result := routingGraphQL(t, mock, 1, query, nil)
-	if len(result["errors"]) != 0 || !strings.Contains(string(result["data"]), `"allowLANAccess":true`) || !strings.Contains(string(result["data"]), `"id":"exit-1"`) {
-		t.Fatalf("result=%s", result)
+	for _, want := range []string{`"advertiseExitNode":true`, `"defaultSubnetRoutes":["192.168.42.0/24"]`, `"ipv4Forwarding":true`, `"health":[]`} {
+		if len(result["errors"]) != 0 || !strings.Contains(string(result["data"]), want) {
+			t.Fatalf("%s", result)
+		}
 	}
-	mock.value.ExitNodes = nil
+	mock.value.SubnetRoutes = nil
+	mock.value.SubnetDefaultsPending = true
 	result = routingGraphQL(t, mock, 1, query, nil)
-	if len(result["errors"]) != 0 || !strings.Contains(string(result["data"]), `"exitNodes":[]`) {
-		t.Fatalf("result=%s", result)
+	if !strings.Contains(string(result["data"]), `"subnetRoutes":[]`) {
+		t.Fatalf("%s", result)
 	}
-	mock.err = errors.New("secret preferences")
+	if !strings.Contains(string(result["data"]), `"subnetDefaultsPending":true`) {
+		t.Fatalf("%s", result)
+	}
+	mock.err = errors.New("secret prefs")
 	for _, router := range []graph.TailscaleRouter{mock, nil} {
 		result = routingGraphQL(t, router, 1, query, nil)
 		if !strings.Contains(string(result["errors"]), tailscale.ErrRoutingUnavailable.Error()) || strings.Contains(string(result["errors"]), "secret") {
-			t.Fatalf("result=%s", result)
+			t.Fatalf("%s", result)
 		}
+	}
+}
+
+func TestRoutingCannotDisableExitNode(t *testing.T) {
+	mock := &routingMock{}
+	result := routingGraphQL(t, mock, 1, `mutation {setRouting(input:{advertiseExitNode:false,subnetRoutes:[]})}`, nil)
+	if len(result["errors"]) == 0 || mock.calls != 0 {
+		t.Fatalf("exit-node disable reached backend: %s", result)
 	}
 }

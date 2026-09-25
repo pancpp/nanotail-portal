@@ -85,6 +85,7 @@ func TestNodeKeyRenewalGraphQL(t *testing.T) {
 			{name: "missing backend", pid: admin.PID, missing: true, want: tailscale.ErrKeyRenewalUnavailable.Error()},
 			{name: "unavailable", pid: admin.PID, err: tailscale.ErrKeyRenewalUnavailable, want: tailscale.ErrKeyRenewalUnavailable.Error(), calls: 1},
 			{name: "no key", pid: admin.PID, err: tailscale.ErrKeyRenewalUnconfigured, want: tailscale.ErrKeyRenewalUnconfigured.Error(), calls: 1},
+			{name: "expiry disabled", pid: admin.PID, err: tailscale.ErrKeyRenewalDisabled, want: tailscale.ErrKeyRenewalDisabled.Error(), calls: 1},
 			{name: "unknown outcome", pid: admin.PID, err: tailscale.ErrKeyRenewalStart, want: tailscale.ErrKeyRenewalStart.Error(), calls: 1},
 			{name: "unsafe URL", pid: admin.PID, err: tailscale.ErrKeyRenewalURL, want: tailscale.ErrKeyRenewalURL.Error(), calls: 1},
 			{name: "stale ID", pid: admin.PID, err: tailscale.ErrKeyRenewalChanged, want: tailscale.ErrKeyRenewalChanged.Error(), calls: 1},

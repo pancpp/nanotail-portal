@@ -1,18 +1,39 @@
 import type { TailscaleRouting } from './api'
 
-export function selectedExitNode(routing: TailscaleRouting): string {
-  return routing.exitNodeID || (routing.exitNodeIP ? `unavailable:${routing.exitNodeIP}` : '')
+export function forwardingWarnings(routing: TailscaleRouting, exitNode: boolean, routes: string[]): string[] {
+  const warnings: string[] = []
+  for (const [family, required, enabled] of [
+    ['IPv4', exitNode || routes.some(route => !route.includes(':')), routing.ipv4Forwarding],
+    ['IPv6', exitNode || routes.some(route => route.includes(':')), routing.ipv6Forwarding],
+  ] as const) {
+    if (required && enabled !== true) warnings.push(family + (enabled === false
+      ? ' forwarding is disabled. Enable it in the OS for routing to work.'
+      : ' forwarding could not be checked. Verify it in the OS before using routing.'))
+  }
+  return warnings
 }
 
-export function routingSummary(routing: TailscaleRouting | null, error: string) {
+export function routingSummary(routing: TailscaleRouting | null, error: string, kind: 'exit' | 'subnet' = 'exit') {
   if (error) return { title: 'Unavailable', detail: 'Unable to read routing settings' }
   if (!routing) return { title: 'Checking…', detail: 'Reading Tailscale routing settings' }
-  const selected = selectedExitNode(routing)
-  if (!selected) return { title: 'Local gateway', detail: routing.advertiseExitNode ? 'This device advertises itself as an exit node' : 'No Tailscale exit node selected' }
-  const peer = routing.exitNodes.find((node) => node.id === selected)
-  const title = peer ? peer.hostName || peer.dnsName || peer.id : routing.exitNodeIP || routing.exitNodeID
-  const detail = routing.backendState !== 'Running' ? 'Saved exit node · Tailscale is not running' :
-    !peer ? 'Selected exit node is no longer available' : !peer.online ? 'Exit node is offline · internet access may be unavailable' :
-    `Selected exit node · local LAN access ${routing.allowLANAccess ? 'allowed' : 'blocked'}`
-  return { title, detail }
+  const enabled = kind === 'exit' ? routing.advertiseExitNode : routing.subnetRoutes.length > 0
+  if (!enabled) return kind === 'exit'
+    ? { title: 'Pending', detail: routing.usingExitNode ? 'Portal is switching this device from using another exit node to offering one' : 'Always-on exit node · waiting for automatic configuration' }
+    : routing.subnetDefaultsPending
+      ? { title: 'Pending', detail: 'Enabled by default · waiting to advertise the local LAN' }
+      : { title: 'Not advertised', detail: 'Share the local LAN with devices in your tailnet' }
+  if (routing.backendState !== 'Running') return { title: 'Paused', detail: 'Advertisements saved · Tailscale is not running' }
+  const warnings = forwardingWarnings(routing, kind === 'exit', kind === 'subnet' ? routing.subnetRoutes : [])
+  if (warnings.length) return { title: 'Needs OS setup', detail: warnings.join(' ') }
+  if (!routing.snatEnabled) return { title: 'Check routing', detail: 'SNAT is disabled · verify upstream/return routes before use' }
+  return { title: 'Advertised', detail: kind === 'exit'
+    ? 'This device offers internet access · verify tailnet approval'
+    : 'Subnet routes advertised · verify tailnet approval and access rules' }
+}
+
+export function routingDraft(routing: TailscaleRouting) {
+  return {
+    subnetEnabled: routing.subnetDefaultsPending || routing.subnetRoutes.length > 0,
+    routeText: (routing.subnetRoutes.length ? routing.subnetRoutes : routing.defaultSubnetRoutes).join('\n'),
+  }
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/pancpp/nanotail-portal/device"
 	"github.com/pancpp/nanotail-portal/factoryreset"
+	"github.com/pancpp/nanotail-portal/tailscale"
 	"github.com/pancpp/nanotail-portal/traffic"
 	"github.com/pancpp/nanotail-portal/webui"
 )
@@ -29,6 +30,7 @@ type Runtime struct {
 	collectorDone chan struct{}
 	serverErrors  chan error
 	ledDone       chan struct{}
+	routingDone   chan struct{}
 }
 
 func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error) {
@@ -44,7 +46,8 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 		return nil, err
 	}
 
-	if err := initAPIs(e); err != nil {
+	client := newTailscaleClient()
+	if err := initAPIsWithClient(e, client); err != nil {
 		return nil, err
 	}
 	initFactoryResetAPI(e, reset)
@@ -70,6 +73,7 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 		collectorDone: make(chan struct{}),
 		serverErrors:  make(chan error, 1),
 		ledDone:       make(chan struct{}),
+		routingDone:   make(chan struct{}),
 	}
 
 	// One collector per portal process, independent of logged-in browsers.
@@ -87,6 +91,11 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 				log.Printf("(VPN traffic LED) disabled: %v", err)
 			}
 		}
+	}()
+
+	go func() {
+		defer close(runtime.routingDone)
+		client.MaintainRouting(collectorCtx)
 	}()
 
 	// Start echo server
@@ -120,6 +129,13 @@ func (r *Runtime) Shutdown(ctx context.Context) error {
 			return ctx.Err()
 		}
 	}
+	if r.routingDone != nil {
+		select {
+		case <-r.routingDone:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 	return nil
 }
 
@@ -132,10 +148,14 @@ func jwtMiddleware() echo.MiddlewareFunc {
 }
 
 func initAPIs(e *echo.Echo) error {
+	return initAPIsWithClient(e, newTailscaleClient())
+}
+
+func initAPIsWithClient(e *echo.Echo, client *tailscale.Client) error {
 	// Only login needs no header authentication
 	e.POST("/api/login", handleLogin)
 
-	gqlSrv := newGraphQLServer()
+	gqlSrv := newGraphQLServerWithClient(client)
 	e.POST("/api/v1/query",
 		func(c *echo.Context) error {
 			token, ok := c.Get(auth.JWT_CONTEXT_KEY_TOKEN).(*jwt.Token)

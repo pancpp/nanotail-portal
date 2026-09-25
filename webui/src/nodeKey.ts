@@ -1,7 +1,17 @@
 import type { TailscaleStatus } from './api'
 
-// Renew depends on whether a key exists, not whether the daemon currently
-// reports NeedsLogin. A device without a key needs the sign-in guide first.
+export function nodeKeyExpiryDisabled(status: TailscaleStatus | null): boolean {
+  return status?.haveNodeKey === true && status.self?.keyExpiry === null
+}
+
+export function nodeKeyRenewDisabled(status: TailscaleStatus | null, statusError = '', active = false): boolean {
+  if (nodeKeyExpiryDisabled(status)) return true
+  return !active && (statusError !== '' || !status ||
+    (status.backendState !== 'NeedsLogin' && nodeKeyStatus(status, statusError).state === 'unavailable'))
+}
+
+// Choose the dialog by key presence, not the daemon's NeedsLogin state.
+// A device without a key needs the sign-in guide first.
 export function nodeKeyDialogMode(status: TailscaleStatus | null): 'signin' | 'renewal' {
   return status?.haveNodeKey === false ? 'signin' : 'renewal'
 }

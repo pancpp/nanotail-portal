@@ -32,7 +32,11 @@ type NetworkActivityReader interface {
 
 type TailscaleRouter interface {
 	Routing(context.Context) (tailscale.Routing, error)
-	SetExitNode(context.Context, string, bool) error
+	SetRouting(context.Context, []string) error
+}
+
+type RoutingHostReader interface {
+	RoutingStatus(context.Context) (device.RoutingStatus, error)
 }
 
 type NetworkHistoryReader interface {
@@ -58,6 +62,7 @@ type Resolver struct {
 	DeviceConfig   DeviceIPConfigurator
 	Traffic        NetworkActivityReader
 	Routing        TailscaleRouter
+	RoutingHost    RoutingHostReader
 	TrafficHistory NetworkHistoryReader
 	Connection     TailscaleConnector
 	KeyRenewer     TailscaleKeyRenewer

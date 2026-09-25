@@ -887,7 +887,7 @@ input:focus-visible {
 .status-grid {
   display: grid;
   margin-bottom: 18px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 17px;
 }
 
@@ -1579,7 +1579,7 @@ input:focus-visible {
   }
 
   .status-card--primary {
-    grid-column: span 2;
+    grid-column: auto;
   }
 
 }
@@ -1742,6 +1742,16 @@ a:focus-visible, dialog:focus-visible {
 .routing-card .status-card__body strong { white-space: normal; }
 .routing-card .status-card__body p { white-space: normal; overflow: visible; font-size: 16px; line-height: 1.5; }
 .routing-settings select { min-width: 0; font-size: 17px; }
+.routing-section { min-width: 0; margin: 24px 0; padding: 18px 0 0; border: 0; border-top: 1px solid var(--line); }
+.routing-section legend { display: flex; align-items: center; gap: 8px; padding-right: 12px; font-weight: 700; font-size: 20px; }
+.routing-section > label { display: block; margin-top: 18px; }
+.routing-section textarea { box-sizing: border-box; width: 100%; margin-top: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; font: 16px/1.6 monospace; resize: vertical; }
+.routing-section textarea:focus-visible { outline: 3px solid #27c283; outline-offset: 2px; }
+.routing-section textarea:disabled { background: #f4f6f5; color: #68776d; }
+.routing-readiness { margin: 18px 0; padding: 16px; background: #f4f7f5; border-radius: 12px; }
+.routing-readiness > p { margin: 8px 0 0; }
+.route-list, .routing-health { padding-left: 18px; margin: 12px 0; overflow-wrap: anywhere; font-size: 14px; line-height: 1.7; }
+.routing-health { font-size: 16px; }
 .routing-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
 .routing-guide { display: inline-block; margin-top: 18px; color: var(--green-dark); font-size: 16px; text-underline-offset: 4px; }
 .setup-dialog .secondary-button, .credential-form .secondary-button, .setup-guide .secondary-button { min-height: 42px; height: auto; width: auto; padding: 10px 14px; font-size: 16px; }

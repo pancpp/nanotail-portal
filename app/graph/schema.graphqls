@@ -182,22 +182,28 @@ type NetworkActivityHistory {
   totals: NetworkActivityTotals!
 }
 
-"Saved exit-node preferences and approved exit nodes visible to this device."
+"This device's routing advertisements and host readiness; not route approval or end-to-end reachability."
 type TailscaleRouting {
   backendState: String!
-  "Empty when no exit node is selected (older daemons may report only exitNodeIP)."
-  exitNodeID: String!
-  exitNodeIP: String!
-  allowLANAccess: Boolean!
   advertiseExitNode: Boolean!
-  exitNodes: [TailscalePeer!]!
+  subnetRoutes: [String!]!
+  "Local LAN advertisement defaults are enabled and waiting for first-time setup."
+  subnetDefaultsPending: Boolean!
+  "Legacy use of another exit node. Applying routing settings clears it."
+  usingExitNode: Boolean!
+  snatEnabled: Boolean!
+  health: [String!]!
+  lanInterface: String!
+  defaultSubnetRoutes: [String!]!
+  lanWarning: String!
+  "Null means the host setting could not be read."
+  ipv4Forwarding: Boolean
+  ipv6Forwarding: Boolean
 }
 
-input ExitNodeInput {
-  "Stable ID from tailscaleRouting.exitNodes; empty disables exit-node use."
-  exitNodeID: String!
-  "Must be false when disabling the exit node."
-  allowLANAccess: Boolean!
+input RoutingInput {
+  "Canonical subnet CIDRs. An empty list disables subnet advertisements."
+  subnetRoutes: [String!]!
 }
 
 "This device's saved connection preference; enabled does not guarantee connectivity."
@@ -270,8 +276,8 @@ type Mutation {
   clearTailscaleCredential: Boolean!
   "Admin only: persist and apply eth0 IPv4 settings through NetworkManager. IPv6 is unchanged; the connection may be interrupted."
   setDeviceIP(deviceIP: DeviceIP): Boolean!
-  "Admin only: persist exit-node preferences. May interrupt connectivity; does not change subnet advertisements or start Tailscale."
-  setExitNode(input: ExitNodeInput!): Boolean!
+  "Admin only: configure subnet routes while keeping the mandatory exit-node advertisement enabled. Does not change OS forwarding or start Tailscale."
+  setRouting(input: RoutingInput!): Boolean!
   "Admin only: resume or pause this device without logging out or changing routing preferences. May disconnect this browser."
   setTailscaleEnabled(enabled: Boolean!): Boolean!
   "Admin only: log this device out of Tailscale. Disconnects the tailnet and requires sign-in again."

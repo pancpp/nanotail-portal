@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:routing-browser": "node tests/routing.browser.mjs",
     "typecheck": "tsc -b",
     "preview": "vite preview"
   },

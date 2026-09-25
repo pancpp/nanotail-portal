@@ -19,23 +19,30 @@ func (r *queryResolver) tailscaleRouting(ctx context.Context) (*model.TailscaleR
 		return nil, tailscale.ErrRoutingUnavailable
 	}
 	result := &model.TailscaleRouting{
-		BackendState: routing.BackendState, ExitNodeID: routing.ExitNodeID, ExitNodeIP: routing.ExitNodeIP,
-		AllowLANAccess: routing.AllowLANAccess, AdvertiseExitNode: routing.AdvertiseExitNode,
-		ExitNodes: make([]*model.TailscalePeer, len(routing.ExitNodes)),
+		BackendState: routing.BackendState, AdvertiseExitNode: routing.AdvertiseExitNode,
+		SubnetRoutes: append([]string{}, routing.SubnetRoutes...), UsingExitNode: routing.UsingExitNode,
+		SubnetDefaultsPending: routing.SubnetDefaultsPending,
+		SnatEnabled:           routing.SNATEnabled, Health: append([]string{}, routing.Health...),
+		LanInterface: "eth0", DefaultSubnetRoutes: []string{},
+		LanWarning: "Unable to detect the local LAN. Enter subnet routes manually.",
 	}
-	for i := range routing.ExitNodes {
-		result.ExitNodes[i] = tailscalePeer(&routing.ExitNodes[i])
+	if r.RoutingHost != nil {
+		if host, err := r.RoutingHost.RoutingStatus(ctx); err == nil {
+			result.LanInterface, result.LanWarning = host.LANInterface, host.LANWarning
+			result.DefaultSubnetRoutes = append([]string{}, host.DefaultSubnetRoutes...)
+			result.Ipv4Forwarding, result.Ipv6Forwarding = host.IPv4Forwarding, host.IPv6Forwarding
+		}
 	}
 	return result, nil
 }
 
-func (r *mutationResolver) setExitNode(ctx context.Context, input model.ExitNodeInput) (bool, error) {
+func (r *mutationResolver) setRouting(ctx context.Context, input model.RoutingInput) (bool, error) {
 	if err := requireAdmin(ctx, ErrRoutingAdmin); err != nil {
 		return false, err
 	}
 	if r.Routing == nil {
 		return false, tailscale.ErrRoutingUnavailable
 	}
-	err := r.Routing.SetExitNode(ctx, input.ExitNodeID, input.AllowLANAccess)
+	err := r.Routing.SetRouting(ctx, input.SubnetRoutes)
 	return err == nil, err
 }

@@ -12,6 +12,7 @@ import (
 var (
 	ErrKeyRenewalUnavailable  = errors.New("Unable to read node key renewal status. Check that tailscaled is running and the portal can access it")
 	ErrKeyRenewalUnconfigured = errors.New("Tailscale is not ready for sign-in. Check the device status and try again")
+	ErrKeyRenewalDisabled     = errors.New("Node key renewal is disabled because key expiry is disabled for this device")
 	ErrKeyRenewalStart        = errors.New("Unable to confirm that renewal started. It may already be in progress. Reconnect over the LAN and check renewal status before retrying")
 	ErrKeyRenewalURL          = errors.New("Tailscale returned an unsupported sign-in URL. Complete reauthentication directly on the device")
 	ErrKeyRenewalChanged      = errors.New("The renewal request has changed or expired. Check renewal status before retrying")
@@ -33,7 +34,14 @@ type keyRenewalAttempt struct {
 	startedAt    time.Time
 }
 
+func nodeKeyExpiryDisabled(status Status) bool {
+	return status.HaveNodeKey && status.Self != nil && status.Self.KeyExpiry == nil
+}
+
 func canStartLogin(status Status) bool {
+	if nodeKeyExpiryDisabled(status) {
+		return false
+	}
 	// A fresh or logged-out device has no node key yet. Interactive login is
 	// still available, but must only begin after an explicit Sign in action.
 	if status.BackendState == "NeedsLogin" {
@@ -69,7 +77,7 @@ func (c *Client) renewalStatus(status Status) (KeyRenewal, error) {
 		if !validRenewalURL(status.AuthURL) {
 			return KeyRenewal{}, ErrKeyRenewalURL
 		}
-		canRenew = true // An existing login link can be resumed after a portal restart.
+		canRenew = !nodeKeyExpiryDisabled(status) // An existing login link cannot bypass disabled renewal.
 	}
 	if attempt == nil {
 		if status.BackendState == "NeedsMachineAuth" {
@@ -185,6 +193,9 @@ func (c *Client) updateKeyRenewal(ctx context.Context, action, attemptID string)
 		return KeyRenewal{}, err
 	}
 	if action == "prepare" {
+		if nodeKeyExpiryDisabled(status) {
+			return KeyRenewal{}, ErrKeyRenewalDisabled
+		}
 		if value.State == "READY" || value.State == "STARTING" || value.State == "AWAITING_LOGIN" || value.State == "AWAITING_APPROVAL" {
 			return value, nil
 		}
@@ -207,6 +218,10 @@ func (c *Client) updateKeyRenewal(ctx context.Context, action, attemptID string)
 	}
 	if attempt.startedAt.IsZero() && currentKey != attempt.previousKey {
 		return KeyRenewal{}, ErrKeyRenewalChanged
+	}
+	// Recheck fresh status: expiry may have been disabled after preparation.
+	if nodeKeyExpiryDisabled(status) {
+		return KeyRenewal{}, ErrKeyRenewalDisabled
 	}
 	if !canStartLogin(status) && status.AuthURL == "" {
 		return KeyRenewal{}, ErrKeyRenewalUnconfigured

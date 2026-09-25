@@ -57,13 +57,6 @@ type DeviceStatus struct {
 	Health string `json:"health"`
 }
 
-type ExitNodeInput struct {
-	// Stable ID from tailscaleRouting.exitNodes; empty disables exit-node use.
-	ExitNodeID string `json:"exitNodeID"`
-	// Must be false when disabling the exit node.
-	AllowLANAccess bool `json:"allowLANAccess"`
-}
-
 type Mutation struct {
 }
 
@@ -110,6 +103,11 @@ type NetworkActivityTotals struct {
 }
 
 type Query struct {
+}
+
+type RoutingInput struct {
+	// Canonical subnet CIDRs. An empty list disables subnet advertisements.
+	SubnetRoutes []string `json:"subnetRoutes"`
 }
 
 type Tailnet struct {
@@ -201,15 +199,23 @@ type TailscalePeer struct {
 	KeyExpiry           *time.Time     `json:"keyExpiry,omitempty"`
 }
 
-// Saved exit-node preferences and approved exit nodes visible to this device.
+// This device's routing advertisements and host readiness; not route approval or end-to-end reachability.
 type TailscaleRouting struct {
-	BackendState string `json:"backendState"`
-	// Empty when no exit node is selected (older daemons may report only exitNodeIP).
-	ExitNodeID        string           `json:"exitNodeID"`
-	ExitNodeIP        string           `json:"exitNodeIP"`
-	AllowLANAccess    bool             `json:"allowLANAccess"`
-	AdvertiseExitNode bool             `json:"advertiseExitNode"`
-	ExitNodes         []*TailscalePeer `json:"exitNodes"`
+	BackendState      string   `json:"backendState"`
+	AdvertiseExitNode bool     `json:"advertiseExitNode"`
+	SubnetRoutes      []string `json:"subnetRoutes"`
+	// Local LAN advertisement defaults are enabled and waiting for first-time setup.
+	SubnetDefaultsPending bool `json:"subnetDefaultsPending"`
+	// Legacy use of another exit node. Applying routing settings clears it.
+	UsingExitNode       bool     `json:"usingExitNode"`
+	SnatEnabled         bool     `json:"snatEnabled"`
+	Health              []string `json:"health"`
+	LanInterface        string   `json:"lanInterface"`
+	DefaultSubnetRoutes []string `json:"defaultSubnetRoutes"`
+	LanWarning          string   `json:"lanWarning"`
+	// Null means the host setting could not be read.
+	Ipv4Forwarding *bool `json:"ipv4Forwarding,omitempty"`
+	Ipv6Forwarding *bool `json:"ipv6Forwarding,omitempty"`
 }
 
 type TailscaleStatus struct {

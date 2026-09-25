@@ -66,6 +66,8 @@ JWTs—including tokens saved in other browsers—are rejected after restart.
 
 Configuration is read from `nanotail.yml` in the process working directory.
 It is created if missing; an empty file uses the built-in defaults.
+`NANOTAIL_TAILSCALE_BINARY` overrides `tailscale_binary`, including after reset;
+integration tests use it to keep all VPN commands on a disposable fake binary.
 The default database is `nanotail.sqlite3`. When upgrading an existing
 installation, stop the portal and copy your existing configuration and database
 to these names, or set `database` in the new configuration to your existing
@@ -113,9 +115,9 @@ changing routing can interrupt access to the portal through Tailscale.
 
 The WebUI shows live connection, peer, node-key, device, routing, and VPN traffic
 data through GraphQL. It also manages OAuth credentials, LAN IPv4 settings, and
-the exit node used by this device. **Network** contains LAN IPv4 settings and
+this device’s exit-node and subnet-route advertisements. **Network** contains LAN IPv4 settings and
 the tailnet connection control; **Access control** contains exit-node
-configuration and OAuth credentials. **Settings** contains Change password and
+and subnet-route advertisements plus OAuth credentials. **Settings** contains Change password and
 the administrator-only, double-confirmed Factory reset.
 
 ### Tailnet connection
@@ -150,32 +152,103 @@ logged-out state before reporting success. The WebUI clears stale renewal links
 and refreshes connection status. If confirmation is lost, reload connection
 settings over the LAN before retrying; logout is never automatically retried.
 
-### Exit-node routing
+### Exit node and subnet router
 
-On Overview, **Routing → Configure** opens the **Access control** tab. The
-authenticated `tailscaleRouting` query reads saved preferences and approved
-exit nodes visible to this device. Select an online exit node, choose whether to
-allow local-LAN access, acknowledge the connectivity warning, and apply. Choose
-**None — use local gateway** to clear a saved selection, including a missing or
-offline exit node. If no exit nodes are available, follow the linked
-[Tailscale setup guide](https://tailscale.com/docs/features/exit-nodes/how-to/setup)
-to configure and approve one on another device.
+Overview shows separate **Exit node** and **Subnet routes** cards; **Configure**
+opens **Access control → Exit node & subnet routes**. This device provides
+internet/LAN access to other tailnet devices, rather than selecting another exit
+node for its own traffic. **Exit-node advertising is always enabled**; there is
+no switch to disable it. The panel shows the actual saved advertisement separately
+from this fixed role.
 
-`setExitNode(input: {exitNodeID: "<stable peer ID>", allowLANAccess: true})` is
-administrator-only. Clearing uses an empty ID and `allowLANAccess: false`.
-The backend validates the peer against fresh daemon status, changes only
-`--exit-node` and `--exit-node-allow-lan-access` via `tailscale set`, and checks
-the saved preferences before returning success. The portal process needs
-permission to manage tailscaled (root or a configured Tailscale operator).
-These settings persist in Tailscale, not in the portal database.
+The portal checks at startup and every 10 seconds. Once Tailscale is signed in,
+it enables both exit-node default routes and clears any selected upstream exit
+node. Each check reads current preferences first and writes only when needed;
+existing subnet routes, DNS, SNAT, and other preferences remain untouched. Missing
+Tailscale, pending sign-in/approval, or daemon errors do not prevent the portal
+from starting. A later check retries after recovery; persistent failures are
+logged. This never signs in, resumes a paused connection, or configures the OS.
 
-This configures **nanotail's use of another exit node**. It does not advertise
-nanotail as an exit node, configure LAN-client forwarding/subnet routes, change
-tailnet policy, or start a stopped Tailscale daemon. An advertising exit node
-cannot simultaneously use another exit node. Changing routes can disconnect
-the browser or SSH; successful changes are not automatically reverted. After a
-timeout or lost connection, reconnect and reload settings before retrying.
-Readback confirms preferences, not end-to-end internet reachability.
+**Subnet advertising is enabled by default.** On initial setup, the background
+routing check advertises the live, masked IPv4/IPv6 prefixes on `eth0`, the LAN
+interface managed by this portal. No browser visit or Save click is required.
+For example, `192.168.42.8/24` becomes `192.168.42.0/24`. Duplicate prefixes,
+link-local, loopback, and Tailscale addresses are excluded, and the same subnet
+validation used for manual changes also applies to detected defaults.
+
+Initial setup waits until Tailscale is signed in and running and usable LAN
+addresses are available, then retries on the next check if necessary. The UI
+checks **Advertise subnet routes** by default and displays **Pending** until the
+advertisement has actually been saved. Missing LAN information shows a warning
+and allows manual entry or an explicit opt-out, including while disconnected.
+
+Existing advertised routes are adopted without replacement. A small SQLite
+initialization marker remembers successful setup or an explicit user choice,
+including disabling subnet advertising. Consequently, restarts and later LAN
+changes never re-enable a saved opt-out or replace custom routes. Before any
+explicit route command, the portal saves this marker; if that fails it sends no
+command. An uncertain manual save is not retried automatically and also suppresses
+initial defaults, so they cannot overwrite the user's choice. Default setup
+failures retry only after reading fresh Tailscale preferences.
+
+**Use local LAN** explicitly replaces the editable draft. Opening the page itself
+does not send routing writes; initialization runs independently in the backend.
+Factory reset clears the marker with the database. After signing in again, LAN
+defaults are applied if there are no existing advertised subnet routes.
+
+Routes accept up to 64 unique, canonical IPv4/IPv6 subnet CIDRs, one per line or
+comma-separated. Host bits, default routes, and reserved/Tailscale ranges are
+rejected. Default routes are managed by the mandatory exit-node role. Turning
+subnet routing off clears only its advertisements; exit-node advertising remains
+enabled. LAN address changes do not silently rewrite existing advertisements;
+review and apply the new LAN prefixes afterward.
+
+The administrator-only `setRouting(input: {subnetRoutes:
+["192.168.42.0/24"]})` mutation replaces the old `setExitNode`
+mutation. It uses one serialized `tailscale set` command with
+`--advertise-exit-node=true` and `--advertise-routes`, clears legacy exit-node use
+with `--exit-node=` and `--exit-node-allow-lan-access=false`, and verifies saved
+preferences afterward. There is no exit-node boolean in the mutation input.
+The UI warns before applying subnet changes and requires an
+access/connectivity acknowledgement. DNS, route acceptance, SNAT, firewall,
+credentials, and other Tailscale preferences are preserved. Settings persist in
+Tailscale; only the initialization marker lives in SQLite. A stopped/logged-out daemon cannot start new
+subnet advertisements from this form, but subnet routes can still be cleared.
+The exit-node preference remains enabled without reconnecting the daemon.
+
+**IP forwarding is an OS prerequisite, never configured by the portal.** The
+read-only readiness display checks IPv4 and IPv6 separately; unreadable values
+are unknown, not disabled. For manual Linux setup, persist these settings in
+`/etc/sysctl.d/99-nanotail-forwarding.conf` and load them with
+`sudo sysctl -p /etc/sysctl.d/99-nanotail-forwarding.conf`:
+
+```ini
+net.ipv4.ip_forward = 1
+net.ipv6.conf.all.forwarding = 1
+```
+
+If the uplink relies on IPv6 router advertisements, also configure
+`net.ipv6.conf.<uplink>.accept_ra = 2` as appropriate; enabling forwarding
+otherwise disables their acceptance. See the
+[Linux IP sysctl documentation](https://docs.kernel.org/networking/ip-sysctl.html).
+Firewall/return-route prerequisites remain the administrator's responsibility.
+The UI surfaces Tailscale health warnings and warns if existing subnet SNAT is
+disabled; it does not rewrite those settings.
+
+**Advertised** means saved local intent, not approved, active, or reachable.
+Approve the exit node and subnet routes in the Tailscale admin console (unless
+covered by auto-approvers), allow the traffic in tailnet access rules, and select
+the exit node or accept subnet routes on client devices. See the official
+[exit-node guide](https://tailscale.com/docs/features/exit-nodes) and
+[subnet-router guide](https://tailscale.com/docs/features/subnet-routers).
+The portal does not change remote approval/policy or other clients.
+
+Keep local access available: changing roles or removing advertisements can
+disconnect this browser, SSH, and other clients. Unknown outcomes require a fresh
+read before retrying; browser subnet mutations are never retried or rolled back
+automatically. The background routing check also reads fresh state before any
+retry, so a lost response does not blindly repeat a successful write.
+Factory reset continues to leave OS forwarding/firewall configuration unchanged.
 
 ## API
 
@@ -273,7 +346,10 @@ Tailscale reports a usable node key and `Running` state (`SIGNED_IN`); this does
 not claim that a previous key was rotated. The overview then refreshes.
 
 **KEY EXPIRY → Renew** opens the **KEY RENEW** dialog for a portal administrator to force reauthentication,
-including for an expired key or a device with expiry disabled. Open the portal
+including for an expired key. **Renew is disabled when node-key expiry is
+disabled**, including for already-prepared requests. The backend checks again
+before starting renewal. First-time sign-in remains available when the device
+has no node key. Open the portal
 over the LAN first: renewal can disconnect Tailscale. Confirm the warning to
 prepare a request, then choose **Sign in to Tailscale** to start reauthentication.
 Until Sign in is clicked, the top-right X button or Escape cancels the prepared
@@ -550,13 +626,13 @@ restrict access to that file and its backups and use trusted HTTPS for the WebUI
 
 A configuration PATCH may include `hostname`, `accept_dns`, `accept_routes`,
 `shields_up`, `exit_node`, `exit_node_allow_lan_access`, `advertise_routes`, and
-`advertise_exit_node`. Booleans can be explicitly set to `false`; an omitted field
-is preserved. Use `exit_node: ""` to stop using an exit node and
+`advertise_exit_node`. Omitted fields are preserved. To enforce the appliance's
+role, `advertise_exit_node: false`, a nonempty `exit_node`, and
+`exit_node_allow_lan_access: true` are rejected. Use `exit_node: ""` to stop using an exit node and
 `advertise_routes: []` to clear subnet advertisements. Routes must be canonical
 CIDRs such as `192.168.1.0/24`; use `advertise_exit_node` for default routes.
-`exit_node` accepts an IP or DNS name. When reading preferences, `exit_node_id`
-reports Tailscale's stable ID if the daemon has resolved the selection to an ID;
-match it against peer `id` values to obtain the address/name for a later PATCH.
+`exit_node_id` may report a legacy upstream selection until the automatic
+exit-node check clears it.
 
 Status counters are cumulative byte counts from Tailscale, **not 24-hour totals**.
 `portal_uptime_seconds` is the lifetime of the portal process, not device uptime.
@@ -576,6 +652,19 @@ The script installs frontend dependencies, builds the React WebUI, and embeds it
 in a static Linux/ARM64 binary at `./nanotail-portal`. Version metadata is filled
 automatically from Git and the build time. Go, Git, and Node/npm are required.
 There are no arguments or target overrides.
+
+Routing UI checks:
+
+```sh
+npm --prefix webui test
+npm --prefix webui run build
+npm --prefix webui run test:routing-browser
+```
+
+The browser check uses headless Chrome with a disposable profile and mocked API
+responses, covering desktop/mobile layout and the actual form workflow. Set
+`CHROME_BIN` if Chrome is not at its default Linux path. It does not start the
+portal backend or change Tailscale/OS settings.
 
 For standalone development checks:
 
