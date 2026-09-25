@@ -11,6 +11,48 @@ type ChangePassword struct {
 	Newpassword string `json:"newpassword"`
 }
 
+type DeviceIP struct {
+	// Static or DHCP.
+	Type string `json:"type"`
+	// IPv4 with CIDR prefix to set or empty for DHCP.
+	IP string `json:"ip"`
+	// Optional gateway IPv4 in the same subnet. Empty clears it; must be empty for DHCP.
+	Gateway string `json:"gateway"`
+	// Up to eight IPv4 DNS servers. Empty clears them; must be empty for DHCP.
+	DNS []string `json:"dns"`
+}
+
+type DeviceStatus struct {
+	// Hostname of the device
+	Hostname string `json:"hostname"`
+	// Active NetworkManager IPv4 profile method: static, DHCP, link-local, shared, disabled, or unknown.
+	LanIPType string `json:"lanIPType"`
+	// One eth0 IPv4 address with CIDR prefix; prefers non-link-local, then lexical order. Empty if absent.
+	LanIP string `json:"lanIP"`
+	// NetworkManager's active eth0 IPv4 gateway; empty if absent.
+	Gateway string `json:"gateway"`
+	// IPv4 and IPv6 DNS servers reported by NetworkManager for eth0, not the system resolver stub.
+	DNS []string `json:"dns"`
+	// Active NetworkManager IPv6 profile method; auto means SLAAC and/or DHCPv6, unknown if no active profile.
+	LanIPv6Type string `json:"lanIPv6Type"`
+	// One eth0 IPv6 address with CIDR prefix; prefers non-link-local, then lexical order. Empty if absent.
+	LanIPv6 string `json:"lanIPv6"`
+	// NetworkManager's active eth0 IPv6 gateway; empty if absent.
+	Gateway6 string `json:"gateway6"`
+	// MAC address of eth0.
+	EthAddr string `json:"ethAddr"`
+	// CPU utilization across all cores over 200 ms, rounded to 0–100 percent.
+	Cpuload int32 `json:"cpuload"`
+	// RAM usage based on MemTotal minus MemAvailable, rounded to 0–100 percent.
+	Memory int32 `json:"memory"`
+	// System boot time, not the portal process start time.
+	LastRestart time.Time `json:"lastRestart"`
+	// System uptime in whole seconds.
+	Uptime int `json:"uptime"`
+	// Currently always healthy; system-health checks are not implemented yet.
+	Health string `json:"health"`
+}
+
 type Mutation struct {
 }
 

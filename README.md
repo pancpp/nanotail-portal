@@ -77,7 +77,7 @@ Login and JWT middleware errors use `{"message":"..."}`; GraphQL responses use
 | --- | --- | --- |
 | GET | `/api/health` | Public portal liveness; does not indicate Tailscale health |
 | POST | `/api/login` | Public login with `username` and `password`; returns a JWT in `token` |
-| POST | `/api/v1/query` | Authenticated GraphQL for password changes, Tailscale status, and OAuth credentials |
+| POST | `/api/v1/query` | Authenticated GraphQL for password changes, device/Tailscale status, and OAuth credentials |
 | GET | `/api/system` | Hostname, OS, architecture, portal uptime and build metadata |
 | GET | `/api/tailscale/status` | State, self, peers, health messages and traffic counters |
 | GET | `/api/tailscale/peers` | Sorted peer array |
@@ -123,6 +123,113 @@ with HTTP 401. Subsequent logins must use the new password. Concurrent valid
 password changes are last-write-wins; the update matches the user ID only.
 Internal failures are logged on the server and exposed only as
 `Internal Server Error`; expected authentication and validation errors remain readable.
+
+### Device status
+
+The authenticated `deviceStatus` query reports Linux device metrics:
+
+```graphql
+query {
+  deviceStatus {
+    hostname
+    lanIPType
+    lanIP
+    gateway
+    dns
+    lanIPv6Type
+    lanIPv6
+    gateway6
+    ethAddr
+    cpuload
+    memory
+    lastRestart
+    uptime
+    health
+  }
+}
+```
+
+`lanIP` and `lanIPv6` report one address per family assigned to `eth0`, with
+CIDR prefixes (for example, `192.0.2.2/24` and `fd00::2/64`). Non-link-local
+unicast addresses are preferred, followed by lexical CIDR order; link-local
+addresses are a fallback. A missing address is an empty string. These are
+representative interface addresses, not a destination-specific source-address
+selection. `ethAddr` is the MAC address of `eth0`.
+
+The backend requires NetworkManager and `nmcli` in its PATH. Read-only queries
+of `eth0` supply `gateway`, `gateway6`, and `dns`; gateways have no prefix and
+are empty strings when absent. DNS is the deduplicated list of servers for
+this link, not `/etc/resolv.conf`'s local stub or Tailscale's resolver settings.
+IPv6 gateways may be link-local, with `eth0` as the implied interface.
+
+`lanIPType` and `lanIPv6Type` describe the active NetworkManager profile:
+`manual` maps to `static`, IPv4 `auto` maps to `DHCP`, and IPv6 `dhcp` maps to
+`DHCP`. IPv6 `auto` remains `auto` because it can use SLAAC and/or DHCPv6.
+Other modes (`disabled`, `ignore`, `link-local`, `shared`) remain explicit;
+an absent active profile or unrecognized method is `unknown`. See the
+[NetworkManager CLI reference](https://networkmanager.dev/docs/api/latest/nmcli.html).
+NetworkManager reads share a three-second timeout and respect request cancellation;
+failures produce a sanitized error rather than fabricated network settings.
+
+`cpuload` is CPU utilization across all cores sampled over 200 ms, rounded to
+an integer percentage. `memory` is `(MemTotal - MemAvailable) / MemTotal * 100`,
+also rounded. Boot time and uptime come from Linux `/proc` statistics;
+`lastRestart` is the system boot time in UTC and `uptime` is whole seconds,
+not the age of the portal process. See the [Linux proc documentation](https://docs.kernel.org/filesystems/proc.html).
+
+`health` currently returns the fixed placeholder `"healthy"`; it does not
+indicate that health checks have run. If `eth0`, NetworkManager, or required system metrics
+cannot be read, the query returns a sanitized GraphQL error instead of zeroed
+metrics. CPU sampling respects request cancellation. The WebUI's device panel
+displays these fields and refreshes every 30 seconds or via **Refresh status**.
+Restart time is displayed in the browser's local timezone. Device-query errors
+are shown separately from Tailscale errors, with a retry button; failed updates
+clear stale device measurements. The fixed health value is labeled as a placeholder.
+
+### LAN IPv4 configuration
+
+In **Settings → LAN IPv4 settings**, administrators can choose DHCP or a static
+IPv4 address with CIDR prefix, optional gateway, and up to eight IPv4 DNS servers.
+The form starts with current device values and keeps unsaved edits during status
+refreshes. IPv6 settings are not changed. Device-status reads remain read-only.
+
+The authenticated `setDeviceIP(deviceIP: DeviceIP)` mutation accepts, for example:
+
+```graphql
+mutation {
+  setDeviceIP(deviceIP: {
+    type: "static"
+    ip: "192.168.1.20/24"
+    gateway: "192.168.1.1"
+    dns: ["192.168.1.1", "1.1.1.1"]
+  })
+}
+```
+
+For DHCP, send `{type: "DHCP", ip: "", gateway: "", dns: []}`. Static addresses
+must use a /1–/32 prefix and cannot be subnet network/broadcast addresses (except
+/31 point-to-point networks). A gateway, if supplied, must be a different usable
+address in the same subnet. Empty gateway/DNS values clear those IPv4 settings.
+
+The portal process needs NetworkManager permission to modify and reapply the
+active `eth0` connection profile without an interactive authorization prompt.
+It persists the IPv4 properties with `nmcli connection modify uuid …`, then
+applies them with `nmcli device reapply eth0`; it does not bring the link down
+or alter IPv6 properties. Manual secondary IPv4 addresses are replaced by the
+single submitted address. Use this feature only on a device with an active,
+NetworkManager-managed `eth0` profile.
+
+The UI requires acknowledgment that changing networking can disconnect browser
+and SSH sessions. Use an unused address on the correct subnet and retain local
+access to recover from mistakes. The backend validates inputs, rejects concurrent
+changes, and attempts to restore the saved IPv4 properties if applying fails.
+Writes/recovery have bounded timeouts and continue if the browser disconnects.
+**A successful apply is not a connectivity test and has no automatic timed
+rollback.** Duplicate addresses and unreachable gateways are not detected.
+If the response is lost, check the device before retrying. For static addresses,
+the UI offers a link using the existing protocol/port; DHCP addresses can be
+found in the router's client list. A changed origin requires signing in again,
+and HTTPS needs a certificate valid for the new address.
 
 ### Tailscale credential setup
 

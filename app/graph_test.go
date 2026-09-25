@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
+	"github.com/pancpp/nanotail-portal/device"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -24,7 +25,8 @@ func TestGraphQLErrorPresenter(t *testing.T) {
 	if got := presentGraphQLError(ctx, nil); got != nil {
 		t.Fatalf("nil error became %v", got)
 	}
-	for _, expected := range []error{auth.ErrUnauthorized, graph.ErrInvalidPassword, graph.ErrInvalidCredential, graph.ErrTailscaleAdmin, graph.ErrTailscaleStatus} {
+	for _, expected := range []error{auth.ErrUnauthorized, graph.ErrInvalidPassword, graph.ErrInvalidCredential, graph.ErrTailscaleAdmin, graph.ErrTailscaleStatus, graph.ErrDeviceStatus,
+		graph.ErrDeviceAdmin, device.ErrInvalidIP, device.ErrConfigBusy, device.ErrConfigUnavailable, device.ErrConfigApply, device.ErrConfigRecovery} {
 		wrapped := &gqlerror.Error{Err: fmt.Errorf("resolver: %w", expected), Message: expected.Error()}
 		for _, err := range []error{expected, fmt.Errorf("resolver: %w", expected), wrapped, fmt.Errorf("execution: %w", wrapped)} {
 			got := presentGraphQLError(ctx, err)
@@ -79,6 +81,16 @@ func TestGraphQLErrorPresenter(t *testing.T) {
 	if internal.Message != "private database details" || internal.Err == nil ||
 		internal.Extensions["code"] != "DATABASE_ERROR" || internal.Extensions["debug"] != "private database details" {
 		t.Fatal("presenter mutated the original error")
+	}
+}
+
+func TestDeviceStatusRequiresAuthentication(t *testing.T) {
+	e := newTestApp(t)
+	for _, authorization := range []string{"", "Bearer invalid"} {
+		w := appRequest(e, http.MethodPost, "/api/v1/query", `{"query":"query { deviceStatus { hostname lanIPType lanIP gateway dns lanIPv6Type lanIPv6 gateway6 ethAddr cpuload memory lastRestart uptime health } }"}`, authorization)
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("unauthenticated device status returned %d: %s", w.Code, w.Body.String())
+		}
 	}
 }
 

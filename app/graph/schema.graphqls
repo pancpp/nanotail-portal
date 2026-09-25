@@ -108,10 +108,42 @@ type TailscaleClient {
   updateTime: Time!
 }
 
+type DeviceStatus {
+  "Hostname of the device"
+  hostname: String!
+  "Active NetworkManager IPv4 profile method: static, DHCP, link-local, shared, disabled, or unknown."
+  lanIPType: String!
+  "One eth0 IPv4 address with CIDR prefix; prefers non-link-local, then lexical order. Empty if absent."
+  lanIP: String!
+  "NetworkManager's active eth0 IPv4 gateway; empty if absent."
+  gateway: String!
+  "IPv4 and IPv6 DNS servers reported by NetworkManager for eth0, not the system resolver stub."
+  dns: [String!]!
+  "Active NetworkManager IPv6 profile method; auto means SLAAC and/or DHCPv6, unknown if no active profile."
+  lanIPv6Type: String!
+  "One eth0 IPv6 address with CIDR prefix; prefers non-link-local, then lexical order. Empty if absent."
+  lanIPv6: String!
+  "NetworkManager's active eth0 IPv6 gateway; empty if absent."
+  gateway6: String!
+  "MAC address of eth0."
+  ethAddr: String!
+  "CPU utilization across all cores over 200 ms, rounded to 0–100 percent."
+  cpuload: Int!
+  "RAM usage based on MemTotal minus MemAvailable, rounded to 0–100 percent."
+  memory: Int!
+  "System boot time, not the portal process start time."
+  lastRestart: Time!
+  "System uptime in whole seconds."
+  uptime: Int64!
+  "Currently always healthy; system-health checks are not implemented yet."
+  health: String!
+}
+
 type Query {
   user: User!
   tailscaleClient: TailscaleClient
   tailscaleStatus: TailscaleStatus!
+  deviceStatus: DeviceStatus!
 }
 
 input ChangePassword {
@@ -125,8 +157,21 @@ input TailscaleCredential {
   clientSecret: String
 }
 
+input DeviceIP {
+  "Static or DHCP."
+  type: String!
+  "IPv4 with CIDR prefix to set or empty for DHCP."
+  ip: String!
+  "Optional gateway IPv4 in the same subnet. Empty clears it; must be empty for DHCP."
+  gateway: String!
+  "Up to eight IPv4 DNS servers. Empty clears them; must be empty for DHCP."
+  dns: [String!]!
+}
+
 type Mutation {
   changePassword(passwords: ChangePassword!): Boolean!
   setTailscaleCredential(credential: TailscaleCredential!): Boolean!
   clearTailscaleCredential: Boolean!
+  "Admin only: persist and apply eth0 IPv4 settings through NetworkManager. IPv6 is unchanged; the connection may be interrupted."
+  setDeviceIP(deviceIP: DeviceIP): Boolean!
 }

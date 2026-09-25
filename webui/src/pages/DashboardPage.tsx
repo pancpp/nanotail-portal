@@ -16,6 +16,7 @@ import { useAuth } from '../auth'
 import Brand from '../components/Brand'
 import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
+import { useDevice } from '../device'
 import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 
 const navItems = [
@@ -28,7 +29,9 @@ const navItems = [
 
 export default function DashboardPage() {
   const { logout } = useAuth()
-  const { status, client, statusError, clientError, refreshing, refresh } = useTailscale()
+  const { status, client, statusError, clientError, refreshing: tailscaleRefreshing, refresh } = useTailscale()
+  const { status: deviceStatus, refreshing: deviceRefreshing, refresh: refreshDevice } = useDevice()
+  const refreshing = tailscaleRefreshing || deviceRefreshing
   const { pathname } = useLocation()
   const pageTitle = pathname === '/settings' ? 'Settings' : pathname === '/tailscale-setup' ? 'Setup guide' : 'Overview'
   const [menuOpen, setMenuOpen] = useState(false)
@@ -79,7 +82,7 @@ export default function DashboardPage() {
         <div className="device-chip">
           <span className="device-chip__icon"><Cpu size={18} /></span>
           <span>
-            <strong>nanotail</strong>
+            <strong title={deviceStatus?.hostname}>{deviceStatus?.hostname || 'nanotail'}</strong>
             <small className={connected ? '' : 'connection-muted'}><i /> {connectionLabel}</small>
           </span>
         </div>
@@ -143,8 +146,8 @@ export default function DashboardPage() {
               <button
                 className="secondary-button"
                 type="button"
-                aria-label="Refresh Tailscale status"
-                onClick={() => { void refresh() }}
+                aria-label="Refresh Tailscale and device status"
+                onClick={() => { void refresh(); void refreshDevice() }}
                 disabled={refreshing}
               >
                 <RefreshCw size={16} className={refreshing ? 'spin' : ''} />

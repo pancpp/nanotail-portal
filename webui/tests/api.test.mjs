@@ -13,7 +13,91 @@ import {
   shouldPromptForTailscale,
   isTailscaleConnected,
   tailscaleStatusLabel,
+  deviceStatusRequest,
+  formatDeviceUptime,
+  deviceIPTypeLabel,
+  validateDeviceIP,
+  setDeviceIPRequest,
+  deviceReconnectURL,
 } from '../src/api.ts'
+
+function staticDeviceIP(overrides = {}) {
+  return { type: 'static', ip: '192.0.2.20/24', gateway: '192.0.2.1', dns: ['1.1.1.1'], ...overrides }
+}
+
+test('LAN IPv4 validation normalizes static and DHCP configuration', () => {
+  assert.deepEqual(validateDeviceIP(staticDeviceIP({ type: ' STATIC ', ip: ' 192.0.2.20/24 ', gateway: ' 192.0.2.1 ', dns: [' 1.1.1.1 ', '1.1.1.1'] })), staticDeviceIP())
+  assert.deepEqual(validateDeviceIP({ type: ' dhcp ', ip: '', gateway: '', dns: [] }), { type: 'DHCP', ip: '', gateway: '', dns: [] })
+  for (const ip of ['192.0.2.20/24', '192.0.2.0/31', '192.0.2.20/32']) {
+    assert.deepEqual(validateDeviceIP(staticDeviceIP({ ip, gateway: '', dns: [] })), staticDeviceIP({ ip, gateway: '', dns: [] }))
+  }
+  assert.equal(validateDeviceIP(staticDeviceIP({ ip: '192.0.2.0/31' })).gateway, '192.0.2.1')
+})
+
+test('invalid LAN settings never reach the API', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch')
+  const invalid = [{ type: 'unknown' }, { type: 'DHCP' }]
+  for (const ip of ['', '192.0.2.20', '192.0.2.20/0', '192.0.2.20/33', '192.0.2.0/24', '192.0.2.255/24',
+    '127.0.0.1/8', '0.1.2.3/24', '224.0.0.1/24', '255.255.255.255/32', '::ffff:192.0.2.20/120', 'fd00::2/64',
+    '192.0.2.20/24;reboot', '192.000.2.20/24']) invalid.push({ ip })
+  for (const gateway of ['192.0.3.1', '192.0.2.20', '192.0.2.0', '192.0.2.255', '::1', '192.0.2.1/24', '192.0.2.1;reboot']) invalid.push({ gateway })
+  for (const dns of [[''], ['::1'], ['127.0.0.1'], ['224.0.0.1'], ['1.1.1.1;reboot'], Array(9).fill('1.1.1.1')]) invalid.push({ dns })
+  for (const overrides of invalid) await assert.rejects(setDeviceIPRequest(jwt(), staticDeviceIP(overrides)))
+  assert.equal(fetch.mock.callCount(), 0)
+})
+
+test('LAN mutation uses authenticated GraphQL variables and explicit success', async (t) => {
+  const token = jwt()
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { setDeviceIP: true } }))
+  await setDeviceIPRequest(token, staticDeviceIP())
+  const [url, options] = fetch.mock.calls[0].arguments
+  const body = JSON.parse(options.body)
+  assert.equal(url, '/api/v1/query')
+  assert.equal(options.method, 'POST')
+  assert.equal(options.headers.Authorization, `Bearer ${token}`)
+  assert.equal(body.operationName, 'SetDeviceIP')
+  assert.match(body.query, /\$deviceIP: DeviceIP!/)
+  assert.equal(body.query.includes('192.0.2.20'), false)
+  assert.deepEqual(body.variables, { deviceIP: staticDeviceIP() })
+  assert.ok(options.signal instanceof AbortSignal)
+  await setDeviceIPRequest(token, { type: 'DHCP', ip: '', gateway: '', dns: [] })
+  assert.deepEqual(JSON.parse(fetch.mock.calls[1].arguments[1].body).variables, { deviceIP: { type: 'DHCP', ip: '', gateway: '', dns: [] } })
+  for (const payload of [{ data: { setDeviceIP: false } }, { data: { setDeviceIP: 'true' } }, { data: {} }, { data: null }, null]) {
+    fetch.mock.mockImplementation(async () => Response.json(payload))
+    await assert.rejects(setDeviceIPRequest(token, staticDeviceIP()))
+  }
+  fetch.mock.mockImplementation(async () => Response.json({ data: { setDeviceIP: true }, errors: [{ message: 'Only portal administrators can change LAN settings' }] }))
+  await assert.rejects(setDeviceIPRequest(token, staticDeviceIP()), { name: 'ApiError', status: 200, isGraphQLError: true, message: 'Only portal administrators can change LAN settings' })
+  fetch.mock.mockImplementation(async () => new Response('{"data":', { status: 200 }))
+  await assert.rejects(setDeviceIPRequest(token, staticDeviceIP()), { name: 'ApiError', status: 200, isGraphQLError: false })
+  fetch.mock.mockImplementation(async () => new Response('Bad gateway', { status: 502 }))
+  await assert.rejects(setDeviceIPRequest(token, staticDeviceIP()), { name: 'ApiError', status: 502, isGraphQLError: false })
+  fetch.mock.mockImplementation(async () => Response.json({ message: 'invalid jwt' }, { status: 401 }))
+  await assert.rejects(setDeviceIPRequest(token, staticDeviceIP()), (error) => isSessionError(error))
+})
+
+test('LAN requests time out, clean up the timer, and do not retry on disconnection', async (t) => {
+  let timeout
+  const handle = {}
+  t.mock.method(globalThis, 'setTimeout', (callback, milliseconds) => { assert.equal(milliseconds, 60_000); timeout = callback; return handle })
+  const clear = t.mock.method(globalThis, 'clearTimeout', (timer) => assert.equal(timer, handle))
+  const fetch = t.mock.method(globalThis, 'fetch', async (_url, options) => { timeout(); options.signal.throwIfAborted() })
+  await assert.rejects(setDeviceIPRequest(jwt(), staticDeviceIP()), { name: 'AbortError' })
+  assert.equal(clear.mock.callCount(), 1)
+  fetch.mock.mockImplementation(async () => { throw new TypeError('Failed to fetch') })
+  await assert.rejects(setDeviceIPRequest(jwt(), staticDeviceIP()), /Failed to fetch/)
+  assert.equal(fetch.mock.callCount(), 2)
+  assert.equal(clear.mock.callCount(), 2)
+})
+
+test('reconnect link keeps protocol/port/path without carrying tokens or credentials', () => {
+  assert.equal(deviceReconnectURL('https://user:password@old.test:8443/portal/?token=secret#/settings', '192.0.2.20/24'), 'https://192.0.2.20:8443/portal/#/login')
+  assert.equal(deviceReconnectURL('http://[fd00::2]:8080/#/settings', '192.0.2.20/24'), 'http://192.0.2.20:8080/#/login')
+  for (const ip of ['192.0.2.20@evil.test', 'javascript:alert(1)', '::1', '127.0.0.1', '999.0.0.1']) {
+    assert.equal(deviceReconnectURL('https://portal.test', ip), null)
+  }
+  assert.equal(deviceReconnectURL('file:///tmp/portal.html', '192.0.2.20/24'), null)
+})
 
 function jwt(payload = {}) {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
@@ -33,6 +117,108 @@ function makePeer(overrides = {}) {
     tailscaleIPs: ['100.64.0.2', 'fd7a:115c:a1e0::2'], online: true, ...overrides,
   }
 }
+
+function makeDeviceStatus(overrides = {}) {
+  return {
+    hostname: 'nanotail', lanIPType: 'DHCP', lanIP: '192.0.2.2/24', gateway: '192.0.2.1',
+    dns: ['192.0.2.53', '2001:db8::53'], lanIPv6Type: 'auto', lanIPv6: 'fd00::2/64', gateway6: 'fe80::1',
+    ethAddr: '02:00:00:00:00:01', cpuload: 42, memory: 65,
+    lastRestart: '2026-09-23T10:20:30Z', uptime: 90061, health: 'healthy', ...overrides,
+  }
+}
+
+test('device status selects every field with bearer authentication and an abort signal', async (t) => {
+  const status = makeDeviceStatus()
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { deviceStatus: status } }))
+  const token = jwt()
+  const controller = new AbortController()
+  assert.deepEqual(await deviceStatusRequest(token, controller.signal), status)
+  const [url, options] = fetch.mock.calls[0].arguments
+  assert.equal(url, '/api/v1/query')
+  assert.equal(options.method, 'POST')
+  assert.equal(options.headers.Authorization, `Bearer ${token}`)
+  assert.equal(options.headers['Content-Type'], 'application/json')
+  assert.equal(options.signal, controller.signal)
+  const body = JSON.parse(options.body)
+  assert.equal(body.operationName, 'DeviceStatus')
+  assert.deepEqual(body.variables, {})
+  assert.equal(body.query.replace(/\s+/g, ' ').trim(),
+    'query DeviceStatus { deviceStatus { hostname lanIPType lanIP gateway dns lanIPv6Type lanIPv6 gateway6 ethAddr cpuload memory lastRestart uptime health } }')
+})
+
+test('device status accepts empty networks, zero usage, and 64-bit uptime', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch')
+  for (const overrides of [
+    { lanIP: '', gateway: '', lanIPv6: '', gateway6: '', dns: [], lanIPType: 'unknown', lanIPv6Type: 'disabled', cpuload: 0, memory: 100, uptime: 0 },
+    { cpuload: 100, memory: 0, uptime: 5_000_000_000 },
+  ]) {
+    const status = makeDeviceStatus(overrides)
+    fetch.mock.mockImplementation(async () => Response.json({ data: { deviceStatus: status } }))
+    assert.deepEqual(await deviceStatusRequest(jwt()), status)
+  }
+})
+
+test('device status rejects missing and malformed measurements', async (t) => {
+  const invalid = [null, [], {}, ...Object.keys(makeDeviceStatus()).map((field) => makeDeviceStatus({ [field]: undefined })),
+    ...['lanIPType', 'lanIP', 'gateway', 'lanIPv6Type', 'lanIPv6', 'gateway6'].flatMap((field) =>
+      [null, [], 42].map((value) => makeDeviceStatus({ [field]: value }))),
+    makeDeviceStatus({ dns: null }), makeDeviceStatus({ dns: [null] }), makeDeviceStatus({ dns: '192.0.2.53' }),
+    { lanIPs: ['192.0.2.2/24'], gatewayIP: ['192.0.2.1'] },
+    makeDeviceStatus({ hostname: {} }), makeDeviceStatus({ ethAddr: 42 }), makeDeviceStatus({ health: true }),
+    makeDeviceStatus({ lastRestart: 'not a date' }), makeDeviceStatus({ lastRestart: 123 }),
+    ...['cpuload', 'memory'].flatMap((field) => [-1, 101, 1.5, '42', null].map((value) => makeDeviceStatus({ [field]: value }))),
+    ...[-1, 1.5, '90061', Number.MAX_SAFE_INTEGER + 1].map((uptime) => makeDeviceStatus({ uptime })),
+  ]
+  const fetch = t.mock.method(globalThis, 'fetch')
+  for (const status of invalid) {
+    fetch.mock.mockImplementation(async () => Response.json({ data: { deviceStatus: status } }))
+    await assert.rejects(deviceStatusRequest(jwt()), /valid device status/)
+  }
+})
+
+test('device errors override data, preserve session errors, and use device-specific fallbacks', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({
+    data: { deviceStatus: makeDeviceStatus() }, errors: [{ message: 'Unable to read device status' }],
+  }))
+  await assert.rejects(deviceStatusRequest(jwt()), { name: 'ApiError', status: 200, message: 'Unable to read device status' })
+  fetch.mock.mockImplementation(async () => Response.json({ message: 'invalid jwt' }, { status: 401 }))
+  await assert.rejects(deviceStatusRequest(jwt()), (error) => isSessionError(error))
+  fetch.mock.mockImplementation(async () => new Response('Bad gateway', { status: 502 }))
+  await assert.rejects(deviceStatusRequest(jwt()), { name: 'ApiError', status: 502, message: 'Unable to complete the device request. Please retry.' })
+  for (const payload of [null, { data: null }, { data: {}, errors: {} }]) {
+    fetch.mock.mockImplementation(async () => Response.json(payload))
+    await assert.rejects(deviceStatusRequest(jwt()), /invalid device response/)
+  }
+  fetch.mock.mockImplementation(async () => { throw new TypeError('Failed to fetch') })
+  await assert.rejects(deviceStatusRequest(jwt()), /Failed to fetch/)
+  fetch.mock.mockImplementation(async (_url, options) => { options.signal.throwIfAborted() })
+  await assert.rejects(deviceStatusRequest(jwt(), AbortSignal.abort()), { name: 'AbortError' })
+})
+
+test('device uptime formatting handles seconds, minutes, days, and long-running systems', () => {
+  for (const [seconds, expected] of [[0, '0s'], [59, '59s'], [60, '1m'], [3599, '59m'],
+    [3600, '1h 0m'], [86399, '23h 59m'], [86400, '1d 0h 0m'], [90061, '1d 1h 1m'],
+    [5_000_000_000, '57870d 8h 53m']]) {
+    assert.equal(formatDeviceUptime(seconds), expected)
+  }
+  for (const seconds of [-1, NaN, Infinity, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(formatDeviceUptime(seconds), 'Unavailable')
+  }
+})
+
+test('device address modes distinguish static, DHCP, IPv6 autoconfiguration, and unknown', () => {
+  assert.equal(deviceIPTypeLabel('static'), 'Static')
+  assert.equal(deviceIPTypeLabel('DHCP'), 'DHCP')
+  assert.equal(deviceIPTypeLabel('DHCP', true), 'DHCPv6')
+  assert.equal(deviceIPTypeLabel('auto', true), 'Automatic (SLAAC / DHCPv6)')
+  assert.equal(deviceIPTypeLabel('unknown'), 'Unknown')
+  assert.equal(deviceIPTypeLabel(''), 'Unknown')
+  assert.equal(deviceIPTypeLabel('disabled', true), 'Disabled')
+  assert.equal(deviceIPTypeLabel('link-local', true), 'Link-local only')
+  assert.equal(deviceIPTypeLabel('ignore', true), 'Not managed')
+  assert.equal(deviceIPTypeLabel('shared'), 'Shared connection')
+  assert.equal(deviceIPTypeLabel('future'), 'future')
+})
 
 test('JWT expiry supports current tokens and rejects malformed, expired, or legacy sessions', () => {
   assert.equal(tokenExpiry(jwt({ exp: 100 }), 99_000), 100_000)

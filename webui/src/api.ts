@@ -10,11 +10,13 @@ export interface PasswordChange {
 
 export class ApiError extends Error {
   readonly status: number
+  readonly isGraphQLError: boolean
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, isGraphQLError = false) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.isGraphQLError = isGraphQLError
   }
 }
 
@@ -142,8 +144,89 @@ export interface TailscaleCredential {
   clientSecret?: string
 }
 
-async function tailscaleGraphQL(token: string, operationName: string, query: string,
-  variables: object = {}, signal?: AbortSignal) {
+export interface DeviceStatus {
+  hostname: string
+  lanIPType: string
+  lanIP: string
+  gateway: string
+  dns: string[]
+  lanIPv6Type: string
+  lanIPv6: string
+  gateway6: string
+  ethAddr: string
+  cpuload: number
+  memory: number
+  lastRestart: string
+  uptime: number
+  health: string
+}
+
+export interface DeviceIP {
+  type: 'static' | 'DHCP'
+  ip: string
+  gateway: string
+  dns: string[]
+}
+
+function ipv4Number(value: string): number | null {
+  const parts = value.split('.')
+  if (parts.length !== 4 || parts.some((part) => !/^(0|[1-9][0-9]{0,2})$/.test(part) || Number(part) > 255)) return null
+  const bytes = parts.map(Number)
+  if (bytes[0] === 0 || bytes[0] === 127 || bytes[0] >= 224) return null
+  return bytes.reduce((address, byte) => address * 256 + byte, 0)
+}
+
+export function validateDeviceIP(input: DeviceIP): DeviceIP {
+  const type = input.type.trim().toLowerCase()
+  const ip = input.ip.trim(), gateway = input.gateway.trim()
+  if (type === 'dhcp') {
+    if (ip || gateway || input.dns.length) throw new Error('DHCP requires empty address, gateway, and DNS fields.')
+    return { type: 'DHCP', ip: '', gateway: '', dns: [] }
+  }
+  if (type !== 'static') throw new Error('Select static or DHCP.')
+  const match = ip.match(/^([^/]+)\/([1-9]|[12][0-9]|3[0-2])$/)
+  const address = match ? ipv4Number(match[1]) : null
+  if (!match || address === null) throw new Error('Enter a unicast IPv4 address with a /1–/32 CIDR prefix, such as 192.168.1.20/24.')
+  const prefix = Number(match[2]), mask = (0xffffffff << (32 - prefix)) >>> 0
+  const network = (address & mask) >>> 0, broadcast = (network | ~mask) >>> 0
+  if (prefix < 31 && (address === network || address === broadcast)) throw new Error('The address cannot be the subnet’s network or broadcast address.')
+  if (gateway) {
+    const route = ipv4Number(gateway)
+    if (route === null || route === address || ((route & mask) >>> 0) !== network ||
+        (prefix < 31 && (route === network || route === broadcast))) {
+      throw new Error('The gateway must be a different usable IPv4 address in the same subnet.')
+    }
+  }
+  if (input.dns.length > 8 || input.dns.some((value) => ipv4Number(value.trim()) === null)) {
+    throw new Error('Enter at most eight unicast IPv4 DNS server addresses.')
+  }
+  return { type: 'static', ip, gateway, dns: [...new Set(input.dns.map((value) => value.trim()))] }
+}
+
+export async function setDeviceIPRequest(token: string, input: DeviceIP): Promise<void> {
+  const deviceIP = validateDeviceIP(input)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'SetDeviceIP', `mutation SetDeviceIP($deviceIP: DeviceIP!) {
+      setDeviceIP(deviceIP: $deviceIP)
+    }`, { deviceIP }, controller.signal, 'LAN configuration')
+    if (data.setDeviceIP !== true) throw new Error('The server did not confirm the LAN change. Check the device before retrying.')
+  } finally { clearTimeout(timer) }
+}
+
+export function deviceReconnectURL(currentURL: string, ip: string): string | null {
+  const address = ip.split('/')[0]
+  if (ipv4Number(address) === null) return null
+  const url = new URL(currentURL)
+  if (!['http:', 'https:'].includes(url.protocol)) return null
+  url.hostname = address
+  url.username = ''; url.password = ''; url.search = ''; url.hash = '/login'
+  return url.toString()
+}
+
+async function graphQLRequest(token: string, operationName: string, query: string,
+  variables: object = {}, signal?: AbortSignal, resource = 'Tailscale') {
   const response = await fetch('/api/v1/query', {
     method: 'POST', signal,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -156,10 +239,10 @@ async function tailscaleGraphQL(token: string, operationName: string, query: str
       typeof error.message === 'string' && error.message.trim() ? [error.message] : []) : []
     throw new ApiError(messages.join('\n') ||
       (typeof payload?.message === 'string' && payload.message) ||
-      'Unable to complete the Tailscale request. Please retry.', response.status)
+      `Unable to complete the ${resource} request. Please retry.`, response.status, messages.length > 0)
   }
   if (!payload?.data || (payload.errors !== undefined && !Array.isArray(payload.errors))) {
-    throw new ApiError('The server returned an invalid Tailscale response.', response.status)
+    throw new ApiError(`The server returned an invalid ${resource} response.`, response.status)
   }
   return payload.data
 }
@@ -185,8 +268,57 @@ function isTailscaleStatus(value: unknown): value is TailscaleStatus {
     Array.isArray(value.peers) && value.peers.every(isTailscalePeer)
 }
 
+function isPercentage(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 100
+}
+
+function isDeviceStatus(value: unknown): value is DeviceStatus {
+  return isRecord(value) && typeof value.hostname === 'string' &&
+    typeof value.lanIPType === 'string' && typeof value.lanIP === 'string' && typeof value.gateway === 'string' &&
+    isStringArray(value.dns) && typeof value.lanIPv6Type === 'string' && typeof value.lanIPv6 === 'string' &&
+    typeof value.gateway6 === 'string' && typeof value.ethAddr === 'string' &&
+    isPercentage(value.cpuload) && isPercentage(value.memory) &&
+    typeof value.lastRestart === 'string' && Number.isFinite(Date.parse(value.lastRestart)) &&
+    typeof value.uptime === 'number' && Number.isSafeInteger(value.uptime) && value.uptime >= 0 &&
+    typeof value.health === 'string'
+}
+
+export async function deviceStatusRequest(token: string, signal?: AbortSignal): Promise<DeviceStatus> {
+  const data = await graphQLRequest(token, 'DeviceStatus', `query DeviceStatus {
+    deviceStatus { hostname lanIPType lanIP gateway dns lanIPv6Type lanIPv6 gateway6 ethAddr cpuload memory lastRestart uptime health }
+  }`, {}, signal, 'device')
+  const status: unknown = data.deviceStatus
+  if (!isDeviceStatus(status)) throw new Error('The server did not return a valid device status.')
+  return status
+}
+
+export function formatDeviceUptime(seconds: number): string {
+  if (!Number.isSafeInteger(seconds) || seconds < 0) return 'Unavailable'
+  const days = Math.floor(seconds / 86_400)
+  const hours = Math.floor(seconds % 86_400 / 3_600)
+  const minutes = Math.floor(seconds % 3_600 / 60)
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  if (minutes > 0) return `${minutes}m`
+  return `${seconds}s`
+}
+
+export function deviceIPTypeLabel(method: string, ipv6 = false): string {
+  switch (method.toLowerCase()) {
+    case 'static': return 'Static'
+    case 'dhcp': return ipv6 ? 'DHCPv6' : 'DHCP'
+    case 'auto': return ipv6 ? 'Automatic (SLAAC / DHCPv6)' : 'Automatic'
+    case 'disabled': return 'Disabled'
+    case 'ignore': return 'Not managed'
+    case 'link-local': return 'Link-local only'
+    case 'shared': return 'Shared connection'
+    case 'unknown': case '': return 'Unknown'
+    default: return method
+  }
+}
+
 export async function tailscaleStatusRequest(token: string, signal?: AbortSignal): Promise<TailscaleStatus> {
-  const data = await tailscaleGraphQL(token, 'TailscaleStatus', `query TailscaleStatus {
+  const data = await graphQLRequest(token, 'TailscaleStatus', `query TailscaleStatus {
     tailscaleStatus {
       backendState
       tailscaleIPs
@@ -203,7 +335,7 @@ export async function tailscaleStatusRequest(token: string, signal?: AbortSignal
 }
 
 export async function tailscaleClientRequest(token: string, signal?: AbortSignal): Promise<TailscaleClient | null> {
-  const data = await tailscaleGraphQL(token, 'TailscaleClient', `query TailscaleClient {
+  const data = await graphQLRequest(token, 'TailscaleClient', `query TailscaleClient {
     tailscaleClient { clientId hasClientSecret updateTime }
   }`, {}, signal)
   const client = data.tailscaleClient
@@ -220,14 +352,14 @@ export async function setTailscaleCredentialRequest(token: string, credential: T
     /[\s\p{Cc}]/u.test(clientId + (clientSecret ?? ''))) {
     throw new Error('Enter a valid client ID and secret without spaces.')
   }
-  const data = await tailscaleGraphQL(token, 'SetTailscaleCredential', `mutation SetTailscaleCredential($credential: TailscaleCredential!) {
+  const data = await graphQLRequest(token, 'SetTailscaleCredential', `mutation SetTailscaleCredential($credential: TailscaleCredential!) {
     setTailscaleCredential(credential: $credential)
   }`, { credential: { clientId, clientSecret } })
   if (data.setTailscaleCredential !== true) throw new Error('The server did not confirm that credentials were saved.')
 }
 
 export async function clearTailscaleCredentialRequest(token: string): Promise<void> {
-  const data = await tailscaleGraphQL(token, 'ClearTailscaleCredential', `mutation ClearTailscaleCredential {
+  const data = await graphQLRequest(token, 'ClearTailscaleCredential', `mutation ClearTailscaleCredential {
     clearTailscaleCredential
   }`)
   if (data.clearTailscaleCredential !== true) throw new Error('The server did not confirm that credentials were removed.')

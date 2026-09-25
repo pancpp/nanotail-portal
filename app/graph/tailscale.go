@@ -22,6 +22,10 @@ var (
 )
 
 func requireTailscaleAdmin(ctx context.Context) error {
+	return requireAdmin(ctx, ErrTailscaleAdmin)
+}
+
+func requireAdmin(ctx context.Context, forbidden error) error {
 	value := queryContextValue(ctx)
 	if value == nil || value.UserPID <= 0 {
 		return auth.ErrUnauthorized
@@ -34,7 +38,7 @@ func requireTailscaleAdmin(ctx context.Context) error {
 		return err
 	}
 	if user.Role != "admin" {
-		return ErrTailscaleAdmin
+		return forbidden
 	}
 	return nil
 }

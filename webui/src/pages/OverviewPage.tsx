@@ -1,21 +1,18 @@
 import {
-  Activity,
   ArrowDownToLine,
   ArrowUpFromLine,
-  Check,
   ChevronRight,
-  Clock3,
   Cpu,
   KeyRound,
   Route,
   SlidersHorizontal,
   Users,
   Wifi,
-  Zap,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { isTailscaleConnected, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
+import DeviceStatusPanel from '../components/DeviceStatusPanel'
 
 export default function OverviewPage() {
   const { status, statusError } = useTailscale()
@@ -35,7 +32,7 @@ export default function OverviewPage() {
         </div>
         <div className="integration-note">
           <SlidersHorizontal size={16} />
-          Connection and peers are live · other panels are previews
+          Connection, peers, and device status are live · other panels are previews
         </div>
       </section>
 
@@ -146,22 +143,7 @@ export default function OverviewPage() {
         </article>
       </section>
 
-      <section className="device-panel" id="device">
-        <div className="device-panel__intro">
-          <span className="device-panel__icon"><Zap size={22} /></span>
-          <div>
-            <span className="panel__eyebrow">THIS DEVICE</span>
-            <h2>nanotail</h2>
-            <p>Edge gateway · nanotail portal</p>
-          </div>
-        </div>
-        <div className="device-metrics">
-          <span><Activity size={17} /><small>Uptime</small><strong>6d 14h</strong></span>
-          <span><Cpu size={17} /><small>CPU load</small><strong>18%</strong></span>
-          <span><Clock3 size={17} /><small>Last restart</small><strong>Sep 15</strong></span>
-          <span><Check size={17} /><small>Service</small><strong>Healthy</strong></span>
-        </div>
-      </section>
+      <DeviceStatusPanel />
     </>
   )
 }

@@ -38,13 +38,32 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	DeviceStatus struct {
+		Cpuload     func(childComplexity int) int
+		DNS         func(childComplexity int) int
+		EthAddr     func(childComplexity int) int
+		Gateway     func(childComplexity int) int
+		Gateway6    func(childComplexity int) int
+		Health      func(childComplexity int) int
+		Hostname    func(childComplexity int) int
+		LanIP       func(childComplexity int) int
+		LanIPType   func(childComplexity int) int
+		LanIPv6     func(childComplexity int) int
+		LanIPv6Type func(childComplexity int) int
+		LastRestart func(childComplexity int) int
+		Memory      func(childComplexity int) int
+		Uptime      func(childComplexity int) int
+	}
+
 	Mutation struct {
 		ChangePassword           func(childComplexity int, passwords model.ChangePassword) int
 		ClearTailscaleCredential func(childComplexity int) int
+		SetDeviceIP              func(childComplexity int, deviceIP *model.DeviceIP) int
 		SetTailscaleCredential   func(childComplexity int, credential model.TailscaleCredential) int
 	}
 
 	Query struct {
+		DeviceStatus    func(childComplexity int) int
 		TailscaleClient func(childComplexity int) int
 		TailscaleStatus func(childComplexity int) int
 		User            func(childComplexity int) int
@@ -155,11 +174,13 @@ type MutationResolver interface {
 	ChangePassword(ctx context.Context, passwords model.ChangePassword) (bool, error)
 	SetTailscaleCredential(ctx context.Context, credential model.TailscaleCredential) (bool, error)
 	ClearTailscaleCredential(ctx context.Context) (bool, error)
+	SetDeviceIP(ctx context.Context, deviceIP *model.DeviceIP) (bool, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context) (*model.User, error)
 	TailscaleClient(ctx context.Context) (*model.TailscaleClient, error)
 	TailscaleStatus(ctx context.Context) (*model.TailscaleStatus, error)
+	DeviceStatus(ctx context.Context) (*model.DeviceStatus, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -180,6 +201,91 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	_ = ec
 	switch typeName + "." + field {
 
+	case "DeviceStatus.cpuload":
+		if e.ComplexityRoot.DeviceStatus.Cpuload == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.Cpuload(childComplexity), true
+	case "DeviceStatus.dns":
+		if e.ComplexityRoot.DeviceStatus.DNS == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.DNS(childComplexity), true
+	case "DeviceStatus.ethAddr":
+		if e.ComplexityRoot.DeviceStatus.EthAddr == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.EthAddr(childComplexity), true
+	case "DeviceStatus.gateway":
+		if e.ComplexityRoot.DeviceStatus.Gateway == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.Gateway(childComplexity), true
+	case "DeviceStatus.gateway6":
+		if e.ComplexityRoot.DeviceStatus.Gateway6 == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.Gateway6(childComplexity), true
+	case "DeviceStatus.health":
+		if e.ComplexityRoot.DeviceStatus.Health == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.Health(childComplexity), true
+	case "DeviceStatus.hostname":
+		if e.ComplexityRoot.DeviceStatus.Hostname == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.Hostname(childComplexity), true
+	case "DeviceStatus.lanIP":
+		if e.ComplexityRoot.DeviceStatus.LanIP == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.LanIP(childComplexity), true
+	case "DeviceStatus.lanIPType":
+		if e.ComplexityRoot.DeviceStatus.LanIPType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.LanIPType(childComplexity), true
+	case "DeviceStatus.lanIPv6":
+		if e.ComplexityRoot.DeviceStatus.LanIPv6 == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.LanIPv6(childComplexity), true
+	case "DeviceStatus.lanIPv6Type":
+		if e.ComplexityRoot.DeviceStatus.LanIPv6Type == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.LanIPv6Type(childComplexity), true
+	case "DeviceStatus.lastRestart":
+		if e.ComplexityRoot.DeviceStatus.LastRestart == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.LastRestart(childComplexity), true
+	case "DeviceStatus.memory":
+		if e.ComplexityRoot.DeviceStatus.Memory == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.Memory(childComplexity), true
+	case "DeviceStatus.uptime":
+		if e.ComplexityRoot.DeviceStatus.Uptime == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeviceStatus.Uptime(childComplexity), true
+
 	case "Mutation.changePassword":
 		if e.ComplexityRoot.Mutation.ChangePassword == nil {
 			break
@@ -197,6 +303,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ClearTailscaleCredential(childComplexity), true
+	case "Mutation.setDeviceIP":
+		if e.ComplexityRoot.Mutation.SetDeviceIP == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setDeviceIP_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetDeviceIP(childComplexity, args["deviceIP"].(*model.DeviceIP)), true
 	case "Mutation.setTailscaleCredential":
 		if e.ComplexityRoot.Mutation.SetTailscaleCredential == nil {
 			break
@@ -208,6 +325,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.SetTailscaleCredential(childComplexity, args["credential"].(model.TailscaleCredential)), true
+
+	case "Query.deviceStatus":
+		if e.ComplexityRoot.Query.DeviceStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.DeviceStatus(childComplexity), true
 
 	case "Query.tailscaleClient":
 		if e.ComplexityRoot.Query.TailscaleClient == nil {
@@ -677,6 +801,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputChangePassword,
+		ec.unmarshalInputDeviceIP,
 		ec.unmarshalInputTailscaleCredential,
 	)
 	first := true
@@ -771,6 +896,40 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // childFields_* functions provide shared child field context lookups.
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
+
+func (ec *executionContext) childFields_DeviceStatus(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "hostname":
+		return ec.fieldContext_DeviceStatus_hostname(ctx, field)
+	case "lanIPType":
+		return ec.fieldContext_DeviceStatus_lanIPType(ctx, field)
+	case "lanIP":
+		return ec.fieldContext_DeviceStatus_lanIP(ctx, field)
+	case "gateway":
+		return ec.fieldContext_DeviceStatus_gateway(ctx, field)
+	case "dns":
+		return ec.fieldContext_DeviceStatus_dns(ctx, field)
+	case "lanIPv6Type":
+		return ec.fieldContext_DeviceStatus_lanIPv6Type(ctx, field)
+	case "lanIPv6":
+		return ec.fieldContext_DeviceStatus_lanIPv6(ctx, field)
+	case "gateway6":
+		return ec.fieldContext_DeviceStatus_gateway6(ctx, field)
+	case "ethAddr":
+		return ec.fieldContext_DeviceStatus_ethAddr(ctx, field)
+	case "cpuload":
+		return ec.fieldContext_DeviceStatus_cpuload(ctx, field)
+	case "memory":
+		return ec.fieldContext_DeviceStatus_memory(ctx, field)
+	case "lastRestart":
+		return ec.fieldContext_DeviceStatus_lastRestart(ctx, field)
+	case "uptime":
+		return ec.fieldContext_DeviceStatus_uptime(ctx, field)
+	case "health":
+		return ec.fieldContext_DeviceStatus_health(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DeviceStatus", field.Name)
+}
 
 func (ec *executionContext) childFields_Tailnet(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
@@ -1080,6 +1239,20 @@ func (ec *executionContext) field_Mutation_changePassword_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_setDeviceIP_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "deviceIP",
+		func(ctx context.Context, v any) (*model.DeviceIP, error) {
+			return ec.unmarshalODeviceIP2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐDeviceIP(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["deviceIP"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_setTailscaleCredential_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1167,6 +1340,328 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _DeviceStatus_hostname(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_hostname(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Hostname, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_hostname(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_lanIPType(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_lanIPType(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LanIPType, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_lanIPType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_lanIP(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_lanIP(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LanIP, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_lanIP(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_gateway(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_gateway(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Gateway, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_gateway(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_dns(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_dns(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DNS, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_dns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_lanIPv6Type(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_lanIPv6Type(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LanIPv6Type, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_lanIPv6Type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_lanIPv6(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_lanIPv6(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LanIPv6, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_lanIPv6(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_gateway6(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_gateway6(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Gateway6, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_gateway6(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_ethAddr(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_ethAddr(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.EthAddr, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_ethAddr(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_cpuload(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_cpuload(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Cpuload, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int32) graphql.Marshaler {
+			return ec.marshalNInt2int32(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_cpuload(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_memory(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_memory(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Memory, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int32) graphql.Marshaler {
+			return ec.marshalNInt2int32(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_memory(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_lastRestart(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_lastRestart(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastRestart, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_lastRestart(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_uptime(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_uptime(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Uptime, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt642int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_uptime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _DeviceStatus_health(ctx context.Context, field graphql.CollectedField, obj *model.DeviceStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DeviceStatus_health(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Health, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DeviceStatus_health(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
 
 func (ec *executionContext) _Mutation_changePassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -1279,6 +1774,50 @@ func (ec *executionContext) fieldContext_Mutation_clearTailscaleCredential(_ con
 	return graphql.NewScalarFieldContext("Mutation", field, true, true, errors.New("field of type Boolean does not have child fields"))
 }
 
+func (ec *executionContext) _Mutation_setDeviceIP(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setDeviceIP(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetDeviceIP(ctx, fc.Args["deviceIP"].(*model.DeviceIP))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setDeviceIP(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setDeviceIP_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1370,6 +1909,38 @@ func (ec *executionContext) fieldContext_Query_tailscaleStatus(_ context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_TailscaleStatus(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_deviceStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_deviceStatus(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().DeviceStatus(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.DeviceStatus) graphql.Marshaler {
+			return ec.marshalNDeviceStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐDeviceStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_deviceStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_DeviceStatus(ctx, field)
 		},
 	}
 	return fc, nil
@@ -4248,6 +4819,57 @@ func (ec *executionContext) unmarshalInputChangePassword(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeviceIP(ctx context.Context, obj any) (model.DeviceIP, error) {
+	var it model.DeviceIP
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"type", "ip", "gateway", "dns"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "ip":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ip"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IP = data
+		case "gateway":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gateway"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Gateway = data
+		case "dns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dns"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DNS = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTailscaleCredential(ctx context.Context, obj any) (model.TailscaleCredential, error) {
 	var it model.TailscaleCredential
 	if obj == nil {
@@ -4293,6 +4915,109 @@ func (ec *executionContext) unmarshalInputTailscaleCredential(ctx context.Contex
 
 // region    **************************** object.gotpl ****************************
 
+var deviceStatusImplementors = []string{"DeviceStatus"}
+
+func (ec *executionContext) _DeviceStatus(ctx context.Context, sel ast.SelectionSet, obj *model.DeviceStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deviceStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeviceStatus")
+		case "hostname":
+			out.Values[i] = ec._DeviceStatus_hostname(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lanIPType":
+			out.Values[i] = ec._DeviceStatus_lanIPType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lanIP":
+			out.Values[i] = ec._DeviceStatus_lanIP(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "gateway":
+			out.Values[i] = ec._DeviceStatus_gateway(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "dns":
+			out.Values[i] = ec._DeviceStatus_dns(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lanIPv6Type":
+			out.Values[i] = ec._DeviceStatus_lanIPv6Type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lanIPv6":
+			out.Values[i] = ec._DeviceStatus_lanIPv6(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "gateway6":
+			out.Values[i] = ec._DeviceStatus_gateway6(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ethAddr":
+			out.Values[i] = ec._DeviceStatus_ethAddr(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cpuload":
+			out.Values[i] = ec._DeviceStatus_cpuload(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "memory":
+			out.Values[i] = ec._DeviceStatus_memory(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastRestart":
+			out.Values[i] = ec._DeviceStatus_lastRestart(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uptime":
+			out.Values[i] = ec._DeviceStatus_uptime(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "health":
+			out.Values[i] = ec._DeviceStatus_health(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -4330,6 +5055,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "clearTailscaleCredential":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_clearTailscaleCredential(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setDeviceIP":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setDeviceIP(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -4429,6 +5161,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_tailscaleStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "deviceStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_deviceStatus(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -5513,6 +6267,16 @@ func (ec *executionContext) unmarshalNChangePassword2githubᚗcomᚋpancppᚋnan
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNDeviceStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐDeviceStatus(ctx context.Context, sel ast.SelectionSet, v *model.DeviceStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeviceStatus(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v any) (int32, error) {
 	res, err := graphql.UnmarshalInt32(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5835,6 +6599,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalODeviceIP2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐDeviceIP(ctx context.Context, v any) (*model.DeviceIP, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDeviceIP(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {

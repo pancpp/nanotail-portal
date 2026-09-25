@@ -26,6 +26,11 @@ func (r *mutationResolver) ClearTailscaleCredential(ctx context.Context) (bool, 
 	return r.clearTailscaleCredential(ctx)
 }
 
+// SetDeviceIP is the resolver for the setDeviceIP field.
+func (r *mutationResolver) SetDeviceIP(ctx context.Context, deviceIP *model.DeviceIP) (bool, error) {
+	return r.setDeviceIP(ctx, deviceIP)
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 	return r.user(ctx)
@@ -39,6 +44,11 @@ func (r *queryResolver) TailscaleClient(ctx context.Context) (*model.TailscaleCl
 // TailscaleStatus is the resolver for the tailscaleStatus field.
 func (r *queryResolver) TailscaleStatus(ctx context.Context) (*model.TailscaleStatus, error) {
 	return r.tailscaleStatus(ctx)
+}
+
+// DeviceStatus is the resolver for the deviceStatus field.
+func (r *queryResolver) DeviceStatus(ctx context.Context) (*model.DeviceStatus, error) {
+	return r.deviceStatus(ctx)
 }
 
 // Mutation returns MutationResolver implementation.

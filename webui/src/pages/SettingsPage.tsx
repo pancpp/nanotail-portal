@@ -1,5 +1,6 @@
 import ChangePasswordForm from '../components/ChangePasswordForm'
 import TailscaleCredentialForm from '../components/TailscaleCredentialForm'
+import LANSettingsForm from '../components/LANSettingsForm'
 import { useTailscale } from '../tailscale'
 
 export default function SettingsPage() {
@@ -9,9 +10,10 @@ export default function SettingsPage() {
       <section className="page-heading">
         <div>
           <h1>Settings</h1>
-          <p>Manage your Tailscale credentials and portal account.</p>
+          <p>Manage LAN settings, Tailscale credentials, and your portal account.</p>
         </div>
       </section>
+      <LANSettingsForm />
       <section className="panel credential-settings" aria-labelledby="credential-heading">
         <div className="panel__header"><div><span className="panel__eyebrow">TAILSCALE</span><h2 id="credential-heading">OAuth client credentials</h2></div>
           <span className="credential-state">{clientError ? 'Unavailable' : client === undefined ? 'Loading…' : client?.hasClientSecret ? 'Secret saved' : 'Not configured'}</span></div>
