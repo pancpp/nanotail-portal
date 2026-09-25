@@ -24,6 +24,8 @@ interface AuthContextValue {
   login: (credentials: LoginCredentials) => Promise<void>
   changePassword: (passwords: PasswordChange) => Promise<void>
   logout: () => void
+  factoryResetResult: 'accepted' | 'unknown' | null
+  logoutAfterFactoryReset: (result: 'accepted' | 'unknown') => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -39,6 +41,7 @@ function readStoredToken(): string | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(readStoredToken)
+  const [factoryResetResult, setFactoryResetResult] = useState<'accepted' | 'unknown' | null>(null)
 
   const logout = useCallback(() => {
     try {
@@ -48,6 +51,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setAccessToken(null)
   }, [])
+
+  // Keep the reset outcome above the protected route: its sign-out redirect
+  // can replace router state while the reset dialog is being unmounted.
+  const logoutAfterFactoryReset = useCallback((result: 'accepted' | 'unknown') => {
+    setFactoryResetResult(result)
+    logout()
+  }, [logout])
 
   useEffect(() => {
     if (!accessToken) {
@@ -91,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Keep this tab signed in even if persistent storage is disabled.
     }
     setAccessToken(token)
+    setFactoryResetResult(null)
   }, [])
 
   const changePassword = useCallback(async (passwords: PasswordChange) => {
@@ -107,8 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken, logout])
 
   const value = useMemo(
-    () => ({ accessToken, isAuthenticated: Boolean(accessToken), login, changePassword, logout }),
-    [accessToken, login, changePassword, logout],
+    () => ({ accessToken, isAuthenticated: Boolean(accessToken), login, changePassword, logout, factoryResetResult, logoutAfterFactoryReset }),
+    [accessToken, login, changePassword, logout, factoryResetResult, logoutAfterFactoryReset],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

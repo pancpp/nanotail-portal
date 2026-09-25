@@ -10,6 +10,8 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+var fileWriter *lumberjack.Logger
+
 func Init() error {
 	logDir := conf.GetString("log_dir")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
@@ -24,6 +26,7 @@ func Init() error {
 		LocalTime:  true,
 		Compress:   true,
 	}
+	fileWriter = fileLogWriter
 	if conf.GetBool("enable_console_log") {
 		log.SetOutput(io.MultiWriter(fileLogWriter, os.Stderr))
 	} else {
@@ -31,5 +34,14 @@ func Init() error {
 	}
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	return nil
+}
+
+// Close redirects subsequent diagnostics to stderr before reset removes logs.
+func Close() error {
+	log.SetOutput(os.Stderr)
+	if fileWriter != nil {
+		return fileWriter.Close()
+	}
 	return nil
 }

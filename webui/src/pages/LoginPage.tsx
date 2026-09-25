@@ -14,7 +14,7 @@ import { useAuth } from '../auth'
 import Brand from '../components/Brand'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, factoryResetResult: resetResult } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [username, setUsername] = useState('')
@@ -106,6 +106,11 @@ export default function LoginPage() {
             <p>Sign in to manage your nanotail gateway.</p>
           </div>
 
+          {resetResult && <div className="form-error reset-result" role="status">
+            <p>{resetResult === 'accepted' ? 'Factory reset was accepted. You have been signed out while the device attempts to reset and restart.' : 'The reset outcome is unknown because the connection ended. You have been signed out; the reset may still be running.'}</p>
+            <p>When the portal returns, reopen your usual portal address over a connection that does not depend on Tailscale and verify the result before trying again. After a successful reset, use admin / admin and change the password.</p>
+            <p>If Tailscale logout failed, no files were cleared and your existing password still applies. Check the device’s local service logs if it does not return.</p>
+          </div>}
           <form onSubmit={handleSubmit} className="login-form">
             <label htmlFor="username">Username</label>
             <input

@@ -19,6 +19,12 @@ import (
 
 func newTestApp(t *testing.T) *echo.Echo {
 	t.Helper()
+	// Never create a real signing key in the source tree. Database fixtures
+	// already use an independent, open connection and are unaffected by chdir.
+	t.Chdir(t.TempDir())
+	if err := auth.Init(); err != nil {
+		t.Fatal(err)
+	}
 	// Exercise the same routing setup as Init without starting its background server.
 	e := echo.New()
 	if err := webui.Init(e); err != nil {

@@ -9,3 +9,7 @@ nanotail-portal
 nanotail-portal.arm64
 nanotail.yml
 nanotail.sqlite3
+nanotail.key
+.nanotail-key-*
+.nanotail-portal.lock
+.nanotail-reset-pending

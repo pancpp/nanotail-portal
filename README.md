@@ -23,9 +23,50 @@ the cause is fixed. Existing accounts, credentials, and traffic history are
 preserved. Concurrent migration attempts are rejected; the process lock is
 released automatically on exit. The old `db` subcommands are no longer supported.
 
-Configuration is read from `nanotail-portal.yml` in the process working directory.
-Create this file before starting; an empty file uses the built-in defaults.
-The default database is `nanotail-portal.sqlite3`. When upgrading an existing
+### Factory reset
+
+**Settings → Factory reset** is restricted to portal administrators. First
+acknowledge the data-loss warning and access without Tailscale, then type `RESET` and enter
+the current portal password to confirm. Closing either confirmation makes no
+changes. The authenticated `POST /api/v1/factory-reset` endpoint requires both
+confirmation fields and verifies the administrator's password on the server.
+
+A reset clears `nanotail.yml`, `nanotail.sqlite3` (including SQLite journal/WAL
+sidecars), and all contents of `logs`; deletes `nanotail.key`; runs `tailscale logout`; clears the
+initiating browser's saved JWT; and restarts the portal. The reset deliberately
+supports only these default paths in the working directory. Custom storage paths,
+symlinked targets, and hard-linked files are refused instead of risking unrelated
+data. No automatic backup is made.
+
+The portal acknowledges acceptance before disconnecting, drains active HTTP
+requests, stops traffic recording, and verifies Tailscale logout **before**
+clearing any files. If logout fails, local data is preserved and the portal
+resumes with its existing settings. On success it closes SQLite and logging,
+records reset intent, and replaces its own process (also works without systemd).
+The new process clears the files before initialization. An interrupted cleanup
+is resumed at the next startup; a cleanup error prevents serving partial state.
+Only one portal process may run in a working directory.
+
+The WebUI signs out on acceptance or an uncertain/disconnected response and
+never automatically retries this destructive operation. Acceptance does not
+guarantee completion: reopen your usual portal address over a connection that
+does not depend on Tailscale and verify the outcome before retrying.
+If the portal does not return, inspect its local service/journal output.
+
+After reset, startup recreates the database and the `admin / admin` account.
+Change that password immediately. Users continue to access the WebUI through
+nginx at their usual portal address; factory reset does not change nginx
+configuration. The portal is temporarily unavailable during restart, and
+Tailscale access is lost, so have a connection that does not depend on Tailscale.
+
+OS/LAN configuration, remote OAuth clients and authorizations, backups, and
+Tailscale routing preferences are not additionally reset or revoked. Deleting
+`nanotail.key` causes startup to generate a new signing key, so all pre-reset
+JWTs—including tokens saved in other browsers—are rejected after restart.
+
+Configuration is read from `nanotail.yml` in the process working directory.
+It is created if missing; an empty file uses the built-in defaults.
+The default database is `nanotail.sqlite3`. When upgrading an existing
 installation, stop the portal and copy your existing configuration and database
 to these names, or set `database` in the new configuration to your existing
 database path. The rename does not move existing runtime files automatically.
@@ -35,7 +76,7 @@ Paths are relative to the process working directory. Logs are written to
 Use `go run . --version` to print build metadata without starting services.
 
 For frontend development, start the backend and run `npm run dev` in `webui/`.
-Vite forwards `/api` to `127.0.0.1:8080`. Alternatively, build the frontend once:
+Vite forwards `/api` to `127.0.0.1:7080`. Alternatively, build the frontend once:
 
 ```sh
 npm --prefix webui ci
@@ -74,7 +115,8 @@ The WebUI shows live connection, peer, node-key, device, routing, and VPN traffi
 data through GraphQL. It also manages OAuth credentials, LAN IPv4 settings, and
 the exit node used by this device. **Network** contains LAN IPv4 settings and
 the tailnet connection control; **Access control** contains exit-node
-configuration and OAuth credentials. **Settings** contains portal account settings.
+configuration and OAuth credentials. **Settings** contains Change password and
+the administrator-only, double-confirmed Factory reset.
 
 ### Tailnet connection
 
@@ -158,6 +200,20 @@ Login and JWT middleware errors use `{"message":"..."}`; GraphQL responses use
 Login returns `{"token":"<JWT>"}`. JWTs expire after seven days. The current
 stateless JWT implementation does not revoke existing tokens after a password
 change; they remain valid until expiry.
+
+The JWT signing key is stored in `nanotail.key` in the process working directory.
+Startup reads an existing nonempty key (ignoring surrounding whitespace).
+If the file is missing, empty, or whitespace-only, it generates a cryptographically
+random 256-bit key, stores its hexadecimal representation atomically with
+owner-only permissions (`0600`), and uses that key for signing and verification.
+Read/write errors, unsafe file types, and files larger than 4096 bytes stop startup;
+there is no built-in fallback key. The key is never returned by the API or logged,
+and key files are ignored by Git. Protect this file and any copies of it.
+
+Normal restarts retain the same key and existing sessions. Factory reset deletes
+the key before initialization so the new key invalidates every previous JWT.
+The first upgrade from the old built-in signing key also requires signing in
+again; account passwords are unchanged.
 
 ```sh
 curl -X POST http://localhost:8080/api/login \

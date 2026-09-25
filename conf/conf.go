@@ -87,6 +87,10 @@ func UseEmbeddedWebUI() bool {
 	return gUseEmbeddedWebUI == "true"
 }
 
+func ConfigFile() string {
+	return gViper.ConfigFileUsed()
+}
+
 func GetString(key string) string {
 	return gViper.GetString(key)
 }

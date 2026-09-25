@@ -46,8 +46,12 @@ func Init(ctx context.Context) error {
 }
 
 func Close() error {
-	gDB.Close()
-	gCancel()
+	if gCancel != nil {
+		gCancel()
+	}
+	if gDB != nil {
+		return gDB.Close()
+	}
 	return nil
 }
 

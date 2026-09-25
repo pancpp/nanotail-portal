@@ -32,7 +32,10 @@ The initial account is `admin` / `admin`. The returned `token` is stored in
 browser local storage. Its JWT expiry is checked when restoring a session and
 while the page is open. This client-side check only controls navigation; the
 backend verifies the signature on protected requests. JWTs currently last seven
-days. There is no `/me` or `/logout` API, so sign-out only clears the local token.
+days. There is no `/me` or `/logout` API, so ordinary sign-out only clears the local token.
+The backend loads its signing key from `nanotail.key`, generating a new random
+key if missing or empty. Normal restarts preserve sessions; factory reset
+deletes this key so all old JWTs are rejected after restart.
 
 The browser storage key is `nanotail_access_token`. After upgrading from the old
 project name, sign in again; existing account passwords are unchanged.
@@ -47,6 +50,30 @@ Only `data.changePassword: true` without GraphQL errors confirms success.
 GraphQL errors are displayed even on HTTP 200. An incorrect current password
 does not sign the user out; an HTTP 401 from JWT middleware does.
 Successful changes keep the current session because existing JWTs are not revoked.
+
+### Factory reset
+
+**Settings → Factory reset** shows two confirmations: acknowledge irreversible
+data loss and access without Tailscale, then type `RESET` and enter the current administrator
+password. Closing either step sends no reset request. The final action posts
+`{ confirmed: true, confirmation: "RESET", password }` with bearer authentication
+to `/api/v1/factory-reset`. Only HTTP 202 with `accepted: true` means accepted,
+not completed. Duplicate clicks are blocked and requests are never retried.
+
+Acceptance or an uncertain response removes `nanotail_access_token` and redirects
+to login with recovery guidance. A definite rejection leaves the session usable
+and clears the password/confirmation fields. The outcome message lives in the
+authentication provider so the sign-out redirect does not erase it.
+
+The backend logs out of Tailscale, clears the default `nanotail.yml`,
+`nanotail.sqlite3` and `logs` targets, deletes `nanotail.key`, and restarts itself. If logout fails, it
+preserves local data. Custom paths and unsafe filesystem targets are refused.
+After a successful reset the account is `admin / admin`. Reopen the usual
+nginx-served portal address and change the default password. The dialog warns
+about temporary downtime and requires access that does not depend on Tailscale;
+it does not direct users to the internal backend listener.
+The new signing key revokes all existing JWTs, including those in other browsers.
+LAN configuration reset and remote OAuth revocation are not part of this operation.
 
 ## Tailscale sign-in and credentials
 
@@ -129,7 +156,7 @@ guide when another device needs to be configured/approved first.
 
 **Overview → Tailscale status → Configure** opens **Network**, which also
 contains LAN IPv4 settings. OAuth credentials are in **Access control**, below
-exit-node configuration. **Settings** retains Change password. All sidebar tabs
+exit-node configuration. **Settings** contains Change password and Factory reset. All sidebar tabs
 support direct links and active navigation states.
 
 **Network → Tailnet connection** reads `tailscaleConnection` on entry and with

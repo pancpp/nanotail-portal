@@ -17,25 +17,16 @@ const (
 	JWT_EXP_LEN              = 7 * 24 * time.Hour
 )
 
-var (
-	gJwtSigningKey []byte = []byte("Rfz23tefYuhpB2iuTVhw")
-)
-
 type Claims struct {
 	UserPID int64 `json:"pid"`
 	jwt.RegisteredClaims
 }
 
-func Init(sign_key string) {
-	gJwtSigningKey = []byte(sign_key)
-}
-
-func GetJwtSignKey() []byte {
-	return gJwtSigningKey
-}
-
 // Create JWT token
 func CreateJwtToken(userPID int64) (string, error) {
+	if len(gJwtSigningKey) == 0 {
+		return "", errors.New("JWT signing key is not initialized")
+	}
 	now := time.Now()
 	claims := &Claims{
 		UserPID: userPID,

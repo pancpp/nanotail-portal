@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -16,51 +17,103 @@ import (
 	"github.com/pancpp/nanotail-portal/conf"
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/pancpp/nanotail-portal/device"
+	"github.com/pancpp/nanotail-portal/factoryreset"
 	"github.com/pancpp/nanotail-portal/traffic"
 	"github.com/pancpp/nanotail-portal/webui"
 )
 
-func Init(ctx context.Context) error {
+type Runtime struct {
+	server        *http.Server
+	stopCollector context.CancelFunc
+	collectorDone chan struct{}
+	serverErrors  chan error
+}
+
+func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error) {
+	if len(auth.GetJwtSignKey()) == 0 {
+		return nil, fmt.Errorf("JWT signing key must be initialized before starting HTTP services")
+	}
 	e := echo.New()
 	if e == nil {
-		return fmt.Errorf("error to create echo context")
+		return nil, fmt.Errorf("error to create echo context")
 	}
 
 	if err := webui.Init(e); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := initAPIs(e); err != nil {
-		return err
+		return nil, err
+	}
+	initFactoryResetAPI(e, reset)
+	// Stop admitting new work before shutdown drains already-running handlers.
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			if reset != nil && reset.Pending() {
+				c.Response().Header().Set("Retry-After", "5")
+				return echo.NewHTTPError(http.StatusServiceUnavailable, "Factory reset is in progress")
+			}
+			return next(c)
+		}
+	})
+
+	listener, err := net.Listen("tcp", conf.GetString("http_listen_addr"))
+	if err != nil {
+		return nil, err
+	}
+	collectorCtx, stopCollector := context.WithCancel(ctx)
+	runtime := &Runtime{
+		server:        &http.Server{Handler: e, ReadHeaderTimeout: 10 * time.Second},
+		stopCollector: stopCollector,
+		collectorDone: make(chan struct{}),
+		serverErrors:  make(chan error, 1),
 	}
 
 	// One collector per portal process, independent of logged-in browsers.
-	go traffic.NewRecorder(device.NewTrafficReader(), traffic.NewStore(database.DB())).Run(ctx)
+	go func() {
+		defer close(runtime.collectorDone)
+		traffic.NewRecorder(device.NewTrafficReader(), traffic.NewStore(database.DB())).Run(collectorCtx)
+	}()
 
 	// Start echo server
 	go func() {
-		sc := echo.StartConfig{
-			Address:         conf.GetString("http_listen_addr"),
-			GracefulTimeout: 2 * time.Second,
-		}
-		if err := sc.Start(ctx, e); err != nil &&
-			!errors.Is(err, context.Canceled) {
+		err := runtime.server.Serve(listener)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("HTTP server stopped: %v", err)
+			runtime.serverErrors <- err
 		}
 	}()
 
-	return nil
+	return runtime, nil
+}
+
+func (r *Runtime) Errors() <-chan error { return r.serverErrors }
+
+func (r *Runtime) Shutdown(ctx context.Context) error {
+	r.stopCollector()
+	if err := r.server.Shutdown(ctx); err != nil {
+		return err
+	}
+	select {
+	case <-r.collectorDone:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func jwtMiddleware() echo.MiddlewareFunc {
+	return echojwt.WithConfig(echojwt.Config{
+		SigningKey:    auth.GetJwtSignKey(),
+		ContextKey:    auth.JWT_CONTEXT_KEY_TOKEN,
+		NewClaimsFunc: func(c *echo.Context) jwt.Claims { return new(auth.Claims) },
+	})
 }
 
 func initAPIs(e *echo.Echo) error {
 	// Only login needs no header authentication
 	e.POST("/api/login", handleLogin)
 
-	jwtMiddleware := echojwt.WithConfig(echojwt.Config{
-		SigningKey:    auth.GetJwtSignKey(),
-		ContextKey:    auth.JWT_CONTEXT_KEY_TOKEN,
-		NewClaimsFunc: func(c *echo.Context) jwt.Claims { return new(auth.Claims) },
-	})
 	gqlSrv := newGraphQLServer()
 	e.POST("/api/v1/query",
 		func(c *echo.Context) error {
@@ -80,7 +133,7 @@ func initAPIs(e *echo.Echo) error {
 			gqlSrv.ServeHTTP(c.Response(), c.Request().WithContext(ctx))
 			return nil
 		},
-		jwtMiddleware)
+		jwtMiddleware())
 
 	return nil
 }
