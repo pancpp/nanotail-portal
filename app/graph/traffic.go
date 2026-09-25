@@ -10,7 +10,7 @@ import (
 )
 
 var ErrNetworkActivity = errors.New("Unable to read VPN traffic. Check that tailscaled is running with the tailscale0 network interface")
-var ErrNetworkActivityHistory = errors.New("Unable to read saved VPN history. Check database access and apply the database migrations")
+var ErrNetworkActivityHistory = errors.New("Unable to read saved VPN history. Check database access and the startup migration logs")
 
 func (r *queryResolver) networkActivityHistory(ctx context.Context) (*model.NetworkActivityHistory, error) {
 	if r.TrafficHistory == nil {

@@ -98,8 +98,8 @@ The guide at `/#/tailscale-setup` links to the official
 and [OAuth client documentation](https://tailscale.com/docs/features/oauth-clients).
 It explains the `auth_keys` permission and device tags for future enrollment.
 
-Apply the new database migration with `./nanotail-portal db migrate` before
-using credential settings (run `db init` first on a new installation).
+The backend initializes the database and applies pending migrations before
+serving requests, including the credentials table on a new installation.
 Connection status, peers, node-key expiry, device status, network activity,
 and routing settings are live.
 
@@ -258,7 +258,8 @@ memory every minute and updates hourly history, the 24-hour totals, and all-time
 totals in one database transaction per hour, also pruning old hourly records.
 Persisted records survive restarts; the unfinished hour (and failed, pending
 saves) can be lost on restart. Samples crossing hour boundaries are prorated by
-elapsed time. Apply `./nanotail-portal db migrate` for the history and totals tables.
+elapsed time. The backend initializes or upgrades the history and totals tables
+automatically at startup.
 Upgrades seed all-time totals from retained history; already-pruned records
 cannot be restored. The overview refreshes saved totals/history every minute,
 pauses requests while hidden, and cancels them on navigation. Database errors

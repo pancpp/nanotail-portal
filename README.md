@@ -15,6 +15,14 @@ administrator account with **username `admin` and password `admin`**. Passwords
 are stored as salted bcrypt hashes in SQLite, never as plaintext. Changing the
 password persists across restarts.
 
+Before starting HTTP services or traffic collection, the portal initializes
+missing database metadata and applies pending migrations automatically. Restart
+the updated binary with the same configured database to upgrade it. Startup
+stops on a migration failure, leaving that migration pending for retry after
+the cause is fixed. Existing accounts, credentials, and traffic history are
+preserved. Concurrent migration attempts are rejected; the process lock is
+released automatically on exit. The old `db` subcommands are no longer supported.
+
 Configuration is read from `nanotail-portal.yml` in the process working directory.
 Create this file before starting; an empty file uses the built-in defaults.
 The default database is `nanotail-portal.sqlite3`. When upgrading an existing
@@ -335,14 +343,9 @@ seconds. Errors clear stale data, retry automatically, and offer a retry button.
 
 #### Persistent 24-hour history and total traffic
 
-Apply the history and totals migrations before running this version:
-
-```sh
-./nanotail-portal db migrate
-```
-
-Use the same configuration/database as the running portal (`db init` first on
-a new installation). **Network activity → Last 24 hours** reads the authenticated
+The history and totals tables are initialized or upgraded automatically before
+the application starts. Use the same configuration/database as the existing
+installation. **Network activity → Last 24 hours** reads the authenticated
 `networkActivityHistory` query, which returns `windowStart`, `windowEnd`,
 hourly `startedAt`, `rxBytes`, `txBytes`, and `observedSeconds` records, and a
 `totals` snapshot. Both **Last 24 hours** and **Total traffic** are displayed
@@ -438,8 +441,8 @@ and timestamps), or `null` before setup. `setTailscaleCredential` accepts
 tokens are never returned by GraphQL. Saving does not validate the credentials,
 connect the device, or switch tailnets; removing does not revoke the remote client.
 
-Apply the new migration with `./nanotail-portal db migrate` before using this
-feature. Credentials are stored unencrypted in the device's SQLite database;
+The credentials table is initialized or upgraded automatically at startup.
+Credentials are stored unencrypted in the device's SQLite database;
 restrict access to that file and its backups and use trusted HTTPS for the WebUI.
 
 A configuration PATCH may include `hostname`, `accept_dns`, `accept_routes`,

@@ -35,7 +35,7 @@ func (s *Store) Save(ctx context.Context, hours []database.NetworkActivityHour, 
 			return err
 		}
 		if n, err := locked.RowsAffected(); err != nil || n != 1 {
-			return errors.New("missing network activity totals; apply migrations")
+			return errors.New("missing network activity totals; check startup migration logs")
 		}
 		totals := database.NetworkActivityTotals{ID: 1}
 		if err := tx.NewSelect().Model(&totals).WherePK().Scan(ctx); err != nil {

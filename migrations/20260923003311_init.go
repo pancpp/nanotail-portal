@@ -43,7 +43,9 @@ func createDefaultUser(ctx context.Context, db *bun.DB) error {
 		Passwd:   string(passwdHash),
 		Role:     "admin",
 	}
-	if _, err := db.NewInsert().Model(user).Exec(ctx); err != nil {
+	// A crash can occur after seeding but before the migration is recorded.
+	// Retrying must keep the existing administrator and its password intact.
+	if _, err := db.NewInsert().Model(user).On("CONFLICT (username) DO NOTHING").Exec(ctx); err != nil {
 		log.Println("(migrations) insert default user err:", err)
 		return err
 	}

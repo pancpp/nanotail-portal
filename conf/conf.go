@@ -42,7 +42,6 @@ func init() {
 		fmt.Println("###############################################")
 		os.Exit(0)
 	}
-	initDBArgs()
 
 	// viper
 	v := viper.New()
@@ -63,6 +62,9 @@ func init() {
 }
 
 func Init() error {
+	if pflag.NArg() != 0 {
+		return fmt.Errorf("unexpected arguments %q: database initialization and migrations now run automatically at startup", pflag.Args())
+	}
 	p := gViper.ConfigFileUsed()
 	if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
 		f, err := os.Create(p)

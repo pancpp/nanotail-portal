@@ -37,12 +37,8 @@ func main() {
 	}
 
 	// db migrations
-	dbCmd, dbArg := conf.DbCmdArg()
-	if dbCmd != conf.DB_UNKNOWN {
-		if err := migrations.Migrate(dbCmd, dbArg); err != nil {
-			log.Fatal(err)
-		}
-		return
+	if err := migrations.Init(ctx); err != nil {
+		log.Fatal(err)
 	}
 
 	// app
