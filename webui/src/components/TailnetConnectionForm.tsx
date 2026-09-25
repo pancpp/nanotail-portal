@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { LogOut, Power } from 'lucide-react'
+import { Power } from 'lucide-react'
 import { ApiError, isSessionError, setTailscaleEnabledRequest, tailscaleConnectionRequest, type TailscaleConnection } from '../api'
 import { useAuth } from '../auth'
 import { useTailscale } from '../tailscale'
 
 export default function TailnetConnectionForm() {
   const { accessToken, logout } = useAuth()
-  const { refresh, logoutTailnet } = useTailscale()
+  const { refresh } = useTailscale()
   const [connection, setConnection] = useState<TailscaleConnection | null>(null)
   const [loading, setLoading] = useState(true)
-  const [action, setAction] = useState<'toggle' | 'logout' | null>(null)
-  const busy = action !== null
+  const [busy, setBusy] = useState(false)
   const [acknowledged, setAcknowledged] = useState(false)
   const [needsReload, setNeedsReload] = useState(false)
   const [error, setError] = useState('')
@@ -45,22 +44,20 @@ export default function TailnetConnectionForm() {
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    void applyConnection('toggle')
+    void applyConnection()
   }
 
-  async function applyConnection(nextAction: 'toggle' | 'logout') {
+  async function applyConnection() {
     if (submitting.current || loading || needsReload || !connection || !acknowledged) return
-    if (nextAction === 'toggle' && !connection.enabled && !connection.canEnable) return
+    if (!connection.enabled && !connection.canEnable) return
     if (!accessToken) { logout(); return }
     const enabled = !connection.enabled
-    submitting.current = true; setAction(nextAction); setError(''); setSuccess('')
+    submitting.current = true; setBusy(true); setError(''); setSuccess('')
     try {
-      if (nextAction === 'logout') await logoutTailnet()
-      else await setTailscaleEnabledRequest(accessToken, enabled)
+      await setTailscaleEnabledRequest(accessToken, enabled)
       if (mounted.current) {
-        setSuccess(nextAction === 'logout' ? 'Logged out of Tailscale. Open Overview to sign in again.' :
-          enabled ? 'Tailnet enabled on this device.' : 'Tailnet disabled on this device. Its login and preferences are kept.')
-        if (nextAction === 'toggle') void refresh()
+        setSuccess(enabled ? 'Tailnet enabled on this device.' : 'Tailnet disabled on this device. Its login and preferences are kept.')
+        void refresh()
         await reload()
       }
     } catch (error) {
@@ -71,7 +68,7 @@ export default function TailnetConnectionForm() {
         'The connection was interrupted or the server did not confirm the change. It may already have applied. Reconnect over the LAN and reload settings before retrying.')
     } finally {
       submitting.current = false
-      if (mounted.current) { setAction(null); setAcknowledged(false) }
+      if (mounted.current) { setBusy(false); setAcknowledged(false) }
     }
   }
 
@@ -92,15 +89,10 @@ export default function TailnetConnectionForm() {
           <span>I have local access and understand that this may disconnect me.</span>
         </label>
         <button className="login-submit" type="submit" disabled={busy || needsReload || !acknowledged || (!connection.enabled && !connection.canEnable)}>
-          <Power size={18} />{action === 'toggle' ? 'Applying connection change…' : connection.enabled ? 'Turn tailnet off' : 'Turn tailnet on'}
-        </button>
-        <p className="password-help" id="tailnet-logout-help">Logging out disconnects this device from Tailscale and requires signing in again from <Link to="/">Overview</Link>. Your portal login and saved OAuth credentials are kept.</p>
-        <button className="secondary-button danger-action" type="button" disabled={busy || needsReload || !acknowledged}
-          aria-describedby="tailnet-logout-help" onClick={() => { void applyConnection('logout') }}>
-          <LogOut size={18} />{action === 'logout' ? 'Logging out of Tailscale…' : 'Log out of Tailscale'}
+          <span>{busy ? 'Applying connection change…' : connection.enabled ? 'Turn tailnet off' : 'Turn tailnet on'}</span><Power size={18} aria-hidden="true" />
         </button>
       </>}
-      <button className="secondary-button" type="button" disabled={busy || loading} onClick={() => { setSuccess(''); void reload() }}>Reload connection</button>
+      <button className="text-action" type="button" disabled={busy || loading} onClick={() => { setSuccess(''); void reload() }}>Reload connection</button>
     </form>
   </section>
 }

@@ -116,7 +116,7 @@ export default function ExitNodeSettingsForm() {
           <p className="password-help" id="routing-subnet-help">One network per line, or separate with commas. IPv4 and IPv6 are supported. Default routes are managed automatically for the exit node.</p>
           <p className="password-help">Local LAN ({routing.lanInterface}): {routing.defaultSubnetRoutes.join(', ') || 'Not detected'}. Used automatically for initial setup; later LAN changes do not replace saved routes. Disabling subnet advertising is remembered across restarts.</p>
           {routing.lanWarning && <p className="form-error">{routing.lanWarning}</p>}
-          <button className="secondary-button" type="button" disabled={!subnetEnabled || !routing.defaultSubnetRoutes.length}
+          <button className="text-action" type="button" disabled={!subnetEnabled || !routing.defaultSubnetRoutes.length}
             onClick={() => { setRouteText(routing.defaultSubnetRoutes.join('\n')); edited() }}>Use local LAN</button>
           {validation && <p className="form-error" role="alert">{validation}</p>}
         </fieldset>
@@ -142,9 +142,7 @@ export default function ExitNodeSettingsForm() {
           {busy ? 'Applying routing settings…' : 'Save and apply routing'}
         </button>
       </>}
-      <div className="routing-actions">
-        <button className="secondary-button" type="button" disabled={busy || loading} onClick={() => { setSaved(false); void refresh(); void reload() }}>Reload settings</button>
-      </div>
+      <button className="text-action" type="button" disabled={busy || loading} onClick={() => { setSaved(false); void refresh(); void reload() }}>Reload settings</button>
     </form>
   </section>
 }

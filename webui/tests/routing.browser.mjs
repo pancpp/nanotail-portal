@@ -57,13 +57,31 @@ try {
     throw new Error(`Condition not met: ${expression}\n${await evaluate('document.body.innerText')}`)
   }
   const click = text => evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(text)}).click()`)
+  const buttonStyle = text => evaluate(`(() => {
+    const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(text)});
+    const style = getComputedStyle(button);
+    // Flex parents blockify inline-flex; compare visible styling, not that layout distinction.
+    return Object.fromEntries(['color', 'backgroundColor', 'borderWidth', 'borderRadius', 'padding', 'fontSize', 'fontWeight', 'boxShadow', 'marginTop', 'alignSelf'].map(key => [key, style[key]]));
+  })()`)
+  const assertTailnetButtonLayout = async () => {
+    const layout = await evaluate(`(() => {
+      const button = document.querySelector('.tailnet-settings button[type=submit]');
+      const box = button.getBoundingClientRect(), text = button.querySelector('span').getBoundingClientRect(), icon = button.querySelector('svg').getBoundingClientRect();
+      return { leftInset: text.left - box.left, rightInset: box.right - icon.right, gap: icon.left - text.right };
+    })()`)
+    assert.equal(layout.leftInset, 17, 'tailnet label must be on the left')
+    assert.equal(layout.rightInset, 17, 'tailnet icon must be on the right')
+    assert.ok(layout.gap > 0, 'tailnet icon overlaps the label')
+  }
   const fill = (id, value) => evaluate(`(() => { const el = document.getElementById(${JSON.stringify(id)}); Object.getOwnPropertyDescriptor(el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value').set.call(el, ${JSON.stringify(value)}); el.dispatchEvent(new Event('input', { bubbles: true })); })()`)
 
   await send('Page.enable')
-  await send('Page.addScriptToEvaluateOnNewDocument', { source: "(() => {\n localStorage.setItem('nanotail_access_token', 'header.' + btoa(JSON.stringify({pid:1,exp:Math.floor(Date.now()/1000)+3600})) + '.signature');\n window.routingFixture = {\n  backendState:'Running',advertiseExitNode:true,subnetDefaultsPending:true,subnetRoutes:[],usingExitNode:false,snatEnabled:true,health:[],\n  lanInterface:'eth0',defaultSubnetRoutes:['192.168.42.0/24','fd00:1234::/64'],lanWarning:'',ipv4Forwarding:true,ipv6Forwarding:true\n };\n window.routingWrites = []; window.nodeKeyExpiry = null;\n window.routingWriteFailure = false;\n const realFetch = window.fetch.bind(window);\n window.fetch = async (url, options) => {\n  if (!String(url).startsWith('/api/')) return realFetch(url, options);\n  const body = JSON.parse(options.body || '{}');\n  switch(body.operationName) {\n   case 'TailscaleRouting':return Response.json({data:{tailscaleRouting:structuredClone(window.routingFixture)}});\n   case 'SetRouting':\n    window.routingWrites.push(body.variables.input);\n    Object.assign(window.routingFixture,body.variables.input,{usingExitNode:false,advertiseExitNode:true,subnetDefaultsPending:false});\n    if(window.routingWriteFailure) throw new TypeError('Simulated connection interrupted after apply');\n    return Response.json({data:{setRouting:true}});\n   case 'TailscaleStatus':return Response.json({data:{tailscaleStatus:{backendState:'Running',haveNodeKey:true,tailscaleIPs:['100.64.0.2'],currentTailnet:{name:'Test tailnet'},self:{online:true,keyExpiry:window.nodeKeyExpiry},peers:[]}}});\n   case 'TailscaleKeyRenewal':return Response.json({data:{tailscaleKeyRenewal:{state:'IDLE',authURL:'',canRenew:window.nodeKeyExpiry!==null,attemptID:''}}});\n   case 'TailscaleClient':return Response.json({data:{tailscaleClient:null}});\n   default:return Response.json({errors:[{message:'Read-only browser fixture'}]});\n  }\n };\n})()" })
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: "(() => {\n localStorage.setItem('nanotail_access_token', 'header.' + btoa(JSON.stringify({pid:1,exp:Math.floor(Date.now()/1000)+3600})) + '.signature');\n window.routingFixture = {\n  backendState:'Running',advertiseExitNode:true,subnetDefaultsPending:true,subnetRoutes:[],usingExitNode:false,snatEnabled:true,health:[],\n  lanInterface:'eth0',defaultSubnetRoutes:['192.168.42.0/24','fd00:1234::/64'],lanWarning:'',ipv4Forwarding:true,ipv6Forwarding:true\n };\n window.routingWrites = []; window.nodeKeyExpiry = null; window.connectionEnabled = true; window.connectionWrites = []; window.logoutCalls = 0;\n window.routingWriteFailure = false;\n const realFetch = window.fetch.bind(window);\n window.fetch = async (url, options) => {\n  if (!String(url).startsWith('/api/')) return realFetch(url, options);\n  const body = JSON.parse(options.body || '{}');\n  switch(body.operationName) {\n   case 'TailscaleRouting':return Response.json({data:{tailscaleRouting:structuredClone(window.routingFixture)}});\n   case 'SetRouting':\n    window.routingWrites.push(body.variables.input);\n    Object.assign(window.routingFixture,body.variables.input,{usingExitNode:false,advertiseExitNode:true,subnetDefaultsPending:false});\n    if(window.routingWriteFailure) throw new TypeError('Simulated connection interrupted after apply');\n    return Response.json({data:{setRouting:true}});\n   case 'TailscaleStatus':return Response.json({data:{tailscaleStatus:{backendState:'Running',haveNodeKey:true,tailscaleIPs:['100.64.0.2'],currentTailnet:{name:'Test tailnet'},self:{online:true,keyExpiry:window.nodeKeyExpiry},peers:[]}}});\n   case 'TailscaleKeyRenewal':return Response.json({data:{tailscaleKeyRenewal:{state:'IDLE',authURL:'',canRenew:window.nodeKeyExpiry!==null,attemptID:''}}});\n   case 'TailscaleConnection':return Response.json({data:{tailscaleConnection:{enabled:window.connectionEnabled,backendState:window.connectionEnabled?'Running':'Stopped',canEnable:true}}});\n   case 'SetTailscaleEnabled':window.connectionWrites.push(body.variables.enabled);window.connectionEnabled=body.variables.enabled;return Response.json({data:{setTailscaleEnabled:true}});\n   case 'LogoutTailscale':window.logoutCalls++;throw new Error('Network must not log out');\n   case 'DeviceStatus':return Response.json({data:{deviceStatus:{hostname:'nanotail',lanIPType:'DHCP',lanIP:'192.168.42.8/24',gateway:'192.168.42.1',dns:['192.168.42.1'],lanIPv6Type:'auto',lanIPv6:'fd00:1234::8/64',gateway6:'',ethAddr:'02:00:00:00:00:01',cpuload:0,memory:20,lastRestart:'2026-09-24T00:00:00Z',uptime:3600,health:'Healthy'}}});\n   case 'TailscaleClient':return Response.json({data:{tailscaleClient:null}});\n   default:return Response.json({errors:[{message:'Read-only browser fixture'}]});\n  }\n };\n})()" })
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url })
   await waitFor("Boolean(document.getElementById('routing-subnets'))")
+  const reloadSettingsStyle = await buttonStyle('Reload settings')
+  const localLANStyle = await buttonStyle('Use local LAN')
   assert.equal(await evaluate("document.getElementById('routing-subnets').value"), '192.168.42.0/24\nfd00:1234::/64')
   assert.equal(await evaluate("document.getElementById('routing-subnet-enabled').checked"), true)
   assert.ok(await evaluate("document.body.innerText.includes('Local LAN advertisement is pending')"))
@@ -178,7 +196,36 @@ try {
   assert.equal(await evaluate("document.getElementById('routing-subnet-enabled').checked"),false)
   assert.equal(await evaluate("window.routingFixture.subnetDefaultsPending"),false)
 
-  console.log('PASS: expiry-disabled Renew, enabled LAN defaults, persistent explicit off, validation, acknowledgement, always-on exit role, subnet withdrawal and preservation, readback, uncertain-save recovery, no retries, stopped withdrawal, missing LAN, forwarding warnings, Overview, and responsive layout')
+  // Network retains pause/resume only; signing out is covered by factory reset.
+  await evaluate("location.hash='#/network'")
+  await waitFor("Boolean(document.getElementById('tailnet-ack')) && Boolean(document.querySelector('.lan-settings .text-action'))")
+  const discardStyle = await buttonStyle('Discard edits and use current values')
+  assert.deepEqual(await buttonStyle('Reload connection'),discardStyle,'reload connection style differs from discard')
+  assert.deepEqual(reloadSettingsStyle,discardStyle,'reload settings style differs from discard')
+  assert.deepEqual(localLANStyle,discardStyle,'local LAN style differs from discard')
+  await assertTailnetButtonLayout()
+  assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"),true,'mobile Network overflows')
+  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false})
+  await assertTailnetButtonLayout()
+  if (process.env.NETWORK_SCREENSHOT) {
+    const result = await send('Page.captureScreenshot', {format:'png',captureBeyondViewport:true})
+    await writeFile(process.env.NETWORK_SCREENSHOT, Buffer.from(result.data,'base64'))
+  }
+  assert.equal(await evaluate("document.querySelector('.tailnet-settings').innerText.includes('Log out of Tailscale')"),false)
+  assert.equal(await evaluate("Boolean(document.getElementById('tailnet-logout-help'))"),false)
+  assert.equal(await evaluate("document.querySelector('.tailnet-settings button[type=submit]').disabled"),true)
+  await evaluate("document.getElementById('tailnet-ack').click()")
+  await click('Turn tailnet off')
+  await waitFor("document.querySelector('.tailnet-settings button[type=submit]')?.textContent.includes('Turn tailnet on')")
+  assert.equal(await evaluate("document.querySelector('.tailnet-settings button[type=submit]').disabled"),true)
+  await evaluate("document.getElementById('tailnet-ack').click()")
+  await click('Turn tailnet on')
+  await waitFor("document.querySelector('.tailnet-settings button[type=submit]')?.textContent.includes('Turn tailnet off')")
+  await assertTailnetButtonLayout()
+  assert.deepEqual(await evaluate("window.connectionWrites"),[false,true])
+  assert.equal(await evaluate("window.logoutCalls"),0)
+
+  console.log('PASS: consistent text-action styles and tailnet button layout, Network pause/resume without logout, expiry-disabled Renew, enabled LAN defaults, persistent explicit off, validation, acknowledgement, always-on exit role, subnet withdrawal and preservation, readback, uncertain-save recovery, no retries, stopped withdrawal, missing LAN, forwarding warnings, Overview, and responsive layout')
 } finally {
   socket?.close()
   chrome.kill('SIGTERM')

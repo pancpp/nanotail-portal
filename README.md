@@ -141,16 +141,10 @@ LAN or console access available to re-enable Tailscale after disconnecting.
 Command/request timeouts do not imply rollback. Unknown outcomes require a
 fresh read before another attempt; mutations are never retried automatically.
 
-**Network → Tailnet connection → Log out of Tailscale** signs this device out
-using the administrator-only `logoutTailscale` mutation and bare
-[`tailscale logout`](https://tailscale.com/docs/reference/tailscale-cli#logout).
-Use the existing local-access acknowledgement before clicking it. Logout
-disconnects Tailscale and requires a new sign-in from Overview; the portal
-session and saved OAuth credentials are retained. The backend serializes logout
-with other device changes, invalidates old renewal attempts, and verifies the
-logged-out state before reporting success. The WebUI clears stale renewal links
-and refreshes connection status. If confirmation is lost, reload connection
-settings over the LAN before retrying; logout is never automatically retried.
+Network has no standalone Tailscale logout button. **Settings → Factory reset**
+logs out of Tailscale as part of the full reset, which also erases portal data
+and restarts the portal. See [Factory reset](#factory-reset) for the confirmation
+steps and data-loss warning.
 
 ### Exit node and subnet router
 
