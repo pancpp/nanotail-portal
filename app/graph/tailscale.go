@@ -11,6 +11,7 @@ import (
 	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph/model"
 	"github.com/pancpp/nanotail-portal/database"
+	"github.com/pancpp/nanotail-portal/tailscale"
 	"github.com/uptrace/bun"
 )
 
@@ -109,10 +110,51 @@ func (r *queryResolver) tailscaleStatus(ctx context.Context) (*model.TailscaleSt
 	if err != nil {
 		return nil, ErrTailscaleStatus
 	}
-	return &model.TailscaleStatus{
-		BackendState: status.BackendState,
-		Connected:    status.BackendState == "Running" && status.Self != nil && status.Self.Online,
-		NeedsLogin:   status.BackendState == "NeedsLogin",
-		Tailnet:      status.Tailnet, Ips: status.IPs,
-	}, nil
+	result := &model.TailscaleStatus{
+		Version: status.Version, Tun: status.TUN, BackendState: status.BackendState,
+		HaveNodeKey: status.HaveNodeKey, AuthURL: status.AuthURL,
+		TailscaleIPs: status.IPs, Health: status.Health, MagicDNSSuffix: status.MagicDNSSuffix,
+		CertDomains: status.CertDomains, Self: tailscalePeer(status.Self),
+		Peers: make([]*model.TailscalePeer, len(status.Peers)),
+	}
+	if tailnet := status.CurrentTailnet; tailnet != nil {
+		result.CurrentTailnet = &model.Tailnet{
+			Name: tailnet.Name, MagicDNSSuffix: tailnet.MagicDNSSuffix, MagicDNSEnabled: tailnet.MagicDNSEnabled,
+		}
+	}
+	if status.ExtraRecords != nil {
+		result.ExtraRecords = make([]*model.TailscaleDNSRecord, len(status.ExtraRecords))
+		for i, record := range status.ExtraRecords {
+			result.ExtraRecords[i] = &model.TailscaleDNSRecord{Name: record.Name, Type: record.Type, Value: record.Value}
+		}
+	}
+	if version := status.ClientVersion; version != nil {
+		result.ClientVersion = &model.TailscaleClientVersion{
+			RunningLatest: version.RunningLatest, LatestVersion: version.LatestVersion,
+			UrgentSecurityUpdate: version.UrgentSecurityUpdate, Notify: version.Notify,
+			NotifyURL: version.NotifyURL, NotifyText: version.NotifyText,
+		}
+	}
+	for i := range status.Peers {
+		result.Peers[i] = tailscalePeer(&status.Peers[i])
+	}
+	return result, nil
+}
+
+func tailscalePeer(peer *tailscale.Peer) *model.TailscalePeer {
+	if peer == nil {
+		return nil
+	}
+	return &model.TailscalePeer{
+		ID: peer.ID, NodeID: int(peer.NodeID), PublicKey: peer.PublicKey,
+		HostName: peer.Hostname, DNSName: peer.DNSName, Os: peer.OS, UserID: int(peer.UserID),
+		TailscaleIPs: peer.IPs, AllowedIPs: peer.AllowedIPs, Tags: peer.Tags, Addrs: peer.Addrs,
+		CurAddr: peer.CurAddr, Relay: peer.Relay, PeerRelay: peer.PeerRelay,
+		RxBytes: int(peer.RxBytes), TxBytes: int(peer.TxBytes), Created: peer.Created,
+		LastWrite: peer.LastWrite, LastSeen: peer.LastSeen, LastHandshake: peer.LastHandshake,
+		Online: peer.Online, ExitNode: peer.ExitNode, ExitNodeOption: peer.ExitNodeOption, Active: peer.Active,
+		PeerAPIURL: peer.PeerAPIURL, TaildropTarget: peer.TaildropTarget, NoFileSharingReason: peer.NoFileSharingReason,
+		CapMap: peer.CapMap, InNetworkMap: peer.InNetworkMap, InMagicSock: peer.InMagicSock, InEngine: peer.InEngine,
+		KeyExpiry: peer.KeyExpiry,
+	}
 }

@@ -181,29 +181,37 @@ type statusReaderFunc func(context.Context) (tailscale.Status, error)
 
 func (f statusReaderFunc) Status(ctx context.Context) (tailscale.Status, error) { return f(ctx) }
 
-func TestTailscaleStatusDistinguishesLoginFromConnectivity(t *testing.T) {
+func TestTailscaleStatusReportsBackendStateAndSelf(t *testing.T) {
 	for _, tt := range []struct {
-		state                         string
-		online, connected, needsLogin bool
+		state   string
+		online  bool
+		hasSelf bool
 	}{
-		{"NeedsLogin", false, false, true}, {"Running", true, true, false},
-		{"Running", false, false, false}, {"Stopped", false, false, false},
-		{"Starting", false, false, false}, {"NeedsMachineAuth", false, false, false},
+		{"NeedsLogin", false, false}, {"Running", true, true},
+		{"Running", false, true}, {"Stopped", false, true},
+		{"Starting", false, true}, {"NeedsMachineAuth", false, true},
 	} {
 		t.Run(tt.state, func(t *testing.T) {
 			r := &graph.Resolver{Tailscale: statusReaderFunc(func(ctx context.Context) (tailscale.Status, error) {
 				if ctx != t.Context() {
 					t.Fatal("request context was not propagated")
 				}
-				return tailscale.Status{BackendState: tt.state, Self: &tailscale.Peer{Online: tt.online}, IPs: []string{}, AuthURL: "private-auth-url"}, nil
+				status := tailscale.Status{BackendState: tt.state, IPs: []string{}, AuthURL: "https://login.tailscale.com/a/test"}
+				if tt.hasSelf {
+					status.Self = &tailscale.Peer{Online: tt.online}
+				}
+				return status, nil
 			})}
 			status, err := r.Query().TailscaleStatus(t.Context())
-			if err != nil || status.Connected != tt.connected || status.NeedsLogin != tt.needsLogin {
+			if err != nil {
+				t.Fatal(err)
+			}
+			if status.BackendState != tt.state || (status.Self != nil) != tt.hasSelf ||
+				(status.Self != nil && status.Self.Online != tt.online) {
 				t.Fatalf("status: %+v %v", status, err)
 			}
-			body, err := json.Marshal(status)
-			if err != nil || strings.Contains(string(body), "private-auth-url") {
-				t.Fatal("status exposed authentication data")
+			if status.AuthURL != "https://login.tailscale.com/a/test" || status.TailscaleIPs == nil || status.Peers == nil {
+				t.Fatal("status did not preserve the schema's login URL and lists")
 			}
 		})
 	}
@@ -212,5 +220,8 @@ func TestTailscaleStatusDistinguishesLoginFromConnectivity(t *testing.T) {
 	})}
 	if status, err := r.Query().TailscaleStatus(t.Context()); status != nil || !errors.Is(err, graph.ErrTailscaleStatus) {
 		t.Fatalf("unavailable daemon should not be NeedsLogin: %+v %v", status, err)
+	}
+	if status, err := (&graph.Resolver{}).Query().TailscaleStatus(t.Context()); status != nil || !errors.Is(err, graph.ErrTailscaleStatus) {
+		t.Fatalf("missing status reader: %+v %v", status, err)
 	}
 }

@@ -1143,8 +1143,19 @@ input:focus-visible {
 }
 
 .peer-row code {
+  min-width: 0;
+  padding: 10px 8px 10px 0;
+  overflow-wrap: anywhere;
   color: #69776f;
   font-size: 12px;
+}
+
+.peer-table__empty {
+  margin: 0;
+  padding: 24px 21px;
+  color: #69776f;
+  font-size: 17px;
+  line-height: 1.5;
 }
 
 .peer-status {

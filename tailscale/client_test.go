@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -54,8 +55,48 @@ func TestLoggedOutStatusAndInvalidOutput(t *testing.T) {
 		if tc.valid && (err != nil || s.AuthURL == "" || s.Peers == nil || s.Self != nil) {
 			t.Fatalf("logged-out status: %+v %v", s, err)
 		}
+		if tc.valid && (s.CurrentTailnet != nil || s.CertDomains != nil || s.ExtraRecords != nil || s.ClientVersion != nil) {
+			t.Fatalf("absent status metadata must remain nil: %+v", s)
+		}
 		if !tc.valid && !errors.Is(err, ErrInvalidOutput) {
 			t.Fatalf("accepted invalid output: %s", tc.data)
+		}
+	}
+}
+
+func TestStatusExpandedFields(t *testing.T) {
+	data, err := os.ReadFile("testdata/status.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := NewClient("tailscale", "", time.Second, runnerFunc(func(context.Context, string, ...string) ([]byte, error) {
+		return data, nil
+	}))
+	s, err := c.Status(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.TUN || !s.HaveNodeKey || s.Version != "1.102.4" || s.MagicDNSSuffix != "example.ts.net" ||
+		s.CurrentTailnet == nil || !s.CurrentTailnet.MagicDNSEnabled || s.CurrentTailnet.Name != s.Tailnet ||
+		s.CurrentTailnet.MagicDNSSuffix != s.MagicDNSSuffix {
+		t.Fatalf("status fields were lost: %+v", s)
+	}
+	if !reflect.DeepEqual(s.CertDomains, []string{"nanotail.example.ts.net"}) ||
+		!reflect.DeepEqual(s.ExtraRecords, []DNSRecord{{Name: "service.example.test", Type: "A", Value: "100.64.0.2"}}) ||
+		!reflect.DeepEqual(s.ClientVersion, &ClientVersion{LatestVersion: "1.102.5", UrgentSecurityUpdate: true,
+			Notify: true, NotifyURL: "https://tailscale.com/download", NotifyText: "Update available"}) {
+		t.Fatalf("status metadata was lost: %+v", s)
+	}
+	if len(s.Peers) != 2 || s.Peers[0].ID != "peer-a" || s.Peers[1].ID != "peer-z" ||
+		s.RxBytes != 5000000017 || s.TxBytes != 6000000029 {
+		t.Fatalf("peers were not sorted or totaled correctly: %+v", s)
+	}
+	if s.Self == nil || s.Self.LastWrite != nil || s.Self.LastSeen != nil || s.Self.LastHandshake != nil || s.Self.KeyExpiry != nil {
+		t.Fatalf("unknown timestamps must be nil: %+v", s.Self)
+	}
+	for _, peer := range []*Peer{s.Self, &s.Peers[1]} {
+		if peer.IPs == nil || peer.AllowedIPs == nil || peer.Tags == nil || peer.PeerAPIURL == nil {
+			t.Fatalf("required lists must be non-nil: %+v", peer)
 		}
 	}
 }

@@ -4,14 +4,14 @@ React and TypeScript frontend for managing Tailscale on nanotail.
 
 ## Development
 
-Start the Go backend on port `8080`, then run:
+Start the Go backend on its default port `7080`, then run:
 
 ```sh
 npm install
 npm run dev
 ```
 
-Vite proxies requests under `/api` to `http://127.0.0.1:8080`.
+Vite proxies requests under `/api` to `http://127.0.0.1:7080`.
 
 ## Build
 
@@ -56,6 +56,11 @@ secret. Stopped devices, pending machine approval, and unavailable status do not
 trigger credential prompts. Reloading the page may show the prompt again;
 ordinary status refreshes do not. Settings and the setup guide remain available.
 
+Connection state comes from `backendState` and `self.online`; `currentTailnet`
+and `self` can be `null` before login. The overview uses `tailscaleIPs` and the
+live `peers` list, including device names, addresses, operating systems, and
+online state. Unavailable status hides stale connection and peer information.
+
 Settings supports saving, replacing, and removing credentials using
 `setTailscaleCredential` and `clearTailscaleCredential`. These operations require
 a portal administrator. The `tailscaleClient` query returns `null` before setup,
@@ -75,4 +80,4 @@ It explains the `auth_keys` permission and device tags for future enrollment.
 
 Apply the new database migration with `./nanotail-portal db migrate` before
 using credential settings (run `db init` first on a new installation).
-Connection status is live; other overview panels are clearly marked previews.
+Connection status and peers are live; other overview panels remain previews.

@@ -1,0 +1,78 @@
+{
+  "Version": "1.102.4",
+  "TUN": true,
+  "BackendState": "Running",
+  "HaveNodeKey": true,
+  "AuthURL": "",
+  "TailscaleIPs": ["100.64.0.1"],
+  "Health": [],
+  "MagicDNSSuffix": "example.ts.net",
+  "CurrentTailnet": {
+    "Name": "example.test",
+    "MagicDNSSuffix": "example.ts.net",
+    "MagicDNSEnabled": true
+  },
+  "CertDomains": ["nanotail.example.ts.net"],
+  "ExtraRecords": [{"Name": "service.example.test", "Type": "A", "Value": "100.64.0.2"}],
+  "ClientVersion": {
+    "RunningLatest": false,
+    "LatestVersion": "1.102.5",
+    "UrgentSecurityUpdate": true,
+    "Notify": true,
+    "NotifyURL": "https://tailscale.com/download",
+    "NotifyText": "Update available"
+  },
+  "Self": {
+    "ID": "self",
+    "HostName": "nanotail",
+    "Created": "2026-01-01T00:00:00Z",
+    "Online": true,
+    "LastWrite": "0001-01-01T00:00:00Z",
+    "LastSeen": "0001-01-01T00:00:00Z",
+    "LastHandshake": "0001-01-01T00:00:00Z"
+  },
+  "Peer": {
+    "nodekey:z": {
+      "ID": "peer-z",
+      "HostName": "phone",
+      "Created": "2026-02-01T00:00:00Z",
+      "RxBytes": 17,
+      "TxBytes": 29
+    },
+    "nodekey:a": {
+      "ID": "peer-a",
+      "NodeID": 7000000000,
+      "PublicKey": "nodekey:a",
+      "HostName": "desktop",
+      "DNSName": "desktop.example.ts.net.",
+      "OS": "linux",
+      "UserID": 8000000000,
+      "TailscaleIPs": ["100.64.0.2"],
+      "AllowedIPs": ["100.64.0.2/32", "192.0.2.0/24"],
+      "Tags": ["tag:test"],
+      "Addrs": ["203.0.113.10:41641"],
+      "CurAddr": "203.0.113.10:41641",
+      "Relay": "sea",
+      "PeerRelay": "203.0.113.11:40000",
+      "RxBytes": 5000000000,
+      "TxBytes": 6000000000,
+      "Created": "2026-01-02T00:00:00Z",
+      "LastWrite": "2026-09-24T01:00:00Z",
+      "LastSeen": "0001-01-01T00:00:00Z",
+      "LastHandshake": "2026-09-24T00:59:00Z",
+      "Online": true,
+      "ExitNode": true,
+      "ExitNodeOption": true,
+      "Active": true,
+      "PeerAPIURL": ["http://100.64.0.2:8080"],
+      "TaildropTarget": 1,
+      "NoFileSharingReason": "test reason",
+      "CapMap": {"example/flag": null, "example/settings": [{"enabled": true, "limit": 2}]},
+      "InNetworkMap": true,
+      "InMagicSock": true,
+      "InEngine": true,
+      "KeyExpiry": "2027-01-01T00:00:00Z"
+    },
+    "nodekey:nil": null
+  }
+}

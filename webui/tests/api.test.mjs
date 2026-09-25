@@ -11,6 +11,8 @@ import {
   setTailscaleCredentialRequest,
   clearTailscaleCredentialRequest,
   shouldPromptForTailscale,
+  isTailscaleConnected,
+  tailscaleStatusLabel,
 } from '../src/api.ts'
 
 function jwt(payload = {}) {
@@ -19,6 +21,17 @@ function jwt(payload = {}) {
     pid: 1, exp: Math.floor(Date.now() / 1000) + 3600, ...payload,
   })).toString('base64url')
   return `${header}.${claims}.signature`
+}
+
+function makeStatus(overrides = {}) {
+  return { backendState: 'NeedsLogin', tailscaleIPs: [], currentTailnet: null, self: null, peers: [], ...overrides }
+}
+
+function makePeer(overrides = {}) {
+  return {
+    id: 'peer-a', hostName: 'desktop', dnsName: 'desktop.example.ts.net.', os: 'linux',
+    tailscaleIPs: ['100.64.0.2', 'fd7a:115c:a1e0::2'], online: true, ...overrides,
+  }
 }
 
 test('JWT expiry supports current tokens and rejects malformed, expired, or legacy sessions', () => {
@@ -87,20 +100,100 @@ test('credential mutations require explicit success and preserve GraphQL errors'
   }
 })
 
-test('status failures and stopped/offline devices do not trigger a credential prompt', async (t) => {
-  const status = { backendState: 'NeedsLogin', connected: false, needsLogin: true, tailnet: '', ips: [] }
+test('status query uses the new schema, bearer authentication, and abort signal', async (t) => {
+  const status = makeStatus({
+    backendState: 'Running', tailscaleIPs: ['100.64.0.1'], currentTailnet: { name: 'example.test' },
+    self: { online: true }, peers: [makePeer(), makePeer({ id: 'peer-b', online: false })],
+  })
   const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { tailscaleStatus: status } }))
+  const token = jwt()
+  const controller = new AbortController()
+  assert.deepEqual(await tailscaleStatusRequest(token, controller.signal), status)
+  const [url, options] = fetch.mock.calls[0].arguments
+  assert.equal(url, '/api/v1/query')
+  assert.equal(options.method, 'POST')
+  assert.equal(options.headers.Authorization, `Bearer ${token}`)
+  assert.equal(options.headers['Content-Type'], 'application/json')
+  assert.equal(options.signal, controller.signal)
+  const body = JSON.parse(options.body)
+  assert.equal(body.operationName, 'TailscaleStatus')
+  assert.deepEqual(body.variables, {})
+  assert.equal(body.query.replace(/\s+/g, ' ').trim(),
+    'query TailscaleStatus { tailscaleStatus { backendState tailscaleIPs currentTailnet { name } self { online } peers { id hostName dnsName os tailscaleIPs online } } }')
+  assert.doesNotMatch(body.query, /\b(connected|needsLogin|tailnet|ips|authURL)\b/)
+})
+
+test('status accepts null tailnet/self and empty lists before login', async (t) => {
+  const status = makeStatus()
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { tailscaleStatus: status } }))
   assert.deepEqual(await tailscaleStatusRequest(jwt()), status)
+})
+
+test('status rejects legacy responses and malformed nested fields', async (t) => {
+  const invalid = [
+    null, [], {}, { backendState: 'Running', connected: true, needsLogin: false, tailnet: 'old', ips: [] },
+    makeStatus({ backendState: null }), makeStatus({ tailscaleIPs: null }), makeStatus({ tailscaleIPs: [42] }),
+    makeStatus({ currentTailnet: undefined }), makeStatus({ currentTailnet: [] }),
+    makeStatus({ currentTailnet: 'example.test' }), makeStatus({ currentTailnet: { name: null } }),
+    makeStatus({ self: undefined }), makeStatus({ self: [] }), makeStatus({ self: {} }),
+    makeStatus({ self: { online: 'false' } }), makeStatus({ peers: null }), makeStatus({ peers: {} }),
+    makeStatus({ peers: [null] }), makeStatus({ peers: [{}] }),
+    ...['id', 'hostName', 'dnsName', 'os', 'tailscaleIPs', 'online'].map((field) =>
+      makeStatus({ peers: [makePeer({ [field]: undefined })] })),
+    makeStatus({ peers: [makePeer({ online: 'true' })] }),
+    makeStatus({ peers: [makePeer({ tailscaleIPs: [42] })] }),
+  ]
+  const fetch = t.mock.method(globalThis, 'fetch')
+  for (const status of invalid) {
+    fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleStatus: status } }))
+    await assert.rejects(tailscaleStatusRequest(jwt()), /valid Tailscale status/)
+  }
+})
+
+test('status errors take precedence over data and preserve session/network handling', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({
+    data: { tailscaleStatus: makeStatus() }, errors: [{ message: 'Unable to read Tailscale status' }],
+  }))
+  await assert.rejects(tailscaleStatusRequest(jwt()), { name: 'ApiError', status: 200, message: 'Unable to read Tailscale status' })
+  fetch.mock.mockImplementation(async () => Response.json({ message: 'invalid jwt' }, { status: 401 }))
+  await assert.rejects(tailscaleStatusRequest(jwt()), (error) => isSessionError(error))
+  fetch.mock.mockImplementation(async () => { throw new TypeError('Failed to fetch') })
+  await assert.rejects(tailscaleStatusRequest(jwt()), /Failed to fetch/)
+})
+
+test('status failures and stopped/offline devices do not trigger a credential prompt', () => {
+  const status = makeStatus()
   assert.equal(shouldPromptForTailscale(status, ''), true)
   assert.equal(shouldPromptForTailscale(status, 'Status unavailable'), false)
   assert.equal(shouldPromptForTailscale(null, ''), false)
-  for (const backendState of ['Running', 'Stopped', 'Starting', 'NeedsMachineAuth']) {
-    assert.equal(shouldPromptForTailscale({ ...status, backendState, needsLogin: false }, ''), false)
+  for (const backendState of ['Running', 'Stopped', 'Starting', 'NeedsMachineAuth', 'NoState', 'FutureState']) {
+    for (const self of [null, { online: false }, { online: true }]) {
+      assert.equal(shouldPromptForTailscale(makeStatus({ backendState, self }), ''), false)
+    }
   }
-  fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleStatus: { connected: false } } }))
-  await assert.rejects(tailscaleStatusRequest(jwt()), /valid Tailscale status/)
-  fetch.mock.mockImplementation(async () => { throw new TypeError('Failed to fetch') })
-  await assert.rejects(tailscaleStatusRequest(jwt()), /Failed to fetch/)
+})
+
+test('connection labels distinguish backend state, offline/missing self, and stale status', () => {
+  assert.equal(isTailscaleConnected(null), false)
+  assert.equal(tailscaleStatusLabel(null, ''), 'Checking…')
+  assert.equal(tailscaleStatusLabel(null, 'Status unavailable'), 'Unavailable')
+  for (const [backendState, self, connected, label] of [
+    ['Running', { online: true }, true, 'Connected'],
+    ['Running', { online: false }, false, 'Not connected'],
+    ['Running', null, false, 'Not connected'],
+    ['NeedsLogin', null, false, 'Needs setup'],
+    ['Stopped', { online: true }, false, 'Stopped'],
+    ['Starting', null, false, 'Starting'],
+    ['NeedsMachineAuth', null, false, 'Awaiting approval'],
+    ['NoState', null, false, 'Not connected'],
+    ['FutureState', null, false, 'Not connected'],
+  ]) {
+    const status = makeStatus({ backendState, self })
+    assert.equal(isTailscaleConnected(status), connected)
+    assert.equal(tailscaleStatusLabel(status, ''), label)
+    assert.equal(isTailscaleConnected(status, 'Failed to refresh'), false)
+    assert.equal(tailscaleStatusLabel(status, 'Failed to refresh'), 'Unavailable')
+  }
 })
 
 test('login posts credentials to /api/login and reads token', async (t) => {

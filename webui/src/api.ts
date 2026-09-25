@@ -113,12 +113,22 @@ export function isSessionError(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401
 }
 
+export interface TailscalePeer {
+  id: string
+  hostName: string
+  dnsName: string
+  os: string
+  tailscaleIPs: string[]
+  online: boolean
+}
+
+// Only the fields selected by the WebUI's status query are included here.
 export interface TailscaleStatus {
   backendState: string
-  connected: boolean
-  needsLogin: boolean
-  tailnet: string
-  ips: string[]
+  tailscaleIPs: string[]
+  currentTailnet: { name: string } | null
+  self: { online: boolean } | null
+  peers: TailscalePeer[]
 }
 
 export interface TailscaleClient {
@@ -154,14 +164,39 @@ async function tailscaleGraphQL(token: string, operationName: string, query: str
   return payload.data
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+}
+
+function isTailscalePeer(value: unknown): value is TailscalePeer {
+  return isRecord(value) && typeof value.id === 'string' && typeof value.hostName === 'string' &&
+    typeof value.dnsName === 'string' && typeof value.os === 'string' &&
+    isStringArray(value.tailscaleIPs) && typeof value.online === 'boolean'
+}
+
+function isTailscaleStatus(value: unknown): value is TailscaleStatus {
+  return isRecord(value) && typeof value.backendState === 'string' && isStringArray(value.tailscaleIPs) &&
+    (value.currentTailnet === null || (isRecord(value.currentTailnet) && typeof value.currentTailnet.name === 'string')) &&
+    (value.self === null || (isRecord(value.self) && typeof value.self.online === 'boolean')) &&
+    Array.isArray(value.peers) && value.peers.every(isTailscalePeer)
+}
+
 export async function tailscaleStatusRequest(token: string, signal?: AbortSignal): Promise<TailscaleStatus> {
   const data = await tailscaleGraphQL(token, 'TailscaleStatus', `query TailscaleStatus {
-    tailscaleStatus { backendState connected needsLogin tailnet ips }
+    tailscaleStatus {
+      backendState
+      tailscaleIPs
+      currentTailnet { name }
+      self { online }
+      peers { id hostName dnsName os tailscaleIPs online }
+    }
   }`, {}, signal)
-  const status = data.tailscaleStatus
-  if (!status || typeof status.backendState !== 'string' || typeof status.connected !== 'boolean' ||
-    typeof status.needsLogin !== 'boolean' || typeof status.tailnet !== 'string' ||
-    !Array.isArray(status.ips) || status.ips.some((ip: unknown) => typeof ip !== 'string')) {
+  const status: unknown = data.tailscaleStatus
+  if (!isTailscaleStatus(status)) {
     throw new Error('The server did not return a valid Tailscale status.')
   }
   return status
@@ -200,5 +235,22 @@ export async function clearTailscaleCredentialRequest(token: string): Promise<vo
 
 export function shouldPromptForTailscale(status: TailscaleStatus | null, statusError: string): boolean {
   // Offline, stopped, starting, or unreachable daemons do not prove credentials are missing.
-  return !statusError && status?.needsLogin === true && !status.connected
+  return !statusError && status?.backendState === 'NeedsLogin'
+}
+
+export function isTailscaleConnected(status: TailscaleStatus | null, statusError = ''): boolean {
+  return !statusError && status?.backendState === 'Running' && status.self?.online === true
+}
+
+export function tailscaleStatusLabel(status: TailscaleStatus | null, statusError: string): string {
+  if (statusError) return 'Unavailable'
+  if (!status) return 'Checking…'
+  if (isTailscaleConnected(status)) return 'Connected'
+  switch (status.backendState) {
+    case 'NeedsLogin': return 'Needs setup'
+    case 'Stopped': return 'Stopped'
+    case 'Starting': return 'Starting'
+    case 'NeedsMachineAuth': return 'Awaiting approval'
+    default: return 'Not connected'
+  }
 }

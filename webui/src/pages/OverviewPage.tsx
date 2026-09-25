@@ -14,19 +14,14 @@ import {
   Zap,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { isTailscaleConnected, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
-
-const peers = [
-  { name: 'workstation', address: '100.82.14.7', os: 'Linux', online: true },
-  { name: 'phone', address: '100.71.22.19', os: 'Android', online: true },
-  { name: 'home-server', address: '100.69.40.2', os: 'Linux', online: false },
-]
 
 export default function OverviewPage() {
   const { status, statusError } = useTailscale()
-  const connected = Boolean(status?.connected && !statusError)
-  const label = statusError ? 'Unavailable' : !status ? 'Checking…' : connected ? 'Connected' :
-    status.needsLogin ? 'Needs setup' : status.backendState === 'Stopped' ? 'Stopped' : 'Not connected'
+  const connected = isTailscaleConnected(status, statusError)
+  const label = tailscaleStatusLabel(status, statusError)
+  const peers = statusError ? [] : status?.peers ?? []
   return (
     <>
       <section className="page-heading">
@@ -40,7 +35,7 @@ export default function OverviewPage() {
         </div>
         <div className="integration-note">
           <SlidersHorizontal size={16} />
-          Connection is live · other panels are previews
+          Connection and peers are live · other panels are previews
         </div>
       </section>
 
@@ -53,10 +48,10 @@ export default function OverviewPage() {
           <div className="status-card__body">
             <span>Tailscale status</span>
             <strong>{connected ? 'Connected to your tailnet' : label}</strong>
-            <p>{!statusError && status?.tailnet ? status.tailnet : 'No active tailnet connection'}</p>
+            <p>{!statusError && status?.currentTailnet?.name ? status.currentTailnet.name : 'No active tailnet connection'}</p>
           </div>
           <div className="status-card__footer">
-            <span>{!statusError && status?.ips.length ? status.ips.join(', ') : 'No Tailscale address'}</span>
+            <span>{!statusError && status?.tailscaleIPs.length ? status.tailscaleIPs.join(', ') : 'No Tailscale address'}</span>
             <Link to="/settings">Settings <ChevronRight size={15} /></Link>
           </div>
         </article>
@@ -94,10 +89,10 @@ export default function OverviewPage() {
         <article className="panel peers-panel">
           <div className="panel__header">
             <div>
-              <span className="panel__eyebrow">SAMPLE TAILNET</span>
-              <h2>Recent peers</h2>
+              <span className="panel__eyebrow">TAILNET</span>
+              <h2>Tailnet peers</h2>
             </div>
-            <span className="peer-count"><Users size={15} /> {peers.length} devices</span>
+            <span className="peer-count"><Users size={15} /> {statusError ? 'Unavailable' : !status ? 'Checking…' : `${peers.length} ${peers.length === 1 ? 'device' : 'devices'}`}</span>
           </div>
 
           <div className="peer-table">
@@ -107,22 +102,21 @@ export default function OverviewPage() {
               <span>Status</span>
             </div>
             {peers.map((peer) => (
-              <div className="peer-row" key={peer.name}>
+              <div className="peer-row" key={peer.id}>
                 <div className="peer-device">
                   <span className="peer-device__icon"><Cpu size={17} /></span>
-                  <span><strong>{peer.name}</strong><small>{peer.os}</small></span>
+                  <span><strong title={peer.hostName || peer.dnsName || peer.id}>{peer.hostName || peer.dnsName || peer.id}</strong><small>{peer.os || 'Unknown OS'}</small></span>
                 </div>
-                <code>{peer.address}</code>
+                <code>{peer.tailscaleIPs.join(', ') || 'No address'}</code>
                 <span className={`peer-status${peer.online ? '' : ' peer-status--offline'}`}>
                   <i /> {peer.online ? 'Online' : 'Offline'}
                 </span>
               </div>
             ))}
+            {peers.length === 0 && <p className="peer-table__empty" role="status">
+              {statusError ? 'Unable to load peers. Retry the status request.' : !status ? 'Loading peers…' : 'No peers are visible to this device.'}
+            </p>}
           </div>
-
-          <button type="button" className="panel__footer-action">
-            View all devices <ChevronRight size={16} />
-          </button>
         </article>
 
         <article className="panel activity-panel">

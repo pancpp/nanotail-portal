@@ -64,49 +64,120 @@ func (c *Client) run(ctx context.Context, args ...string) ([]byte, error) {
 }
 
 type Peer struct {
-	ID             string     `json:"id"`
-	Hostname       string     `json:"hostname"`
-	DNSName        string     `json:"dns_name"`
-	OS             string     `json:"os"`
-	IPs            []string   `json:"ips"`
-	Online         bool       `json:"online"`
-	Active         bool       `json:"active"`
-	ExitNode       bool       `json:"exit_node"`
-	ExitNodeOption bool       `json:"exit_node_option"`
-	RxBytes        int64      `json:"rx_bytes"`
-	TxBytes        int64      `json:"tx_bytes"`
-	LastSeen       *time.Time `json:"last_seen,omitempty"`
-	KeyExpiry      *time.Time `json:"key_expiry,omitempty"`
+	ID                  string         `json:"id"`
+	NodeID              int64          `json:"node_id"`
+	PublicKey           string         `json:"public_key"`
+	Hostname            string         `json:"hostname"`
+	DNSName             string         `json:"dns_name"`
+	OS                  string         `json:"os"`
+	UserID              int64          `json:"user_id"`
+	IPs                 []string       `json:"ips"`
+	AllowedIPs          []string       `json:"allowed_ips"`
+	Tags                []string       `json:"tags"`
+	Addrs               []string       `json:"addrs"`
+	CurAddr             string         `json:"cur_addr"`
+	Relay               string         `json:"relay"`
+	PeerRelay           string         `json:"peer_relay"`
+	Online              bool           `json:"online"`
+	Active              bool           `json:"active"`
+	ExitNode            bool           `json:"exit_node"`
+	ExitNodeOption      bool           `json:"exit_node_option"`
+	RxBytes             int64          `json:"rx_bytes"`
+	TxBytes             int64          `json:"tx_bytes"`
+	Created             time.Time      `json:"created"`
+	LastWrite           *time.Time     `json:"last_write,omitempty"`
+	LastSeen            *time.Time     `json:"last_seen,omitempty"`
+	LastHandshake       *time.Time     `json:"last_handshake,omitempty"`
+	KeyExpiry           *time.Time     `json:"key_expiry,omitempty"`
+	PeerAPIURL          []string       `json:"peer_api_url"`
+	TaildropTarget      int32          `json:"taildrop_target"`
+	NoFileSharingReason string         `json:"no_file_sharing_reason"`
+	CapMap              map[string]any `json:"cap_map,omitempty"`
+	InNetworkMap        bool           `json:"in_network_map"`
+	InMagicSock         bool           `json:"in_magic_sock"`
+	InEngine            bool           `json:"in_engine"`
 }
 
 type rawPeer struct {
-	ID, HostName, DNSName, OS                string
-	TailscaleIPs                             []string
-	Online, Active, ExitNode, ExitNodeOption bool
-	RxBytes, TxBytes                         int64
-	LastSeen, KeyExpiry                      *time.Time
+	ID, PublicKey, HostName, DNSName, OS          string
+	NodeID, UserID                                int64
+	TailscaleIPs, AllowedIPs, Tags, Addrs         []string
+	CurAddr, Relay, PeerRelay                     string
+	Online, Active, ExitNode, ExitNodeOption      bool
+	RxBytes, TxBytes                              int64
+	Created                                       time.Time
+	LastWrite, LastSeen, LastHandshake, KeyExpiry *time.Time
+	PeerAPIURL                                    []string
+	TaildropTarget                                int32
+	NoFileSharingReason                           string
+	CapMap                                        map[string]any
+	InNetworkMap, InMagicSock, InEngine           bool
 }
 
 func (p rawPeer) peer() Peer {
 	return Peer{
 		ID: p.ID, Hostname: p.HostName, DNSName: p.DNSName, OS: p.OS, IPs: nonNil(p.TailscaleIPs),
+		NodeID: p.NodeID, PublicKey: p.PublicKey, UserID: p.UserID,
+		AllowedIPs: nonNil(p.AllowedIPs), Tags: nonNil(p.Tags), Addrs: p.Addrs,
+		CurAddr: p.CurAddr, Relay: p.Relay, PeerRelay: p.PeerRelay,
 		Online: p.Online, Active: p.Active, ExitNode: p.ExitNode, ExitNodeOption: p.ExitNodeOption,
-		RxBytes: p.RxBytes, TxBytes: p.TxBytes, LastSeen: p.LastSeen, KeyExpiry: p.KeyExpiry,
+		RxBytes: p.RxBytes, TxBytes: p.TxBytes, Created: p.Created,
+		LastWrite: knownTime(p.LastWrite), LastSeen: knownTime(p.LastSeen),
+		LastHandshake: knownTime(p.LastHandshake), KeyExpiry: knownTime(p.KeyExpiry),
+		PeerAPIURL: nonNil(p.PeerAPIURL), TaildropTarget: p.TaildropTarget,
+		NoFileSharingReason: p.NoFileSharingReason, CapMap: p.CapMap,
+		InNetworkMap: p.InNetworkMap, InMagicSock: p.InMagicSock, InEngine: p.InEngine,
 	}
 }
 
+// Tailscale uses zero timestamps for unknown times.
+func knownTime(value *time.Time) *time.Time {
+	if value == nil || value.IsZero() {
+		return nil
+	}
+	return value
+}
+
+type Tailnet struct {
+	Name            string `json:"name"`
+	MagicDNSSuffix  string `json:"magicDNSSuffix"`
+	MagicDNSEnabled bool   `json:"magicDNSEnabled"`
+}
+
+type DNSRecord struct {
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
+type ClientVersion struct {
+	RunningLatest        bool   `json:"runningLatest"`
+	LatestVersion        string `json:"latestVersion"`
+	UrgentSecurityUpdate bool   `json:"urgentSecurityUpdate"`
+	Notify               bool   `json:"notify"`
+	NotifyURL            string `json:"notifyURL"`
+	NotifyText           string `json:"notifyText"`
+}
+
 type Status struct {
-	Version      string    `json:"version"`
-	BackendState string    `json:"backend_state"`
-	AuthURL      string    `json:"auth_url,omitempty"`
-	IPs          []string  `json:"ips"`
-	Health       []string  `json:"health"`
-	Tailnet      string    `json:"tailnet"`
-	Self         *Peer     `json:"self"`
-	Peers        []Peer    `json:"peers"`
-	RxBytes      int64     `json:"rx_bytes"`
-	TxBytes      int64     `json:"tx_bytes"`
-	ObservedAt   time.Time `json:"observed_at"`
+	Version        string         `json:"version"`
+	TUN            bool           `json:"tun"`
+	BackendState   string         `json:"backend_state"`
+	HaveNodeKey    bool           `json:"have_node_key"`
+	AuthURL        string         `json:"auth_url,omitempty"`
+	IPs            []string       `json:"ips"`
+	Health         []string       `json:"health"`
+	Tailnet        string         `json:"tailnet"`
+	MagicDNSSuffix string         `json:"magic_dns_suffix"`
+	CurrentTailnet *Tailnet       `json:"current_tailnet"`
+	CertDomains    []string       `json:"cert_domains"`
+	ExtraRecords   []DNSRecord    `json:"extra_records"`
+	ClientVersion  *ClientVersion `json:"client_version"`
+	Self           *Peer          `json:"self"`
+	Peers          []Peer         `json:"peers"`
+	RxBytes        int64          `json:"rx_bytes"`
+	TxBytes        int64          `json:"tx_bytes"`
+	ObservedAt     time.Time      `json:"observed_at"`
 }
 
 func (c *Client) Status(ctx context.Context) (Status, error) {
@@ -118,8 +189,13 @@ func (c *Client) Status(ctx context.Context) (Status, error) {
 	}
 	var raw struct {
 		Version, BackendState, AuthURL string
+		TUN, HaveNodeKey               bool
 		TailscaleIPs, Health           []string
-		CurrentTailnet                 *struct{ Name string }
+		MagicDNSSuffix                 string
+		CurrentTailnet                 *Tailnet
+		CertDomains                    []string
+		ExtraRecords                   []DNSRecord
+		ClientVersion                  *ClientVersion
 		Self                           *rawPeer
 		Peer                           map[string]*rawPeer
 	}
@@ -128,6 +204,9 @@ func (c *Client) Status(ctx context.Context) (Status, error) {
 	}
 	status := Status{
 		Version: raw.Version, BackendState: raw.BackendState, AuthURL: raw.AuthURL,
+		TUN: raw.TUN, HaveNodeKey: raw.HaveNodeKey, MagicDNSSuffix: raw.MagicDNSSuffix,
+		CurrentTailnet: raw.CurrentTailnet, CertDomains: raw.CertDomains,
+		ExtraRecords: raw.ExtraRecords, ClientVersion: raw.ClientVersion,
 		IPs: nonNil(raw.TailscaleIPs), Health: nonNil(raw.Health), Peers: []Peer{}, ObservedAt: time.Now().UTC(),
 	}
 	if raw.CurrentTailnet != nil {

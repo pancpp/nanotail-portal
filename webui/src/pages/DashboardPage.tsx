@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth'
 import Brand from '../components/Brand'
-import { shouldPromptForTailscale } from '../api'
+import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
 import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 
@@ -35,8 +35,8 @@ export default function DashboardPage() {
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptDismissed, setPromptDismissed] = useState(false)
   const needsSetup = shouldPromptForTailscale(status, statusError)
-  const connectionLabel = statusError ? 'Status unavailable' : !status ? 'Checking Tailscale…' :
-    status.connected ? 'Connected' : status.needsLogin ? 'Needs setup' : status.backendState === 'Stopped' ? 'Stopped' : 'Not connected'
+  const connected = isTailscaleConnected(status, statusError)
+  const connectionLabel = tailscaleStatusLabel(status, statusError)
 
   useEffect(() => {
     if (needsSetup && client !== undefined && !clientError && !promptDismissed && pathname === '/') setPromptOpen(true)
@@ -80,7 +80,7 @@ export default function DashboardPage() {
           <span className="device-chip__icon"><Cpu size={18} /></span>
           <span>
             <strong>nanotail</strong>
-            <small className={!status?.connected || statusError ? 'connection-muted' : ''}><i /> {connectionLabel}</small>
+            <small className={connected ? '' : 'connection-muted'}><i /> {connectionLabel}</small>
           </span>
         </div>
 

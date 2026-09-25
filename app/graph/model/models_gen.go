@@ -17,6 +17,12 @@ type Mutation struct {
 type Query struct {
 }
 
+type Tailnet struct {
+	Name            string `json:"name"`
+	MagicDNSSuffix  string `json:"magicDNSSuffix"`
+	MagicDNSEnabled bool   `json:"magicDNSEnabled"`
+}
+
 type TailscaleClient struct {
 	ID              int       `json:"id"`
 	ClientID        string    `json:"clientId"`
@@ -25,18 +31,84 @@ type TailscaleClient struct {
 	UpdateTime      time.Time `json:"updateTime"`
 }
 
+type TailscaleClientVersion struct {
+	RunningLatest        bool   `json:"runningLatest"`
+	LatestVersion        string `json:"latestVersion"`
+	UrgentSecurityUpdate bool   `json:"urgentSecurityUpdate"`
+	Notify               bool   `json:"notify"`
+	NotifyURL            string `json:"notifyURL"`
+	NotifyText           string `json:"notifyText"`
+}
+
 type TailscaleCredential struct {
 	ClientID string `json:"clientId"`
 	// Omit to retain the saved secret when the client ID is unchanged.
 	ClientSecret *string `json:"clientSecret,omitempty"`
 }
 
+type TailscaleDNSRecord struct {
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
+type TailscalePeer struct {
+	ID                  string         `json:"id"`
+	NodeID              int            `json:"nodeID"`
+	PublicKey           string         `json:"publicKey"`
+	HostName            string         `json:"hostName"`
+	DNSName             string         `json:"dnsName"`
+	Os                  string         `json:"os"`
+	UserID              int            `json:"userID"`
+	TailscaleIPs        []string       `json:"tailscaleIPs"`
+	AllowedIPs          []string       `json:"allowedIPs"`
+	Tags                []string       `json:"tags"`
+	Addrs               []string       `json:"addrs,omitempty"`
+	CurAddr             string         `json:"curAddr"`
+	Relay               string         `json:"relay"`
+	PeerRelay           string         `json:"peerRelay"`
+	RxBytes             int            `json:"rxBytes"`
+	TxBytes             int            `json:"txBytes"`
+	Created             time.Time      `json:"created"`
+	LastWrite           *time.Time     `json:"lastWrite,omitempty"`
+	LastSeen            *time.Time     `json:"lastSeen,omitempty"`
+	LastHandshake       *time.Time     `json:"lastHandshake,omitempty"`
+	Online              bool           `json:"online"`
+	ExitNode            bool           `json:"exitNode"`
+	ExitNodeOption      bool           `json:"exitNodeOption"`
+	Active              bool           `json:"active"`
+	PeerAPIURL          []string       `json:"peerAPIURL"`
+	TaildropTarget      int32          `json:"taildropTarget"`
+	NoFileSharingReason string         `json:"noFileSharingReason"`
+	CapMap              map[string]any `json:"capMap,omitempty"`
+	InNetworkMap        bool           `json:"inNetworkMap"`
+	InMagicSock         bool           `json:"inMagicSock"`
+	InEngine            bool           `json:"inEngine"`
+	KeyExpiry           *time.Time     `json:"keyExpiry,omitempty"`
+}
+
 type TailscaleStatus struct {
-	BackendState string   `json:"backendState"`
-	Connected    bool     `json:"connected"`
-	NeedsLogin   bool     `json:"needsLogin"`
-	Tailnet      string   `json:"tailnet"`
-	Ips          []string `json:"ips"`
+	Version        string                  `json:"version"`
+	Tun            bool                    `json:"tun"`
+	BackendState   string                  `json:"backendState"`
+	HaveNodeKey    bool                    `json:"haveNodeKey"`
+	AuthURL        string                  `json:"authURL"`
+	TailscaleIPs   []string                `json:"tailscaleIPs"`
+	Health         []string                `json:"health"`
+	MagicDNSSuffix string                  `json:"magicDnsSuffix"`
+	CurrentTailnet *Tailnet                `json:"currentTailnet,omitempty"`
+	CertDomains    []string                `json:"certDomains,omitempty"`
+	ExtraRecords   []*TailscaleDNSRecord   `json:"extraRecords,omitempty"`
+	ClientVersion  *TailscaleClientVersion `json:"clientVersion,omitempty"`
+	Self           *TailscalePeer          `json:"self,omitempty"`
+	Peers          []*TailscalePeer        `json:"peers"`
+}
+
+type TailscaleUser struct {
+	ID            int    `json:"id"`
+	LoginName     string `json:"loginName"`
+	DisplayName   string `json:"displayName"`
+	ProfilePicURL string `json:"profilePicURL"`
 }
 
 type User struct {

@@ -50,6 +50,12 @@ type ComplexityRoot struct {
 		User            func(childComplexity int) int
 	}
 
+	Tailnet struct {
+		MagicDNSEnabled func(childComplexity int) int
+		MagicDNSSuffix  func(childComplexity int) int
+		Name            func(childComplexity int) int
+	}
+
 	TailscaleClient struct {
 		ClientID        func(childComplexity int) int
 		CreateTime      func(childComplexity int) int
@@ -58,12 +64,78 @@ type ComplexityRoot struct {
 		UpdateTime      func(childComplexity int) int
 	}
 
+	TailscaleClientVersion struct {
+		LatestVersion        func(childComplexity int) int
+		Notify               func(childComplexity int) int
+		NotifyText           func(childComplexity int) int
+		NotifyURL            func(childComplexity int) int
+		RunningLatest        func(childComplexity int) int
+		UrgentSecurityUpdate func(childComplexity int) int
+	}
+
+	TailscaleDNSRecord struct {
+		Name  func(childComplexity int) int
+		Type  func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
+	TailscalePeer struct {
+		Active              func(childComplexity int) int
+		Addrs               func(childComplexity int) int
+		AllowedIPs          func(childComplexity int) int
+		CapMap              func(childComplexity int) int
+		Created             func(childComplexity int) int
+		CurAddr             func(childComplexity int) int
+		DNSName             func(childComplexity int) int
+		ExitNode            func(childComplexity int) int
+		ExitNodeOption      func(childComplexity int) int
+		HostName            func(childComplexity int) int
+		ID                  func(childComplexity int) int
+		InEngine            func(childComplexity int) int
+		InMagicSock         func(childComplexity int) int
+		InNetworkMap        func(childComplexity int) int
+		KeyExpiry           func(childComplexity int) int
+		LastHandshake       func(childComplexity int) int
+		LastSeen            func(childComplexity int) int
+		LastWrite           func(childComplexity int) int
+		NoFileSharingReason func(childComplexity int) int
+		NodeID              func(childComplexity int) int
+		Online              func(childComplexity int) int
+		Os                  func(childComplexity int) int
+		PeerAPIURL          func(childComplexity int) int
+		PeerRelay           func(childComplexity int) int
+		PublicKey           func(childComplexity int) int
+		Relay               func(childComplexity int) int
+		RxBytes             func(childComplexity int) int
+		Tags                func(childComplexity int) int
+		TaildropTarget      func(childComplexity int) int
+		TailscaleIPs        func(childComplexity int) int
+		TxBytes             func(childComplexity int) int
+		UserID              func(childComplexity int) int
+	}
+
 	TailscaleStatus struct {
-		BackendState func(childComplexity int) int
-		Connected    func(childComplexity int) int
-		Ips          func(childComplexity int) int
-		NeedsLogin   func(childComplexity int) int
-		Tailnet      func(childComplexity int) int
+		AuthURL        func(childComplexity int) int
+		BackendState   func(childComplexity int) int
+		CertDomains    func(childComplexity int) int
+		ClientVersion  func(childComplexity int) int
+		CurrentTailnet func(childComplexity int) int
+		ExtraRecords   func(childComplexity int) int
+		HaveNodeKey    func(childComplexity int) int
+		Health         func(childComplexity int) int
+		MagicDNSSuffix func(childComplexity int) int
+		Peers          func(childComplexity int) int
+		Self           func(childComplexity int) int
+		TailscaleIPs   func(childComplexity int) int
+		Tun            func(childComplexity int) int
+		Version        func(childComplexity int) int
+	}
+
+	TailscaleUser struct {
+		DisplayName   func(childComplexity int) int
+		ID            func(childComplexity int) int
+		LoginName     func(childComplexity int) int
+		ProfilePicURL func(childComplexity int) int
 	}
 
 	User struct {
@@ -156,6 +228,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.User(childComplexity), true
 
+	case "Tailnet.magicDNSEnabled":
+		if e.ComplexityRoot.Tailnet.MagicDNSEnabled == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Tailnet.MagicDNSEnabled(childComplexity), true
+	case "Tailnet.magicDNSSuffix":
+		if e.ComplexityRoot.Tailnet.MagicDNSSuffix == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Tailnet.MagicDNSSuffix(childComplexity), true
+	case "Tailnet.name":
+		if e.ComplexityRoot.Tailnet.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Tailnet.Name(childComplexity), true
+
 	case "TailscaleClient.clientId":
 		if e.ComplexityRoot.TailscaleClient.ClientID == nil {
 			break
@@ -187,36 +278,364 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TailscaleClient.UpdateTime(childComplexity), true
 
+	case "TailscaleClientVersion.latestVersion":
+		if e.ComplexityRoot.TailscaleClientVersion.LatestVersion == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClientVersion.LatestVersion(childComplexity), true
+	case "TailscaleClientVersion.notify":
+		if e.ComplexityRoot.TailscaleClientVersion.Notify == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClientVersion.Notify(childComplexity), true
+	case "TailscaleClientVersion.notifyText":
+		if e.ComplexityRoot.TailscaleClientVersion.NotifyText == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClientVersion.NotifyText(childComplexity), true
+	case "TailscaleClientVersion.notifyURL":
+		if e.ComplexityRoot.TailscaleClientVersion.NotifyURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClientVersion.NotifyURL(childComplexity), true
+	case "TailscaleClientVersion.runningLatest":
+		if e.ComplexityRoot.TailscaleClientVersion.RunningLatest == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClientVersion.RunningLatest(childComplexity), true
+	case "TailscaleClientVersion.urgentSecurityUpdate":
+		if e.ComplexityRoot.TailscaleClientVersion.UrgentSecurityUpdate == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleClientVersion.UrgentSecurityUpdate(childComplexity), true
+
+	case "TailscaleDNSRecord.name":
+		if e.ComplexityRoot.TailscaleDNSRecord.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleDNSRecord.Name(childComplexity), true
+	case "TailscaleDNSRecord.type":
+		if e.ComplexityRoot.TailscaleDNSRecord.Type == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleDNSRecord.Type(childComplexity), true
+	case "TailscaleDNSRecord.value":
+		if e.ComplexityRoot.TailscaleDNSRecord.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleDNSRecord.Value(childComplexity), true
+
+	case "TailscalePeer.active":
+		if e.ComplexityRoot.TailscalePeer.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.Active(childComplexity), true
+	case "TailscalePeer.addrs":
+		if e.ComplexityRoot.TailscalePeer.Addrs == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.Addrs(childComplexity), true
+	case "TailscalePeer.allowedIPs":
+		if e.ComplexityRoot.TailscalePeer.AllowedIPs == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.AllowedIPs(childComplexity), true
+	case "TailscalePeer.capMap":
+		if e.ComplexityRoot.TailscalePeer.CapMap == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.CapMap(childComplexity), true
+	case "TailscalePeer.created":
+		if e.ComplexityRoot.TailscalePeer.Created == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.Created(childComplexity), true
+	case "TailscalePeer.curAddr":
+		if e.ComplexityRoot.TailscalePeer.CurAddr == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.CurAddr(childComplexity), true
+	case "TailscalePeer.dnsName":
+		if e.ComplexityRoot.TailscalePeer.DNSName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.DNSName(childComplexity), true
+	case "TailscalePeer.exitNode":
+		if e.ComplexityRoot.TailscalePeer.ExitNode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.ExitNode(childComplexity), true
+	case "TailscalePeer.exitNodeOption":
+		if e.ComplexityRoot.TailscalePeer.ExitNodeOption == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.ExitNodeOption(childComplexity), true
+	case "TailscalePeer.hostName":
+		if e.ComplexityRoot.TailscalePeer.HostName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.HostName(childComplexity), true
+	case "TailscalePeer.id":
+		if e.ComplexityRoot.TailscalePeer.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.ID(childComplexity), true
+	case "TailscalePeer.inEngine":
+		if e.ComplexityRoot.TailscalePeer.InEngine == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.InEngine(childComplexity), true
+	case "TailscalePeer.inMagicSock":
+		if e.ComplexityRoot.TailscalePeer.InMagicSock == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.InMagicSock(childComplexity), true
+	case "TailscalePeer.inNetworkMap":
+		if e.ComplexityRoot.TailscalePeer.InNetworkMap == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.InNetworkMap(childComplexity), true
+	case "TailscalePeer.keyExpiry":
+		if e.ComplexityRoot.TailscalePeer.KeyExpiry == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.KeyExpiry(childComplexity), true
+	case "TailscalePeer.lastHandshake":
+		if e.ComplexityRoot.TailscalePeer.LastHandshake == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.LastHandshake(childComplexity), true
+	case "TailscalePeer.lastSeen":
+		if e.ComplexityRoot.TailscalePeer.LastSeen == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.LastSeen(childComplexity), true
+	case "TailscalePeer.lastWrite":
+		if e.ComplexityRoot.TailscalePeer.LastWrite == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.LastWrite(childComplexity), true
+	case "TailscalePeer.noFileSharingReason":
+		if e.ComplexityRoot.TailscalePeer.NoFileSharingReason == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.NoFileSharingReason(childComplexity), true
+	case "TailscalePeer.nodeID":
+		if e.ComplexityRoot.TailscalePeer.NodeID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.NodeID(childComplexity), true
+	case "TailscalePeer.online":
+		if e.ComplexityRoot.TailscalePeer.Online == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.Online(childComplexity), true
+	case "TailscalePeer.os":
+		if e.ComplexityRoot.TailscalePeer.Os == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.Os(childComplexity), true
+	case "TailscalePeer.peerAPIURL":
+		if e.ComplexityRoot.TailscalePeer.PeerAPIURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.PeerAPIURL(childComplexity), true
+	case "TailscalePeer.peerRelay":
+		if e.ComplexityRoot.TailscalePeer.PeerRelay == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.PeerRelay(childComplexity), true
+	case "TailscalePeer.publicKey":
+		if e.ComplexityRoot.TailscalePeer.PublicKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.PublicKey(childComplexity), true
+	case "TailscalePeer.relay":
+		if e.ComplexityRoot.TailscalePeer.Relay == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.Relay(childComplexity), true
+	case "TailscalePeer.rxBytes":
+		if e.ComplexityRoot.TailscalePeer.RxBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.RxBytes(childComplexity), true
+	case "TailscalePeer.tags":
+		if e.ComplexityRoot.TailscalePeer.Tags == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.Tags(childComplexity), true
+	case "TailscalePeer.taildropTarget":
+		if e.ComplexityRoot.TailscalePeer.TaildropTarget == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.TaildropTarget(childComplexity), true
+	case "TailscalePeer.tailscaleIPs":
+		if e.ComplexityRoot.TailscalePeer.TailscaleIPs == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.TailscaleIPs(childComplexity), true
+	case "TailscalePeer.txBytes":
+		if e.ComplexityRoot.TailscalePeer.TxBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.TxBytes(childComplexity), true
+	case "TailscalePeer.userID":
+		if e.ComplexityRoot.TailscalePeer.UserID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.UserID(childComplexity), true
+
+	case "TailscaleStatus.authURL":
+		if e.ComplexityRoot.TailscaleStatus.AuthURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.AuthURL(childComplexity), true
 	case "TailscaleStatus.backendState":
 		if e.ComplexityRoot.TailscaleStatus.BackendState == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TailscaleStatus.BackendState(childComplexity), true
-	case "TailscaleStatus.connected":
-		if e.ComplexityRoot.TailscaleStatus.Connected == nil {
+	case "TailscaleStatus.certDomains":
+		if e.ComplexityRoot.TailscaleStatus.CertDomains == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TailscaleStatus.Connected(childComplexity), true
-	case "TailscaleStatus.ips":
-		if e.ComplexityRoot.TailscaleStatus.Ips == nil {
+		return e.ComplexityRoot.TailscaleStatus.CertDomains(childComplexity), true
+	case "TailscaleStatus.clientVersion":
+		if e.ComplexityRoot.TailscaleStatus.ClientVersion == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TailscaleStatus.Ips(childComplexity), true
-	case "TailscaleStatus.needsLogin":
-		if e.ComplexityRoot.TailscaleStatus.NeedsLogin == nil {
+		return e.ComplexityRoot.TailscaleStatus.ClientVersion(childComplexity), true
+	case "TailscaleStatus.currentTailnet":
+		if e.ComplexityRoot.TailscaleStatus.CurrentTailnet == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TailscaleStatus.NeedsLogin(childComplexity), true
-	case "TailscaleStatus.tailnet":
-		if e.ComplexityRoot.TailscaleStatus.Tailnet == nil {
+		return e.ComplexityRoot.TailscaleStatus.CurrentTailnet(childComplexity), true
+	case "TailscaleStatus.extraRecords":
+		if e.ComplexityRoot.TailscaleStatus.ExtraRecords == nil {
 			break
 		}
 
-		return e.ComplexityRoot.TailscaleStatus.Tailnet(childComplexity), true
+		return e.ComplexityRoot.TailscaleStatus.ExtraRecords(childComplexity), true
+	case "TailscaleStatus.haveNodeKey":
+		if e.ComplexityRoot.TailscaleStatus.HaveNodeKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.HaveNodeKey(childComplexity), true
+	case "TailscaleStatus.health":
+		if e.ComplexityRoot.TailscaleStatus.Health == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.Health(childComplexity), true
+	case "TailscaleStatus.magicDnsSuffix":
+		if e.ComplexityRoot.TailscaleStatus.MagicDNSSuffix == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.MagicDNSSuffix(childComplexity), true
+	case "TailscaleStatus.peers":
+		if e.ComplexityRoot.TailscaleStatus.Peers == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.Peers(childComplexity), true
+	case "TailscaleStatus.self":
+		if e.ComplexityRoot.TailscaleStatus.Self == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.Self(childComplexity), true
+	case "TailscaleStatus.tailscaleIPs":
+		if e.ComplexityRoot.TailscaleStatus.TailscaleIPs == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.TailscaleIPs(childComplexity), true
+	case "TailscaleStatus.tun":
+		if e.ComplexityRoot.TailscaleStatus.Tun == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.Tun(childComplexity), true
+	case "TailscaleStatus.version":
+		if e.ComplexityRoot.TailscaleStatus.Version == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleStatus.Version(childComplexity), true
+
+	case "TailscaleUser.displayName":
+		if e.ComplexityRoot.TailscaleUser.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleUser.DisplayName(childComplexity), true
+	case "TailscaleUser.id":
+		if e.ComplexityRoot.TailscaleUser.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleUser.ID(childComplexity), true
+	case "TailscaleUser.loginName":
+		if e.ComplexityRoot.TailscaleUser.LoginName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleUser.LoginName(childComplexity), true
+	case "TailscaleUser.profilePicURL":
+		if e.ComplexityRoot.TailscaleUser.ProfilePicURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleUser.ProfilePicURL(childComplexity), true
 
 	case "User.createTime":
 		if e.ComplexityRoot.User.CreateTime == nil {
@@ -353,6 +772,18 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
 
+func (ec *executionContext) childFields_Tailnet(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_Tailnet_name(ctx, field)
+	case "magicDNSSuffix":
+		return ec.fieldContext_Tailnet_magicDNSSuffix(ctx, field)
+	case "magicDNSEnabled":
+		return ec.fieldContext_Tailnet_magicDNSEnabled(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Tailnet", field.Name)
+}
+
 func (ec *executionContext) childFields_TailscaleClient(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -369,18 +800,136 @@ func (ec *executionContext) childFields_TailscaleClient(ctx context.Context, fie
 	return nil, fmt.Errorf("no field named %q was found under type TailscaleClient", field.Name)
 }
 
+func (ec *executionContext) childFields_TailscaleClientVersion(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "runningLatest":
+		return ec.fieldContext_TailscaleClientVersion_runningLatest(ctx, field)
+	case "latestVersion":
+		return ec.fieldContext_TailscaleClientVersion_latestVersion(ctx, field)
+	case "urgentSecurityUpdate":
+		return ec.fieldContext_TailscaleClientVersion_urgentSecurityUpdate(ctx, field)
+	case "notify":
+		return ec.fieldContext_TailscaleClientVersion_notify(ctx, field)
+	case "notifyURL":
+		return ec.fieldContext_TailscaleClientVersion_notifyURL(ctx, field)
+	case "notifyText":
+		return ec.fieldContext_TailscaleClientVersion_notifyText(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TailscaleClientVersion", field.Name)
+}
+
+func (ec *executionContext) childFields_TailscaleDNSRecord(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_TailscaleDNSRecord_name(ctx, field)
+	case "type":
+		return ec.fieldContext_TailscaleDNSRecord_type(ctx, field)
+	case "value":
+		return ec.fieldContext_TailscaleDNSRecord_value(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TailscaleDNSRecord", field.Name)
+}
+
+func (ec *executionContext) childFields_TailscalePeer(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_TailscalePeer_id(ctx, field)
+	case "nodeID":
+		return ec.fieldContext_TailscalePeer_nodeID(ctx, field)
+	case "publicKey":
+		return ec.fieldContext_TailscalePeer_publicKey(ctx, field)
+	case "hostName":
+		return ec.fieldContext_TailscalePeer_hostName(ctx, field)
+	case "dnsName":
+		return ec.fieldContext_TailscalePeer_dnsName(ctx, field)
+	case "os":
+		return ec.fieldContext_TailscalePeer_os(ctx, field)
+	case "userID":
+		return ec.fieldContext_TailscalePeer_userID(ctx, field)
+	case "tailscaleIPs":
+		return ec.fieldContext_TailscalePeer_tailscaleIPs(ctx, field)
+	case "allowedIPs":
+		return ec.fieldContext_TailscalePeer_allowedIPs(ctx, field)
+	case "tags":
+		return ec.fieldContext_TailscalePeer_tags(ctx, field)
+	case "addrs":
+		return ec.fieldContext_TailscalePeer_addrs(ctx, field)
+	case "curAddr":
+		return ec.fieldContext_TailscalePeer_curAddr(ctx, field)
+	case "relay":
+		return ec.fieldContext_TailscalePeer_relay(ctx, field)
+	case "peerRelay":
+		return ec.fieldContext_TailscalePeer_peerRelay(ctx, field)
+	case "rxBytes":
+		return ec.fieldContext_TailscalePeer_rxBytes(ctx, field)
+	case "txBytes":
+		return ec.fieldContext_TailscalePeer_txBytes(ctx, field)
+	case "created":
+		return ec.fieldContext_TailscalePeer_created(ctx, field)
+	case "lastWrite":
+		return ec.fieldContext_TailscalePeer_lastWrite(ctx, field)
+	case "lastSeen":
+		return ec.fieldContext_TailscalePeer_lastSeen(ctx, field)
+	case "lastHandshake":
+		return ec.fieldContext_TailscalePeer_lastHandshake(ctx, field)
+	case "online":
+		return ec.fieldContext_TailscalePeer_online(ctx, field)
+	case "exitNode":
+		return ec.fieldContext_TailscalePeer_exitNode(ctx, field)
+	case "exitNodeOption":
+		return ec.fieldContext_TailscalePeer_exitNodeOption(ctx, field)
+	case "active":
+		return ec.fieldContext_TailscalePeer_active(ctx, field)
+	case "peerAPIURL":
+		return ec.fieldContext_TailscalePeer_peerAPIURL(ctx, field)
+	case "taildropTarget":
+		return ec.fieldContext_TailscalePeer_taildropTarget(ctx, field)
+	case "noFileSharingReason":
+		return ec.fieldContext_TailscalePeer_noFileSharingReason(ctx, field)
+	case "capMap":
+		return ec.fieldContext_TailscalePeer_capMap(ctx, field)
+	case "inNetworkMap":
+		return ec.fieldContext_TailscalePeer_inNetworkMap(ctx, field)
+	case "inMagicSock":
+		return ec.fieldContext_TailscalePeer_inMagicSock(ctx, field)
+	case "inEngine":
+		return ec.fieldContext_TailscalePeer_inEngine(ctx, field)
+	case "keyExpiry":
+		return ec.fieldContext_TailscalePeer_keyExpiry(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TailscalePeer", field.Name)
+}
+
 func (ec *executionContext) childFields_TailscaleStatus(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
+	case "version":
+		return ec.fieldContext_TailscaleStatus_version(ctx, field)
+	case "tun":
+		return ec.fieldContext_TailscaleStatus_tun(ctx, field)
 	case "backendState":
 		return ec.fieldContext_TailscaleStatus_backendState(ctx, field)
-	case "connected":
-		return ec.fieldContext_TailscaleStatus_connected(ctx, field)
-	case "needsLogin":
-		return ec.fieldContext_TailscaleStatus_needsLogin(ctx, field)
-	case "tailnet":
-		return ec.fieldContext_TailscaleStatus_tailnet(ctx, field)
-	case "ips":
-		return ec.fieldContext_TailscaleStatus_ips(ctx, field)
+	case "haveNodeKey":
+		return ec.fieldContext_TailscaleStatus_haveNodeKey(ctx, field)
+	case "authURL":
+		return ec.fieldContext_TailscaleStatus_authURL(ctx, field)
+	case "tailscaleIPs":
+		return ec.fieldContext_TailscaleStatus_tailscaleIPs(ctx, field)
+	case "health":
+		return ec.fieldContext_TailscaleStatus_health(ctx, field)
+	case "magicDnsSuffix":
+		return ec.fieldContext_TailscaleStatus_magicDnsSuffix(ctx, field)
+	case "currentTailnet":
+		return ec.fieldContext_TailscaleStatus_currentTailnet(ctx, field)
+	case "certDomains":
+		return ec.fieldContext_TailscaleStatus_certDomains(ctx, field)
+	case "extraRecords":
+		return ec.fieldContext_TailscaleStatus_extraRecords(ctx, field)
+	case "clientVersion":
+		return ec.fieldContext_TailscaleStatus_clientVersion(ctx, field)
+	case "self":
+		return ec.fieldContext_TailscaleStatus_self(ctx, field)
+	case "peers":
+		return ec.fieldContext_TailscaleStatus_peers(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TailscaleStatus", field.Name)
 }
@@ -902,6 +1451,75 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Tailnet_name(ctx context.Context, field graphql.CollectedField, obj *model.Tailnet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Tailnet_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Tailnet_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Tailnet", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Tailnet_magicDNSSuffix(ctx context.Context, field graphql.CollectedField, obj *model.Tailnet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Tailnet_magicDNSSuffix(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MagicDNSSuffix, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Tailnet_magicDNSSuffix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Tailnet", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Tailnet_magicDNSEnabled(ctx context.Context, field graphql.CollectedField, obj *model.Tailnet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Tailnet_magicDNSEnabled(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MagicDNSEnabled, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Tailnet_magicDNSEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Tailnet", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
 func (ec *executionContext) _TailscaleClient_id(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClient) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1017,6 +1635,995 @@ func (ec *executionContext) fieldContext_TailscaleClient_updateTime(_ context.Co
 	return graphql.NewScalarFieldContext("TailscaleClient", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
+func (ec *executionContext) _TailscaleClientVersion_runningLatest(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClientVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClientVersion_runningLatest(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RunningLatest, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClientVersion_runningLatest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClientVersion", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClientVersion_latestVersion(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClientVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClientVersion_latestVersion(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LatestVersion, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClientVersion_latestVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClientVersion", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClientVersion_urgentSecurityUpdate(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClientVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClientVersion_urgentSecurityUpdate(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UrgentSecurityUpdate, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClientVersion_urgentSecurityUpdate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClientVersion", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClientVersion_notify(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClientVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClientVersion_notify(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Notify, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClientVersion_notify(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClientVersion", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClientVersion_notifyURL(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClientVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClientVersion_notifyURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.NotifyURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClientVersion_notifyURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClientVersion", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleClientVersion_notifyText(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleClientVersion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleClientVersion_notifyText(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.NotifyText, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleClientVersion_notifyText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleClientVersion", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleDNSRecord_name(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleDNSRecord) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleDNSRecord_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleDNSRecord_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleDNSRecord", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleDNSRecord_type(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleDNSRecord) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleDNSRecord_type(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleDNSRecord_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleDNSRecord", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleDNSRecord_value(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleDNSRecord) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleDNSRecord_value(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleDNSRecord_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleDNSRecord", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_id(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_nodeID(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_nodeID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.NodeID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt642int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_nodeID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_publicKey(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_publicKey(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PublicKey, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_publicKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_hostName(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_hostName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.HostName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_hostName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_dnsName(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_dnsName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DNSName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_dnsName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_os(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_os(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Os, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_os(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_userID(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_userID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UserID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt642int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_tailscaleIPs(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_tailscaleIPs(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TailscaleIPs, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_tailscaleIPs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_allowedIPs(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_allowedIPs(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AllowedIPs, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_allowedIPs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_tags(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_tags(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Tags, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_addrs(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_addrs(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Addrs, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_addrs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_curAddr(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_curAddr(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CurAddr, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_curAddr(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_relay(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_relay(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Relay, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_relay(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_peerRelay(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_peerRelay(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PeerRelay, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_peerRelay(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_rxBytes(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_rxBytes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RxBytes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt642int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_rxBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_txBytes(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_txBytes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TxBytes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt642int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_txBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_created(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_created(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Created, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_created(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_lastWrite(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_lastWrite(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastWrite, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_lastWrite(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_lastSeen(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_lastSeen(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastSeen, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_lastSeen(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_lastHandshake(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_lastHandshake(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastHandshake, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_lastHandshake(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_online(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_online(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Online, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_online(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_exitNode(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_exitNode(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExitNode, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_exitNode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_exitNodeOption(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_exitNodeOption(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExitNodeOption, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_exitNodeOption(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_active(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_active(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_peerAPIURL(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_peerAPIURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PeerAPIURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_peerAPIURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_taildropTarget(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_taildropTarget(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TaildropTarget, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int32) graphql.Marshaler {
+			return ec.marshalNInt2int32(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_taildropTarget(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_noFileSharingReason(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_noFileSharingReason(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.NoFileSharingReason, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_noFileSharingReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_capMap(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_capMap(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CapMap, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v map[string]any) graphql.Marshaler {
+			return ec.marshalOMap2map(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_capMap(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Map does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_inNetworkMap(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_inNetworkMap(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.InNetworkMap, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_inNetworkMap(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_inMagicSock(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_inMagicSock(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.InMagicSock, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_inMagicSock(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_inEngine(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_inEngine(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.InEngine, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_inEngine(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscalePeer_keyExpiry(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_keyExpiry(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.KeyExpiry, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_keyExpiry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_version(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_version(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Version, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_tun(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_tun(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Tun, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_tun(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
 func (ec *executionContext) _TailscaleStatus_backendState(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1040,16 +2647,16 @@ func (ec *executionContext) fieldContext_TailscaleStatus_backendState(_ context.
 	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _TailscaleStatus_connected(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+func (ec *executionContext) _TailscaleStatus_haveNodeKey(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_TailscaleStatus_connected(ctx, field)
+			return ec.fieldContext_TailscaleStatus_haveNodeKey(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.Connected, nil
+			return obj.HaveNodeKey, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
@@ -1059,43 +2666,20 @@ func (ec *executionContext) _TailscaleStatus_connected(ctx context.Context, fiel
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_TailscaleStatus_connected(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_TailscaleStatus_haveNodeKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
-func (ec *executionContext) _TailscaleStatus_needsLogin(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+func (ec *executionContext) _TailscaleStatus_authURL(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_TailscaleStatus_needsLogin(ctx, field)
+			return ec.fieldContext_TailscaleStatus_authURL(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.NeedsLogin, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
-			return ec.marshalNBoolean2bool(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_TailscaleStatus_needsLogin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
-}
-
-func (ec *executionContext) _TailscaleStatus_tailnet(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_TailscaleStatus_tailnet(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Tailnet, nil
+			return obj.AuthURL, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
@@ -1105,20 +2689,20 @@ func (ec *executionContext) _TailscaleStatus_tailnet(ctx context.Context, field 
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_TailscaleStatus_tailnet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_TailscaleStatus_authURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _TailscaleStatus_ips(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+func (ec *executionContext) _TailscaleStatus_tailscaleIPs(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_TailscaleStatus_ips(ctx, field)
+			return ec.fieldContext_TailscaleStatus_tailscaleIPs(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.Ips, nil
+			return obj.TailscaleIPs, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
@@ -1128,8 +2712,329 @@ func (ec *executionContext) _TailscaleStatus_ips(ctx context.Context, field grap
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_TailscaleStatus_ips(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_TailscaleStatus_tailscaleIPs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_health(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_health(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Health, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_health(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_magicDnsSuffix(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_magicDnsSuffix(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MagicDNSSuffix, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_magicDnsSuffix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_currentTailnet(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_currentTailnet(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CurrentTailnet, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Tailnet) graphql.Marshaler {
+			return ec.marshalOTailnet2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailnet(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_currentTailnet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TailscaleStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Tailnet(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TailscaleStatus_certDomains(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_certDomains(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CertDomains, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_certDomains(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleStatus_extraRecords(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_extraRecords(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExtraRecords, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.TailscaleDNSRecord) graphql.Marshaler {
+			return ec.marshalOTailscaleDNSRecord2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleDNSRecordᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_extraRecords(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TailscaleStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleDNSRecord(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TailscaleStatus_clientVersion(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_clientVersion(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClientVersion, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscaleClientVersion) graphql.Marshaler {
+			return ec.marshalOTailscaleClientVersion2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleClientVersion(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_clientVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TailscaleStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleClientVersion(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TailscaleStatus_self(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_self(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Self, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscalePeer) graphql.Marshaler {
+			return ec.marshalOTailscalePeer2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeer(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_self(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TailscaleStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscalePeer(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TailscaleStatus_peers(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleStatus_peers(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Peers, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.TailscalePeer) graphql.Marshaler {
+			return ec.marshalNTailscalePeer2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeerᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleStatus_peers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TailscaleStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscalePeer(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TailscaleUser_id(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleUser_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt642int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleUser_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleUser", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleUser_loginName(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleUser_loginName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LoginName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleUser_loginName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleUser", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleUser_displayName(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleUser_displayName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleUser_displayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleUser", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleUser_profilePicURL(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleUser_profilePicURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ProfilePicURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleUser_profilePicURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleUser", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2571,6 +4476,54 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
+var tailnetImplementors = []string{"Tailnet"}
+
+func (ec *executionContext) _Tailnet(ctx context.Context, sel ast.SelectionSet, obj *model.Tailnet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailnetImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Tailnet")
+		case "name":
+			out.Values[i] = ec._Tailnet_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "magicDNSSuffix":
+			out.Values[i] = ec._Tailnet_magicDNSSuffix(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "magicDNSEnabled":
+			out.Values[i] = ec._Tailnet_magicDNSEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var tailscaleClientImplementors = []string{"TailscaleClient"}
 
 func (ec *executionContext) _TailscaleClient(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleClient) graphql.Marshaler {
@@ -2629,6 +4582,310 @@ func (ec *executionContext) _TailscaleClient(ctx context.Context, sel ast.Select
 	return out
 }
 
+var tailscaleClientVersionImplementors = []string{"TailscaleClientVersion"}
+
+func (ec *executionContext) _TailscaleClientVersion(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleClientVersion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailscaleClientVersionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TailscaleClientVersion")
+		case "runningLatest":
+			out.Values[i] = ec._TailscaleClientVersion_runningLatest(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "latestVersion":
+			out.Values[i] = ec._TailscaleClientVersion_latestVersion(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "urgentSecurityUpdate":
+			out.Values[i] = ec._TailscaleClientVersion_urgentSecurityUpdate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "notify":
+			out.Values[i] = ec._TailscaleClientVersion_notify(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "notifyURL":
+			out.Values[i] = ec._TailscaleClientVersion_notifyURL(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "notifyText":
+			out.Values[i] = ec._TailscaleClientVersion_notifyText(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var tailscaleDNSRecordImplementors = []string{"TailscaleDNSRecord"}
+
+func (ec *executionContext) _TailscaleDNSRecord(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleDNSRecord) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailscaleDNSRecordImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TailscaleDNSRecord")
+		case "name":
+			out.Values[i] = ec._TailscaleDNSRecord_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._TailscaleDNSRecord_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._TailscaleDNSRecord_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var tailscalePeerImplementors = []string{"TailscalePeer"}
+
+func (ec *executionContext) _TailscalePeer(ctx context.Context, sel ast.SelectionSet, obj *model.TailscalePeer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailscalePeerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TailscalePeer")
+		case "id":
+			out.Values[i] = ec._TailscalePeer_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nodeID":
+			out.Values[i] = ec._TailscalePeer_nodeID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "publicKey":
+			out.Values[i] = ec._TailscalePeer_publicKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hostName":
+			out.Values[i] = ec._TailscalePeer_hostName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "dnsName":
+			out.Values[i] = ec._TailscalePeer_dnsName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "os":
+			out.Values[i] = ec._TailscalePeer_os(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userID":
+			out.Values[i] = ec._TailscalePeer_userID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tailscaleIPs":
+			out.Values[i] = ec._TailscalePeer_tailscaleIPs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "allowedIPs":
+			out.Values[i] = ec._TailscalePeer_allowedIPs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tags":
+			out.Values[i] = ec._TailscalePeer_tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "addrs":
+			out.Values[i] = ec._TailscalePeer_addrs(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "curAddr":
+			out.Values[i] = ec._TailscalePeer_curAddr(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "relay":
+			out.Values[i] = ec._TailscalePeer_relay(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "peerRelay":
+			out.Values[i] = ec._TailscalePeer_peerRelay(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rxBytes":
+			out.Values[i] = ec._TailscalePeer_rxBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "txBytes":
+			out.Values[i] = ec._TailscalePeer_txBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "created":
+			out.Values[i] = ec._TailscalePeer_created(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastWrite":
+			out.Values[i] = ec._TailscalePeer_lastWrite(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "lastSeen":
+			out.Values[i] = ec._TailscalePeer_lastSeen(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "lastHandshake":
+			out.Values[i] = ec._TailscalePeer_lastHandshake(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "online":
+			out.Values[i] = ec._TailscalePeer_online(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "exitNode":
+			out.Values[i] = ec._TailscalePeer_exitNode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "exitNodeOption":
+			out.Values[i] = ec._TailscalePeer_exitNodeOption(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "active":
+			out.Values[i] = ec._TailscalePeer_active(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "peerAPIURL":
+			out.Values[i] = ec._TailscalePeer_peerAPIURL(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "taildropTarget":
+			out.Values[i] = ec._TailscalePeer_taildropTarget(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "noFileSharingReason":
+			out.Values[i] = ec._TailscalePeer_noFileSharingReason(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "capMap":
+			out.Values[i] = ec._TailscalePeer_capMap(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "inNetworkMap":
+			out.Values[i] = ec._TailscalePeer_inNetworkMap(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inMagicSock":
+			out.Values[i] = ec._TailscalePeer_inMagicSock(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inEngine":
+			out.Values[i] = ec._TailscalePeer_inEngine(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "keyExpiry":
+			out.Values[i] = ec._TailscalePeer_keyExpiry(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var tailscaleStatusImplementors = []string{"TailscaleStatus"}
 
 func (ec *executionContext) _TailscaleStatus(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleStatus) graphql.Marshaler {
@@ -2641,28 +4898,126 @@ func (ec *executionContext) _TailscaleStatus(ctx context.Context, sel ast.Select
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("TailscaleStatus")
+		case "version":
+			out.Values[i] = ec._TailscaleStatus_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tun":
+			out.Values[i] = ec._TailscaleStatus_tun(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "backendState":
 			out.Values[i] = ec._TailscaleStatus_backendState(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "connected":
-			out.Values[i] = ec._TailscaleStatus_connected(ctx, field, obj)
+		case "haveNodeKey":
+			out.Values[i] = ec._TailscaleStatus_haveNodeKey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "needsLogin":
-			out.Values[i] = ec._TailscaleStatus_needsLogin(ctx, field, obj)
+		case "authURL":
+			out.Values[i] = ec._TailscaleStatus_authURL(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "tailnet":
-			out.Values[i] = ec._TailscaleStatus_tailnet(ctx, field, obj)
+		case "tailscaleIPs":
+			out.Values[i] = ec._TailscaleStatus_tailscaleIPs(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "ips":
-			out.Values[i] = ec._TailscaleStatus_ips(ctx, field, obj)
+		case "health":
+			out.Values[i] = ec._TailscaleStatus_health(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "magicDnsSuffix":
+			out.Values[i] = ec._TailscaleStatus_magicDnsSuffix(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "currentTailnet":
+			out.Values[i] = ec._TailscaleStatus_currentTailnet(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "certDomains":
+			out.Values[i] = ec._TailscaleStatus_certDomains(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "extraRecords":
+			out.Values[i] = ec._TailscaleStatus_extraRecords(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "clientVersion":
+			out.Values[i] = ec._TailscaleStatus_clientVersion(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "self":
+			out.Values[i] = ec._TailscaleStatus_self(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "peers":
+			out.Values[i] = ec._TailscaleStatus_peers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var tailscaleUserImplementors = []string{"TailscaleUser"}
+
+func (ec *executionContext) _TailscaleUser(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleUser) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailscaleUserImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TailscaleUser")
+		case "id":
+			out.Values[i] = ec._TailscaleUser_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "loginName":
+			out.Values[i] = ec._TailscaleUser_loginName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "displayName":
+			out.Values[i] = ec._TailscaleUser_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "profilePicURL":
+			out.Values[i] = ec._TailscaleUser_profilePicURL(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3158,6 +5513,22 @@ func (ec *executionContext) unmarshalNChangePassword2githubᚗcomᚋpancppᚋnan
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v any) (int32, error) {
+	res, err := graphql.UnmarshalInt32(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.SelectionSet, v int32) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalInt32(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNInt642int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3222,6 +5593,42 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 func (ec *executionContext) unmarshalNTailscaleCredential2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleCredential(ctx context.Context, v any) (model.TailscaleCredential, error) {
 	res, err := ec.unmarshalInputTailscaleCredential(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTailscaleDNSRecord2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleDNSRecord(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleDNSRecord) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TailscaleDNSRecord(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTailscalePeer2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TailscalePeer) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNTailscalePeer2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeer(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTailscalePeer2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeer(ctx context.Context, sel ast.SelectionSet, v *model.TailscalePeer) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TailscalePeer(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTailscaleStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleStatus(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleStatus) graphql.Marshaler {
@@ -3430,6 +5837,59 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]any) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalMap(v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -3448,11 +5908,69 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
+func (ec *executionContext) marshalOTailnet2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailnet(ctx context.Context, sel ast.SelectionSet, v *model.Tailnet) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Tailnet(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOTailscaleClient2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleClient(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleClient) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._TailscaleClient(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOTailscaleClientVersion2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleClientVersion(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleClientVersion) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TailscaleClientVersion(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOTailscaleDNSRecord2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleDNSRecordᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TailscaleDNSRecord) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNTailscaleDNSRecord2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleDNSRecord(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOTailscalePeer2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeer(ctx context.Context, sel ast.SelectionSet, v *model.TailscalePeer) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TailscalePeer(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v any) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalTime(*v)
+	return res
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
