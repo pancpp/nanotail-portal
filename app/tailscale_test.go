@@ -117,10 +117,18 @@ func TestTailscaleCredentialLifecycle(t *testing.T) {
 		t.Fatalf("expected singleton credentials: %d %v", count, err)
 	}
 
+	// Removal must also discard tokens derived from these credentials.
+	updated.ApiToken, updated.ApiTokenId, updated.AuthKey, updated.AuthKeyId = "cached-token", "cached-token-id", "cached-key", "cached-key-id"
+	if _, err := database.DB().NewUpdate().Model(updated).WherePK().Column("api_token", "api_token_id", "auth_key", "auth_key_id").Exec(t.Context()); err != nil {
+		t.Fatal(err)
+	}
 	for range 2 {
 		data, failures = credentialRequest(t, e, user, `mutation { clearTailscaleCredential }`, nil)
 		if len(failures) != 0 || string(data["clearTailscaleCredential"]) != "true" {
 			t.Fatalf("clear: %s %v", data, failures)
+		}
+		if count, err := database.DB().NewSelect().Model((*database.TailscaleClient)(nil)).Count(t.Context()); err != nil || count != 0 {
+			t.Fatalf("removal retained credentials or cached tokens: %d %v", count, err)
 		}
 	}
 	data, failures = credentialRequest(t, e, user, credentialQuery, nil)

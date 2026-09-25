@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, ExternalLink, Eye, EyeOff, KeyRound } from 'lucide-react'
+import { BookOpen, ExternalLink, Eye, EyeOff, KeyRound, Trash2 } from 'lucide-react'
 import { useTailscale } from '../tailscale'
 
 export const TAILSCALE_CREDENTIALS_URL = 'https://console.tailscale.com/admin/settings/trust-credentials'
@@ -15,41 +15,42 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
   const [clientId, setClientId] = useState(client?.clientId ?? '')
   const [secret, setSecret] = useState('')
   const [showSecret, setShowSecret] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const [action, setAction] = useState<'save' | 'remove' | null>(null)
+  const busy = action !== null
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const needsSecret = !client?.hasClientSecret || clientId.trim() !== client.clientId
 
-  function setWorking(value: boolean) { setBusy(value); onBusy?.(value) }
+  function setWorking(value: typeof action) { setAction(value); onBusy?.(value !== null) }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (busy) return
+    if (busy || confirmRemove) return
     setError(''); setSuccess('')
     if (!clientId.trim() || (needsSecret && !secret.trim())) {
       setError('Enter both the client ID and client secret. A new client ID needs its matching secret.')
       return
     }
-    setWorking(true)
+    setWorking('save')
     try {
       await save({ clientId, clientSecret: secret || undefined })
       setSecret(''); setShowSecret(false)
       setSuccess('Credentials saved on this device. They have not been validated, and saving does not connect to a tailnet.')
       onSaved?.()
     } catch (error) { setError(error instanceof Error ? error.message : 'Unable to save credentials.') }
-    finally { setWorking(false) }
+    finally { setWorking(null) }
   }
 
   async function remove() {
-    if (busy) return
-    setWorking(true); setError(''); setSuccess('')
+    if (busy || !confirmRemove || !client) return
+    setWorking('remove'); setError(''); setSuccess('')
     try {
       await clear()
       setClientId(''); setSecret(''); setShowSecret(false); setConfirmRemove(false)
       setSuccess('Saved credentials removed. The Tailscale OAuth client has not been revoked, and the device was not disconnected.')
     } catch (error) { setError(error instanceof Error ? error.message : 'Unable to remove credentials.') }
-    finally { setWorking(false) }
+    finally { setWorking(null) }
   }
 
   return <form className="login-form credential-form" onSubmit={submit} aria-busy={busy}>
@@ -73,13 +74,19 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
     <p className="password-help" id={`${id}-help`}>{client?.hasClientSecret ? 'Leave blank to keep the saved secret for this client ID. The saved secret is never sent back to this browser.' : 'The secret is shown only once by Tailscale. Copy it before closing that page.'}</p>
     {error && <div className="form-error" role="alert">{error}</div>}
     {success && <div className="form-success" role="status">{success}</div>}
-    <button className="login-submit" type="submit" disabled={busy}>{busy ? 'Saving changes…' : 'Save credentials'}<KeyRound size={17} /></button>
+    <div className="credential-actions">
+      <button className="login-submit" type="submit" disabled={busy || confirmRemove}>{action === 'save' ? 'Saving changes…' : 'Save credentials'}<KeyRound size={17} /></button>
+      <button className="text-action danger-action" type="button" disabled={busy || !client || confirmRemove}
+        aria-expanded={confirmRemove} aria-controls={`${id}-remove`}
+        onClick={() => { setError(''); setSuccess(''); setConfirmRemove(true) }}>
+        Remove credentials <Trash2 size={17} />
+      </button>
+    </div>
     <p className="password-help">Save only: this does not join or switch tailnets. Use a trusted HTTPS connection when entering secrets.</p>
-    {client && !confirmRemove && <button className="text-action danger-action" type="button" disabled={busy} onClick={() => setConfirmRemove(true)}>Remove saved credentials</button>}
-    {confirmRemove && <div className="remove-confirmation">
-      <p>Remove the saved ID and secret from this device? This does not revoke the OAuth client in Tailscale.</p>
+    {confirmRemove && <div className="remove-confirmation" id={`${id}-remove`} role="group" aria-label="Confirm credential removal">
+      <p>Remove the saved client ID and secret from this device? This does not disconnect Tailscale or revoke the OAuth client in Tailscale.</p>
       <div className="credential-links">
-        <button className="secondary-button danger-action" type="button" disabled={busy} onClick={() => { void remove() }}>Remove credentials</button>
+        <button className="secondary-button danger-action" type="button" disabled={busy || !client} onClick={() => { void remove() }}>{action === 'remove' ? 'Removing credentials…' : 'Confirm removal'}</button>
         <button className="secondary-button" type="button" disabled={busy} onClick={() => setConfirmRemove(false)}>Cancel</button>
       </div>
     </div>}

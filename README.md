@@ -604,6 +604,9 @@ and HTTPS needs a certificate valid for the new address.
 The WebUI offers browser sign-in when Tailscale reports `NeedsLogin`.
 OAuth credentials remain optional, separate settings: Access control lets portal
 administrators save, replace, or remove the device-wide client ID and secret.
+To remove them, choose **Remove credentials** beside **Save credentials**, then
+**Confirm removal**. This clears the saved credentials and cached tokens on this
+device without disconnecting Tailscale or revoking the OAuth client in Tailscale.
 The setup guide at `/#/tailscale-setup` includes a link to the Tailscale Trust
 credentials console and explains the OAuth client creation process.
 
