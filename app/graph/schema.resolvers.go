@@ -41,6 +41,21 @@ func (r *mutationResolver) SetTailscaleEnabled(ctx context.Context, enabled bool
 	return r.setTailscaleEnabled(ctx, enabled)
 }
 
+// RenewTailscaleNodeKey is the resolver for the renewTailscaleNodeKey field.
+func (r *mutationResolver) RenewTailscaleNodeKey(ctx context.Context) (*model.TailscaleKeyRenewal, error) {
+	return r.renewTailscaleNodeKey(ctx)
+}
+
+// BeginTailscaleNodeKeyRenewal is the resolver for the beginTailscaleNodeKeyRenewal field.
+func (r *mutationResolver) BeginTailscaleNodeKeyRenewal(ctx context.Context, attemptID string) (*model.TailscaleKeyRenewal, error) {
+	return r.beginTailscaleNodeKeyRenewal(ctx, attemptID)
+}
+
+// CancelTailscaleNodeKeyRenewal is the resolver for the cancelTailscaleNodeKeyRenewal field.
+func (r *mutationResolver) CancelTailscaleNodeKeyRenewal(ctx context.Context, attemptID string) (*model.TailscaleKeyRenewal, error) {
+	return r.cancelTailscaleNodeKeyRenewal(ctx, attemptID)
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 	return r.user(ctx)
@@ -79,6 +94,11 @@ func (r *queryResolver) TailscaleRouting(ctx context.Context) (*model.TailscaleR
 // TailscaleConnection is the resolver for the tailscaleConnection field.
 func (r *queryResolver) TailscaleConnection(ctx context.Context) (*model.TailscaleConnection, error) {
 	return r.tailscaleConnection(ctx)
+}
+
+// TailscaleKeyRenewal is the resolver for the tailscaleKeyRenewal field.
+func (r *queryResolver) TailscaleKeyRenewal(ctx context.Context) (*model.TailscaleKeyRenewal, error) {
+	return r.tailscaleKeyRenewal(ctx)
 }
 
 // Mutation returns MutationResolver implementation.

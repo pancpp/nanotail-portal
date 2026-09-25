@@ -31,7 +31,7 @@ func newGraphQLServer() *handler.Server {
 	}
 	client := tailscale.NewClient(conf.GetString("tailscale_binary"), conf.GetString("tailscale_socket"), timeout, nil)
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
-		Tailscale: client, Routing: client, Connection: client, Device: device.NewReader(), DeviceConfig: device.NewConfigurator(), Traffic: device.NewTrafficReader(),
+		Tailscale: client, Routing: client, Connection: client, KeyRenewer: client, Device: device.NewReader(), DeviceConfig: device.NewConfigurator(), Traffic: device.NewTrafficReader(),
 		TrafficHistory: traffic.NewStore(database.DB()),
 	}}))
 	srv.SetErrorPresenter(presentGraphQLError)
@@ -63,7 +63,11 @@ func presentGraphQLError(ctx context.Context, err error) *gqlerror.Error {
 		errors.Is(err, tailscale.ErrExitNodeInvalid) || errors.Is(err, tailscale.ErrRoutingStopped) ||
 		errors.Is(err, tailscale.ErrRoutingAdvertised) || errors.Is(err, tailscale.ErrRoutingApply) ||
 		errors.Is(err, graph.ErrConnectionAdmin) || errors.Is(err, tailscale.ErrConnectionUnavailable) ||
-		errors.Is(err, tailscale.ErrConnectionLogin) || errors.Is(err, tailscale.ErrConnectionApply) {
+		errors.Is(err, tailscale.ErrConnectionLogin) || errors.Is(err, tailscale.ErrConnectionApply) ||
+		errors.Is(err, graph.ErrKeyRenewalAdmin) || errors.Is(err, tailscale.ErrKeyRenewalUnavailable) ||
+		errors.Is(err, tailscale.ErrKeyRenewalUnconfigured) || errors.Is(err, tailscale.ErrKeyRenewalStart) ||
+		errors.Is(err, tailscale.ErrKeyRenewalURL) || errors.Is(err, tailscale.ErrKeyRenewalChanged) ||
+		errors.Is(err, tailscale.ErrKeyRenewalStarted) {
 		return presented
 	}
 	switch presented.Extensions["code"] {

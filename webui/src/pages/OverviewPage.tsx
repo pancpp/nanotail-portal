@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   ChevronRight,
   Cpu,
@@ -6,15 +7,34 @@ import {
   Wifi,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { isTailscaleConnected, tailscaleStatusLabel } from '../api'
+import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
+import { nodeKeyDialogMode } from '../nodeKey'
 import DeviceStatusPanel from '../components/DeviceStatusPanel'
 import NetworkActivityPanel from '../components/NetworkActivityPanel'
 import NodeKeyCard from '../components/NodeKeyCard'
 import RoutingCard from '../components/RoutingCard'
+import NodeKeyRenewalDialog from '../components/NodeKeyRenewalDialog'
+import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 
 export default function OverviewPage() {
-  const { status, statusError } = useTailscale()
+  const { status, statusError, setKeyRenewalDialogOpen } = useTailscale()
+  const [dialogMode, setDialogMode] = useState<'signin' | 'renewal' | null>(null)
+  const [promptDismissed, setPromptDismissed] = useState(false)
+  const needsSignIn = shouldPromptForTailscale(status, statusError)
+  // Local to this route: show once per Overview visit, never on each poll.
+  // A single dialog also serves manual Renew, so prompts cannot stack.
+  useEffect(() => {
+    if (needsSignIn && !promptDismissed && !dialogMode) {
+      setPromptDismissed(true)
+      setDialogMode('signin')
+    }
+  }, [needsSignIn, promptDismissed, dialogMode])
+  function openDialog(mode: 'signin' | 'renewal') {
+    setPromptDismissed(true)
+    setKeyRenewalDialogOpen(true)
+    setDialogMode(mode)
+  }
   const connected = isTailscaleConnected(status, statusError)
   const label = tailscaleStatusLabel(status, statusError)
   const peers = statusError ? [] : status?.peers ?? []
@@ -45,16 +65,17 @@ export default function OverviewPage() {
             <span>Tailscale status</span>
             <strong>{connected ? 'Connected to your tailnet' : label}</strong>
             <p>{!statusError && status?.currentTailnet?.name ? status.currentTailnet.name : 'No active tailnet connection'}</p>
+            {needsSignIn && <button type="button" className="status-card__configure tailscale-signin" onClick={() => openDialog('signin')}>Sign in to Tailscale <ChevronRight size={15} /></button>}
           </div>
           <div className="status-card__footer">
-            <Link to="/network">Configure <ChevronRight size={15} /></Link>
+            <Link className="status-card__configure" to="/network">Configure <ChevronRight size={15} /></Link>
             <span>{!statusError && status?.tailscaleIPs.length ? status.tailscaleIPs.join(', ') : 'No Tailscale address'}</span>
           </div>
         </article>
 
         <RoutingCard />
 
-        <NodeKeyCard />
+        <NodeKeyCard onRenew={() => openDialog(nodeKeyDialogMode(status))} />
       </section>
 
       <section className="dashboard-columns">
@@ -95,6 +116,8 @@ export default function OverviewPage() {
       </section>
 
       <DeviceStatusPanel />
+      {dialogMode === 'signin' && <TailscaleSetupPrompt onClose={() => setDialogMode(null)} />}
+      {dialogMode === 'renewal' && <NodeKeyRenewalDialog onClose={() => setDialogMode(null)} />}
     </>
   )
 }

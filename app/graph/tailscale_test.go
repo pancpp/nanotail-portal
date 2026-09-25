@@ -166,7 +166,7 @@ func TestTailscaleStatusGraphQLOptionalFields(t *testing.T) {
 		`{"BackendState":"NeedsLogin","AuthURL":"https://login.tailscale.com/a/test","Self":null,"CurrentTailnet":null,"CertDomains":null,"ExtraRecords":null,"ClientVersion":null,"Peer":null}`,
 	} {
 		status, fields := queryStatus(t, []byte(data))
-		if status.BackendState != "NeedsLogin" || status.AuthURL != "https://login.tailscale.com/a/test" {
+		if status.BackendState != "NeedsLogin" || status.AuthURL != "" {
 			t.Fatalf("incorrect login state: %+v", status)
 		}
 		for _, field := range []string{"currentTailnet", "certDomains", "extraRecords", "clientVersion", "self"} {

@@ -44,6 +44,13 @@ type TailscaleConnector interface {
 	SetEnabled(context.Context, bool) error
 }
 
+type TailscaleKeyRenewer interface {
+	KeyRenewal(context.Context) (tailscale.KeyRenewal, error)
+	RenewNodeKey(context.Context) (tailscale.KeyRenewal, error)
+	BeginNodeKeyRenewal(context.Context, string) (tailscale.KeyRenewal, error)
+	CancelNodeKeyRenewal(context.Context, string) (tailscale.KeyRenewal, error)
+}
+
 type Resolver struct {
 	Tailscale      TailscaleStatusReader
 	Device         DeviceStatusReader
@@ -52,4 +59,5 @@ type Resolver struct {
 	Routing        TailscaleRouter
 	TrafficHistory NetworkHistoryReader
 	Connection     TailscaleConnector
+	KeyRenewer     TailscaleKeyRenewer
 }

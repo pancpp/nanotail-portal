@@ -17,7 +17,6 @@ import Brand from '../components/Brand'
 import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
 import { useDevice } from '../device'
-import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 
 const navItems = [
   { label: 'Overview', icon: CircleGauge, path: '/' },
@@ -29,23 +28,15 @@ const navItems = [
 
 export default function DashboardPage() {
   const { logout } = useAuth()
-  const { status, client, statusError, clientError, refreshing: tailscaleRefreshing, refresh } = useTailscale()
+  const { status, statusError, refreshing: tailscaleRefreshing, refresh, keyRenewalActive } = useTailscale()
   const { status: deviceStatus, refreshing: deviceRefreshing, refresh: refreshDevice } = useDevice()
   const refreshing = tailscaleRefreshing || deviceRefreshing
   const { pathname } = useLocation()
   const pageTitle = navItems.find((item) => item.path === pathname)?.label ?? 'Overview'
   const [menuOpen, setMenuOpen] = useState(false)
-  const [promptOpen, setPromptOpen] = useState(false)
-  const [promptDismissed, setPromptDismissed] = useState(false)
-  const needsSetup = shouldPromptForTailscale(status, statusError)
+  const needsSetup = shouldPromptForTailscale(status, statusError) && !keyRenewalActive
   const connected = isTailscaleConnected(status, statusError)
   const connectionLabel = tailscaleStatusLabel(status, statusError)
-
-  useEffect(() => {
-    if (needsSetup && client !== undefined && !clientError && !promptDismissed && pathname === '/') setPromptOpen(true)
-  }, [needsSetup, client, clientError, promptDismissed, pathname])
-
-  function closePrompt() { setPromptOpen(false); setPromptDismissed(true) }
 
   useEffect(() => {
     if (!menuOpen) return
@@ -150,12 +141,11 @@ export default function DashboardPage() {
             <p>{statusError}</p><p>This does not mean your credentials are missing.</p>
             <button className="secondary-button" disabled={refreshing} onClick={() => { void refresh() }}>Retry status</button></div>}
           {needsSetup && <div className="connection-notice" role="status"><strong>This device is not signed in to a tailnet.</strong>
-            <p>{client?.hasClientSecret ? 'Credentials are saved. Saving alone does not connect the device.' : 'Add your OAuth client ID and secret to prepare the device for setup.'}</p>
-            <div className="credential-links"><Link to="/network">Manage credentials</Link><Link to="/tailscale-setup">Read the setup guide</Link></div></div>}
+            <p>Use Sign in to Tailscale on the Overview to connect this device. Your portal login is separate from your Tailscale account.</p>
+            {pathname !== '/' && <Link to="/">Open the sign-in guide</Link>}</div>}
           <Outlet />
         </main>
       </div>
-      {promptOpen && needsSetup && pathname === '/' && <TailscaleSetupPrompt onClose={closePrompt} />}
     </div>
   )
 }

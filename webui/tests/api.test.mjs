@@ -405,9 +405,10 @@ test('status errors take precedence over data and preserve session/network handl
   await assert.rejects(tailscaleStatusRequest(jwt()), /Failed to fetch/)
 })
 
-test('status failures and stopped/offline devices do not trigger a credential prompt', () => {
+test('sign-in prompts cover new and expired devices, not offline, paused or unknown status', () => {
   const status = makeStatus()
   assert.equal(shouldPromptForTailscale(status, ''), true)
+  assert.equal(shouldPromptForTailscale(makeStatus({ haveNodeKey: true, self: { online: false, keyExpiry: '2020-01-01T00:00:00Z' } }), ''), true)
   assert.equal(shouldPromptForTailscale(status, 'Status unavailable'), false)
   assert.equal(shouldPromptForTailscale(null, ''), false)
   for (const backendState of ['Running', 'Stopped', 'Starting', 'NeedsMachineAuth', 'NoState', 'FutureState']) {

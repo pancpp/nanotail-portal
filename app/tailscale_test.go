@@ -210,8 +210,8 @@ func TestTailscaleStatusReportsBackendStateAndSelf(t *testing.T) {
 				(status.Self != nil && status.Self.Online != tt.online) {
 				t.Fatalf("status: %+v %v", status, err)
 			}
-			if status.AuthURL != "https://login.tailscale.com/a/test" || status.TailscaleIPs == nil || status.Peers == nil {
-				t.Fatal("status did not preserve the schema's login URL and lists")
+			if status.AuthURL != "" || status.TailscaleIPs == nil || status.Peers == nil {
+				t.Fatal("status must hide login URLs without admin identity and preserve lists")
 			}
 		})
 	}

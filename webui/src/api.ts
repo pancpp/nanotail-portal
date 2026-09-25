@@ -320,7 +320,7 @@ export function deviceReconnectURL(currentURL: string, ip: string): string | nul
 async function graphQLRequest(token: string, operationName: string, query: string,
   variables: object = {}, signal?: AbortSignal, resource = 'Tailscale') {
   const response = await fetch('/api/v1/query', {
-    method: 'POST', signal,
+    method: 'POST', signal, cache: 'no-store',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ operationName, query, variables }),
   })
@@ -531,6 +531,93 @@ export async function clearTailscaleCredentialRequest(token: string): Promise<vo
     clearTailscaleCredential
   }`)
   if (data.clearTailscaleCredential !== true) throw new Error('The server did not confirm that credentials were removed.')
+}
+
+export type KeyRenewalState = 'IDLE' | 'READY' | 'CANCELLED' | 'STARTING' | 'AWAITING_LOGIN' | 'AWAITING_APPROVAL' | 'COMPLETE' | 'SIGNED_IN'
+
+export interface TailscaleKeyRenewal {
+  state: KeyRenewalState
+  authURL: string
+  canRenew: boolean
+  attemptID: string
+}
+
+export function isKeyRenewalPending(value: TailscaleKeyRenewal): boolean {
+  return ['READY', 'STARTING', 'AWAITING_LOGIN', 'AWAITING_APPROVAL'].includes(value.state)
+}
+
+function parseKeyRenewal(value: unknown): TailscaleKeyRenewal {
+  const invalid = () => new Error('The server did not return valid node key renewal status. Check status before retrying.')
+  if (!value || typeof value !== 'object') throw invalid()
+  const result = value as TailscaleKeyRenewal
+  if (!['IDLE', 'READY', 'CANCELLED', 'STARTING', 'AWAITING_LOGIN', 'AWAITING_APPROVAL', 'COMPLETE', 'SIGNED_IN'].includes(result.state) ||
+    typeof result.authURL !== 'string' || typeof result.canRenew !== 'boolean' || typeof result.attemptID !== 'string' ||
+    (result.attemptID !== '' && !/^[A-Za-z0-9_-]{1,128}$/.test(result.attemptID)) ||
+    (!['IDLE', 'AWAITING_APPROVAL'].includes(result.state) && !result.attemptID) ||
+    (result.state === 'READY' && result.canRenew)) throw invalid()
+  if (result.state === 'AWAITING_LOGIN') {
+    let url: URL
+    try { url = new URL(result.authURL) } catch { throw invalid() }
+    if (url.protocol !== 'https:' || url.host !== 'login.tailscale.com' || url.username || url.password ||
+      url.hash || !url.pathname.startsWith('/a/') || url.pathname.length <= 3 || /[\\\s\p{Cc}]/u.test(result.authURL) ||
+      result.canRenew) throw invalid()
+  } else if (result.authURL !== '' || (result.state === 'AWAITING_APPROVAL' && result.canRenew)) throw invalid()
+  return { state: result.state, authURL: result.authURL, canRenew: result.canRenew, attemptID: result.attemptID }
+}
+
+// Sign-in URLs are sensitive: keep them only in memory, never in browser storage.
+export async function tailscaleKeyRenewalRequest(token: string, signal?: AbortSignal): Promise<TailscaleKeyRenewal> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'TailscaleKeyRenewal', `query TailscaleKeyRenewal {
+      tailscaleKeyRenewal { state authURL canRenew attemptID }
+    }`, {}, signal ? AbortSignal.any([signal, controller.signal]) : controller.signal, 'node key renewal')
+    return parseKeyRenewal(data.tailscaleKeyRenewal)
+  } finally { clearTimeout(timer) }
+}
+
+export async function renewTailscaleNodeKeyRequest(token: string, signal?: AbortSignal): Promise<TailscaleKeyRenewal> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'RenewTailscaleNodeKey', `mutation RenewTailscaleNodeKey {
+      renewTailscaleNodeKey { state authURL canRenew attemptID }
+    }`, {}, signal ? AbortSignal.any([signal, controller.signal]) : controller.signal, 'node key renewal')
+    const value = parseKeyRenewal(data.renewTailscaleNodeKey)
+    if (!isKeyRenewalPending(value)) throw new Error('The server did not confirm the renewal request. Check status before retrying.')
+    return value
+  } finally { clearTimeout(timer) }
+}
+
+export async function beginTailscaleNodeKeyRenewalRequest(token: string, attemptID: string, signal?: AbortSignal): Promise<TailscaleKeyRenewal> {
+  if (typeof attemptID !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(attemptID)) throw new Error('Check renewal status before starting sign-in.')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'BeginTailscaleNodeKeyRenewal', `mutation BeginTailscaleNodeKeyRenewal($attemptID: String!) {
+      beginTailscaleNodeKeyRenewal(attemptID: $attemptID) { state authURL canRenew attemptID }
+    }`, { attemptID }, signal ? AbortSignal.any([signal, controller.signal]) : controller.signal, 'node key renewal')
+    const value = parseKeyRenewal(data.beginTailscaleNodeKeyRenewal)
+    if (value.attemptID !== attemptID || !['STARTING', 'AWAITING_LOGIN', 'AWAITING_APPROVAL', 'COMPLETE', 'SIGNED_IN', 'IDLE'].includes(value.state)) {
+      throw new Error('The server did not confirm that sign-in started. Check status before retrying.')
+    }
+    return value
+  } finally { clearTimeout(timer) }
+}
+
+export async function cancelTailscaleNodeKeyRenewalRequest(token: string, attemptID: string, signal?: AbortSignal): Promise<TailscaleKeyRenewal> {
+  if (typeof attemptID !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(attemptID)) throw new Error('Check renewal status before cancelling.')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'CancelTailscaleNodeKeyRenewal', `mutation CancelTailscaleNodeKeyRenewal($attemptID: String!) {
+      cancelTailscaleNodeKeyRenewal(attemptID: $attemptID) { state authURL canRenew attemptID }
+    }`, { attemptID }, signal ? AbortSignal.any([signal, controller.signal]) : controller.signal, 'renewal cancellation')
+    const value = parseKeyRenewal(data.cancelTailscaleNodeKeyRenewal)
+    if (value.state !== 'CANCELLED' || value.attemptID !== attemptID) throw new Error('The server did not confirm cancellation. Check status before closing.')
+    return value
+  } finally { clearTimeout(timer) }
 }
 
 export function shouldPromptForTailscale(status: TailscaleStatus | null, statusError: string): boolean {

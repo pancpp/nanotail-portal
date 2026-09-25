@@ -80,8 +80,9 @@ pause the device. The backend validates fresh preferences/status, serializes
 the change with routing writes, executes bare `tailscale up`/`tailscale down`,
 and checks the saved preference afterward. It does not reset DNS, routing, or
 login settings; see the [Tailscale CLI reference](https://tailscale.com/docs/reference/tailscale-cli#down).
-Initial sign-in, expired-key reauthentication, and device approval must be
-completed separately; saved OAuth credentials are still storage-only.
+Initial sign-in and expired-key reauthentication are available through the
+Overview's browser sign-in guide. Device approval may still be required in the
+tailnet admin console; saved OAuth credentials are still storage-only.
 
 The form requires acknowledgment that connectivity may be interrupted. Keep
 LAN or console access available to re-enable Tailscale after disconnecting.
@@ -179,9 +180,59 @@ The WebUI Node key card reads `tailscaleStatus.haveNodeKey` and
 `tailscaleStatus.self.keyExpiry`, which are populated from `tailscale status
 --json`. It calculates remaining time from the reported expiration timestamp,
 shows the exact date in the browser's timezone, and warns when expired. A null
-expiration is shown as **No expiry reported**; no fixed lifetime or progress
+expiration for an existing node key is shown as **Expiry disabled**; no fixed lifetime or progress
 percentage is assumed. Loading, absent keys, and failed status requests do not
 display fabricated or stale expiry values. See [Tailscale key expiry](https://tailscale.com/docs/features/access-control/key-expiry).
+
+When Tailscale reports `NeedsLogin`, entering **Overview** automatically opens a
+browser sign-in guide. This works for first-time setup and expired logins, with
+no OAuth client credentials required. Confirm the instructions, choose
+**Prepare sign-in**, then **Sign in to Tailscale** and authorize the device in
+the new tab. Opening the popup never starts authentication on its own. Closing
+suppresses the prompt until the next Overview visit; **Sign in to Tailscale**
+also reopens it manually. Paused/offline devices and status errors do not prompt.
+First-time login shows **Signed in to Tailscale successfully** only after
+Tailscale reports a usable node key and `Running` state (`SIGNED_IN`); this does
+not claim that a previous key was rotated. The overview then refreshes.
+
+**KEY EXPIRY → Renew** opens the **KEY RENEW** dialog for a portal administrator to force reauthentication,
+including for an expired key or a device with expiry disabled. Open the portal
+over the LAN first: renewal can disconnect Tailscale. Confirm the warning to
+prepare a request, then choose **Sign in to Tailscale** to start reauthentication.
+Until Sign in is clicked, the top-right X button or Escape cancels the prepared
+backend request without changing Tailscale. The dialog waits for confirmed
+cancellation before closing. Authenticate with the **same account and tailnet**. Signing
+in turns the tailnet connection on, even if it was stopped. Device approval may
+also be required. The dialog checks progress and refreshes the overview only
+after a new, unexpired (or non-expiring) key is reported with `Running` state.
+The panel and dialog show a rotating **Waiting for renewal…** indicator while
+pending, followed by a green check mark and **Node key renewed successfully**.
+After Sign in, completion checks continue when the dialog is closed or another WebUI tab is
+selected. Errors show **Renewal not confirmed** instead of a success indicator.
+
+`renewTailscaleNodeKey` only prepares an in-memory first-login/renewal request and returns its
+`attemptID`. `cancelTailscaleNodeKeyRenewal(attemptID)` cancels that request
+before sign-in, even if tailscaled is unavailable. IDs prevent stale requests
+from modifying another attempt. `beginTailscaleNodeKeyRenewal(attemptID)` starts
+Tailscale's `StartLoginInteractive` operation via
+`tailscale debug localapi POST /localapi/v0/login-interactive`; the installed CLI
+must support `debug localapi`, and the portal needs permission to write to the
+tailscaled socket. It does not reset routing preferences, log out, or enroll
+using saved OAuth credentials. `tailscaleKeyRenewal` is a read-only admin query
+for progress and the sign-in URL. URLs are validated for Tailscale-hosted login,
+are not stored in the database/browser storage, and are hidden from non-admins
+in the general status query too. Custom control-server sign-in URLs are not
+supported by this dialog.
+
+If a request is interrupted, reconnect over the LAN, close the dialog with X,
+and reopen **Renew** to check status before retrying; writes are never automatically retried.
+The renewal dialog has no **Check status** or **Close** buttons. Once Sign in starts, closing
+only dismisses the dialog: Tailscale has no dedicated cancel-login API, so the
+portal does not log out or disconnect the device to imitate cancellation.
+Reopen **Renew** to recover a pending link. Prepared requests and the comparison
+baseline are in memory. After a portal restart, prepare and choose Sign in again
+to resume an existing login link; without the old baseline the portal cannot
+certify that a prior renewal completed. Review the current expiry in the overview.
 
 ### Device status
 
@@ -361,8 +412,8 @@ and HTTPS needs a certificate valid for the new address.
 
 ### Tailscale credential setup
 
-The WebUI checks the device's `tailscaleStatus` GraphQL query and offers an OAuth
-credential dialog when Tailscale reports `NeedsLogin`. Network lets portal
+The WebUI offers browser sign-in when Tailscale reports `NeedsLogin`.
+OAuth credentials remain optional, separate settings: Network lets portal
 administrators save, replace, or remove the device-wide client ID and secret.
 The setup guide at `/#/tailscale-setup` includes a link to the Tailscale Trust
 credentials console and explains the OAuth client creation process.

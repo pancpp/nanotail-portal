@@ -56,12 +56,15 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ChangePassword           func(childComplexity int, passwords model.ChangePassword) int
-		ClearTailscaleCredential func(childComplexity int) int
-		SetDeviceIP              func(childComplexity int, deviceIP *model.DeviceIP) int
-		SetExitNode              func(childComplexity int, input model.ExitNodeInput) int
-		SetTailscaleCredential   func(childComplexity int, credential model.TailscaleCredential) int
-		SetTailscaleEnabled      func(childComplexity int, enabled bool) int
+		BeginTailscaleNodeKeyRenewal  func(childComplexity int, attemptID string) int
+		CancelTailscaleNodeKeyRenewal func(childComplexity int, attemptID string) int
+		ChangePassword                func(childComplexity int, passwords model.ChangePassword) int
+		ClearTailscaleCredential      func(childComplexity int) int
+		RenewTailscaleNodeKey         func(childComplexity int) int
+		SetDeviceIP                   func(childComplexity int, deviceIP *model.DeviceIP) int
+		SetExitNode                   func(childComplexity int, input model.ExitNodeInput) int
+		SetTailscaleCredential        func(childComplexity int, credential model.TailscaleCredential) int
+		SetTailscaleEnabled           func(childComplexity int, enabled bool) int
 	}
 
 	NetworkActivity struct {
@@ -102,6 +105,7 @@ type ComplexityRoot struct {
 		NetworkActivityHistory func(childComplexity int) int
 		TailscaleClient        func(childComplexity int) int
 		TailscaleConnection    func(childComplexity int) int
+		TailscaleKeyRenewal    func(childComplexity int) int
 		TailscaleRouting       func(childComplexity int) int
 		TailscaleStatus        func(childComplexity int) int
 		User                   func(childComplexity int) int
@@ -140,6 +144,13 @@ type ComplexityRoot struct {
 		Name  func(childComplexity int) int
 		Type  func(childComplexity int) int
 		Value func(childComplexity int) int
+	}
+
+	TailscaleKeyRenewal struct {
+		AttemptID func(childComplexity int) int
+		AuthURL   func(childComplexity int) int
+		CanRenew  func(childComplexity int) int
+		State     func(childComplexity int) int
 	}
 
 	TailscalePeer struct {
@@ -230,6 +241,9 @@ type MutationResolver interface {
 	SetDeviceIP(ctx context.Context, deviceIP *model.DeviceIP) (bool, error)
 	SetExitNode(ctx context.Context, input model.ExitNodeInput) (bool, error)
 	SetTailscaleEnabled(ctx context.Context, enabled bool) (bool, error)
+	RenewTailscaleNodeKey(ctx context.Context) (*model.TailscaleKeyRenewal, error)
+	BeginTailscaleNodeKeyRenewal(ctx context.Context, attemptID string) (*model.TailscaleKeyRenewal, error)
+	CancelTailscaleNodeKeyRenewal(ctx context.Context, attemptID string) (*model.TailscaleKeyRenewal, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context) (*model.User, error)
@@ -240,6 +254,7 @@ type QueryResolver interface {
 	NetworkActivityHistory(ctx context.Context) (*model.NetworkActivityHistory, error)
 	TailscaleRouting(ctx context.Context) (*model.TailscaleRouting, error)
 	TailscaleConnection(ctx context.Context) (*model.TailscaleConnection, error)
+	TailscaleKeyRenewal(ctx context.Context) (*model.TailscaleKeyRenewal, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -345,6 +360,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.DeviceStatus.Uptime(childComplexity), true
 
+	case "Mutation.beginTailscaleNodeKeyRenewal":
+		if e.ComplexityRoot.Mutation.BeginTailscaleNodeKeyRenewal == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_beginTailscaleNodeKeyRenewal_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.BeginTailscaleNodeKeyRenewal(childComplexity, args["attemptID"].(string)), true
+	case "Mutation.cancelTailscaleNodeKeyRenewal":
+		if e.ComplexityRoot.Mutation.CancelTailscaleNodeKeyRenewal == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cancelTailscaleNodeKeyRenewal_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CancelTailscaleNodeKeyRenewal(childComplexity, args["attemptID"].(string)), true
 	case "Mutation.changePassword":
 		if e.ComplexityRoot.Mutation.ChangePassword == nil {
 			break
@@ -362,6 +399,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ClearTailscaleCredential(childComplexity), true
+	case "Mutation.renewTailscaleNodeKey":
+		if e.ComplexityRoot.Mutation.RenewTailscaleNodeKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Mutation.RenewTailscaleNodeKey(childComplexity), true
 	case "Mutation.setDeviceIP":
 		if e.ComplexityRoot.Mutation.SetDeviceIP == nil {
 			break
@@ -562,6 +605,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.TailscaleConnection(childComplexity), true
+	case "Query.tailscaleKeyRenewal":
+		if e.ComplexityRoot.Query.TailscaleKeyRenewal == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.TailscaleKeyRenewal(childComplexity), true
 	case "Query.tailscaleRouting":
 		if e.ComplexityRoot.Query.TailscaleRouting == nil {
 			break
@@ -705,6 +754,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TailscaleDNSRecord.Value(childComplexity), true
+
+	case "TailscaleKeyRenewal.attemptID":
+		if e.ComplexityRoot.TailscaleKeyRenewal.AttemptID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleKeyRenewal.AttemptID(childComplexity), true
+	case "TailscaleKeyRenewal.authURL":
+		if e.ComplexityRoot.TailscaleKeyRenewal.AuthURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleKeyRenewal.AuthURL(childComplexity), true
+	case "TailscaleKeyRenewal.canRenew":
+		if e.ComplexityRoot.TailscaleKeyRenewal.CanRenew == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleKeyRenewal.CanRenew(childComplexity), true
+	case "TailscaleKeyRenewal.state":
+		if e.ComplexityRoot.TailscaleKeyRenewal.State == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleKeyRenewal.State(childComplexity), true
 
 	case "TailscalePeer.active":
 		if e.ComplexityRoot.TailscalePeer.Active == nil {
@@ -1351,6 +1425,20 @@ func (ec *executionContext) childFields_TailscaleDNSRecord(ctx context.Context, 
 	return nil, fmt.Errorf("no field named %q was found under type TailscaleDNSRecord", field.Name)
 }
 
+func (ec *executionContext) childFields_TailscaleKeyRenewal(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "state":
+		return ec.fieldContext_TailscaleKeyRenewal_state(ctx, field)
+	case "attemptID":
+		return ec.fieldContext_TailscaleKeyRenewal_attemptID(ctx, field)
+	case "authURL":
+		return ec.fieldContext_TailscaleKeyRenewal_authURL(ctx, field)
+	case "canRenew":
+		return ec.fieldContext_TailscaleKeyRenewal_canRenew(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TailscaleKeyRenewal", field.Name)
+}
+
 func (ec *executionContext) childFields_TailscalePeer(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -1604,6 +1692,34 @@ func (ec *executionContext) childFields___Type(ctx context.Context, field graphq
 // endregion ************************** internal!.gotpl ***************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_beginTailscaleNodeKeyRenewal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "attemptID",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["attemptID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_cancelTailscaleNodeKeyRenewal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "attemptID",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["attemptID"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_changePassword_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -2308,6 +2424,126 @@ func (ec *executionContext) fieldContext_Mutation_setTailscaleEnabled(ctx contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_setTailscaleEnabled_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_renewTailscaleNodeKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_renewTailscaleNodeKey(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().RenewTailscaleNodeKey(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscaleKeyRenewal) graphql.Marshaler {
+			return ec.marshalNTailscaleKeyRenewal2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleKeyRenewal(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_renewTailscaleNodeKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleKeyRenewal(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_beginTailscaleNodeKeyRenewal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_beginTailscaleNodeKeyRenewal(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().BeginTailscaleNodeKeyRenewal(ctx, fc.Args["attemptID"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscaleKeyRenewal) graphql.Marshaler {
+			return ec.marshalNTailscaleKeyRenewal2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleKeyRenewal(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_beginTailscaleNodeKeyRenewal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleKeyRenewal(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_beginTailscaleNodeKeyRenewal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_cancelTailscaleNodeKeyRenewal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_cancelTailscaleNodeKeyRenewal(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CancelTailscaleNodeKeyRenewal(ctx, fc.Args["attemptID"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscaleKeyRenewal) graphql.Marshaler {
+			return ec.marshalNTailscaleKeyRenewal2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleKeyRenewal(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_cancelTailscaleNodeKeyRenewal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleKeyRenewal(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cancelTailscaleNodeKeyRenewal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3048,6 +3284,38 @@ func (ec *executionContext) fieldContext_Query_tailscaleConnection(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_tailscaleKeyRenewal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_tailscaleKeyRenewal(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().TailscaleKeyRenewal(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscaleKeyRenewal) graphql.Marshaler {
+			return ec.marshalNTailscaleKeyRenewal2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleKeyRenewal(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_tailscaleKeyRenewal(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleKeyRenewal(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3582,6 +3850,98 @@ func (ec *executionContext) _TailscaleDNSRecord_value(ctx context.Context, field
 }
 func (ec *executionContext) fieldContext_TailscaleDNSRecord_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("TailscaleDNSRecord", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleKeyRenewal_state(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleKeyRenewal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleKeyRenewal_state(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.State, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.KeyRenewalState) graphql.Marshaler {
+			return ec.marshalNKeyRenewalState2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐKeyRenewalState(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleKeyRenewal_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleKeyRenewal", field, false, false, errors.New("field of type KeyRenewalState does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleKeyRenewal_attemptID(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleKeyRenewal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleKeyRenewal_attemptID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AttemptID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleKeyRenewal_attemptID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleKeyRenewal", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleKeyRenewal_authURL(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleKeyRenewal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleKeyRenewal_authURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AuthURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleKeyRenewal_authURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleKeyRenewal", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleKeyRenewal_canRenew(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleKeyRenewal) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleKeyRenewal_canRenew(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CanRenew, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleKeyRenewal_canRenew(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleKeyRenewal", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
 func (ec *executionContext) _TailscalePeer_id(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
@@ -6435,6 +6795,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "renewTailscaleNodeKey":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_renewTailscaleNodeKey(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "beginTailscaleNodeKeyRenewal":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_beginTailscaleNodeKeyRenewal(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cancelTailscaleNodeKeyRenewal":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cancelTailscaleNodeKeyRenewal(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6884,6 +7265,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "tailscaleKeyRenewal":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tailscaleKeyRenewal(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -7160,6 +7563,59 @@ func (ec *executionContext) _TailscaleDNSRecord(ctx context.Context, sel ast.Sel
 			}
 		case "value":
 			out.Values[i] = ec._TailscaleDNSRecord_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var tailscaleKeyRenewalImplementors = []string{"TailscaleKeyRenewal"}
+
+func (ec *executionContext) _TailscaleKeyRenewal(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleKeyRenewal) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailscaleKeyRenewalImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TailscaleKeyRenewal")
+		case "state":
+			out.Values[i] = ec._TailscaleKeyRenewal_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "attemptID":
+			out.Values[i] = ec._TailscaleKeyRenewal_attemptID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "authURL":
+			out.Values[i] = ec._TailscaleKeyRenewal_authURL(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "canRenew":
+			out.Values[i] = ec._TailscaleKeyRenewal_canRenew(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -8130,6 +8586,16 @@ func (ec *executionContext) marshalNInt642int(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNKeyRenewalState2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐKeyRenewalState(ctx context.Context, v any) (model.KeyRenewalState, error) {
+	var res model.KeyRenewalState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNKeyRenewalState2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐKeyRenewalState(ctx context.Context, sel ast.SelectionSet, v model.KeyRenewalState) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNNetworkActivity2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivity(ctx context.Context, sel ast.SelectionSet, v *model.NetworkActivity) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -8254,6 +8720,16 @@ func (ec *executionContext) marshalNTailscaleDNSRecord2ᚖgithubᚗcomᚋpancpp�
 		return graphql.Null
 	}
 	return ec._TailscaleDNSRecord(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTailscaleKeyRenewal2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleKeyRenewal(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleKeyRenewal) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TailscaleKeyRenewal(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTailscalePeer2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TailscalePeer) graphql.Marshaler {

@@ -1,12 +1,30 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { nodeKeyStatus } from '../src/nodeKey.ts'
+import { nodeKeyDialogMode, nodeKeyStatus } from '../src/nodeKey.ts'
 
 const now = Date.parse('2026-09-24T12:00:00Z')
 function status(expiry, overrides = {}) {
   return { backendState: 'Running', haveNodeKey: true, tailscaleIPs: ['100.64.0.1'], currentTailnet: { name: 'example.test' },
     self: { online: true, keyExpiry: expiry }, peers: [], ...overrides }
 }
+
+test('Renew opens sign-in for a device without a key regardless of daemon state or self metadata', () => {
+  for (const backendState of ['NeedsLogin', 'Stopped', 'Starting', 'NoState', 'Running', 'NeedsMachineAuth']) {
+    for (const self of [null, { online: false, keyExpiry: null }]) {
+      assert.equal(nodeKeyDialogMode(status(null, { haveNodeKey: false, backendState, self })), 'signin')
+    }
+  }
+})
+
+test('Renew keeps the key-renewal panel for existing keys, including expired keys', () => {
+  for (const backendState of ['Running', 'Stopped', 'NeedsLogin']) {
+    for (const expiry of [null, '2020-01-01T00:00:00Z', '2027-01-01T00:00:00Z']) {
+      assert.equal(nodeKeyDialogMode(status(expiry, { backendState })), 'renewal')
+    }
+  }
+  // Missing status is not evidence that the device was never signed in.
+  assert.equal(nodeKeyDialogMode(null), 'renewal')
+})
 
 test('node-key countdown uses the reported expiry, without assuming a fixed key lifetime', () => {
   for (const [remaining, label] of [
@@ -35,12 +53,13 @@ test('expired keys are detected at the exact deadline and never get negative rem
   assert.equal(nodeKeyStatus(status(expiry), '', now + 1000).state, 'expired')
 })
 
-test('null expiry, absent keys and absent self are distinct and never show a made-up date', () => {
+test('null expiry means disabled while absent keys and absent self remain distinct', () => {
   const noExpiry = nodeKeyStatus(status(null), '', now)
   assert.equal(noExpiry.state, 'no-expiry')
-  assert.equal(noExpiry.label, 'No expiry reported')
+  assert.equal(noExpiry.label, 'Expiry disabled')
+  assert.equal(noExpiry.description, 'Key expiry is disabled for this device.')
   assert.equal(noExpiry.expiresAt, null)
-  assert.doesNotMatch(noExpiry.label + noExpiry.description, /never expires|disabled|180|178/i)
+  assert.doesNotMatch(noExpiry.label + noExpiry.description, /180|178|remaining/i)
   assert.equal(nodeKeyStatus(status(null, { haveNodeKey: false }), '', now).state, 'unconfigured')
   assert.equal(nodeKeyStatus(status(null, { self: null }), '', now).state, 'unavailable')
   assert.equal(nodeKeyStatus(status(null, { haveNodeKey: false, self: null, backendState: 'NeedsLogin' }), '', now).state, 'unconfigured')
@@ -52,6 +71,7 @@ test('loading, failed refreshes and invalid timestamps do not show stale key dat
   assert.equal(stale.state, 'unavailable')
   assert.equal(stale.expiresAt, null)
   assert.equal(nodeKeyStatus(null, 'Tailscale unavailable', now).state, 'unavailable')
+  assert.equal(nodeKeyStatus(status(null), 'Tailscale unavailable', now).state, 'unavailable')
   for (const expiry of [undefined, '', 'bad-date']) assert.equal(nodeKeyStatus(status(expiry), '', now).state, 'unavailable')
   assert.equal(nodeKeyStatus(status('2027-01-01T00:00:00Z'), '', NaN).state, 'unavailable')
 })

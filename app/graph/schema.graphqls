@@ -88,6 +88,7 @@ type TailscaleStatus {
   tun: Boolean!
   backendState: String!
   haveNodeKey: Boolean!
+  "Sensitive sign-in link, returned only to portal administrators; empty for other users."
   authURL: String!
   tailscaleIPs: [String!]!
   health: [String!]!
@@ -207,6 +208,28 @@ type TailscaleConnection {
   canEnable: Boolean!
 }
 
+enum KeyRenewalState {
+  IDLE
+  READY
+  CANCELLED
+  STARTING
+  AWAITING_LOGIN
+  AWAITING_APPROVAL
+  COMPLETE
+  SIGNED_IN
+}
+
+"Admin-only sign-in/renewal status. COMPLETE verifies key rotation; SIGNED_IN verifies first-time or resumed login with a usable key and Running state, without claiming rotation."
+type TailscaleKeyRenewal {
+  state: KeyRenewalState!
+  "Opaque request ID; required to start or cancel this specific attempt. Empty if none is tracked."
+  attemptID: String!
+  "Sensitive sign-in link; empty until available. Do not persist or log it."
+  authURL: String!
+  "Whether an explicit sign-in or renewal request may be made. Never automatically retry a mutation."
+  canRenew: Boolean!
+}
+
 type Query {
   user: User!
   tailscaleClient: TailscaleClient
@@ -216,6 +239,7 @@ type Query {
   networkActivityHistory: NetworkActivityHistory!
   tailscaleRouting: TailscaleRouting!
   tailscaleConnection: TailscaleConnection!
+  tailscaleKeyRenewal: TailscaleKeyRenewal!
 }
 
 input ChangePassword {
@@ -250,4 +274,10 @@ type Mutation {
   setExitNode(input: ExitNodeInput!): Boolean!
   "Admin only: resume or pause this device without logging out or changing routing preferences. May disconnect this browser."
   setTailscaleEnabled(enabled: Boolean!): Boolean!
+  "Admin only: prepare first-time sign-in or renewal without changing Tailscale. Sign in explicitly to begin, or cancel while READY."
+  renewTailscaleNodeKey: TailscaleKeyRenewal!
+  "Admin only: start the prepared attempt. May disconnect Tailscale; cannot be cancelled once started."
+  beginTailscaleNodeKeyRenewal(attemptID: String!): TailscaleKeyRenewal!
+  "Admin only: cancel a prepared attempt without touching Tailscale. Rejects stale IDs and attempts whose sign-in has begun."
+  cancelTailscaleNodeKeyRenewal(attemptID: String!): TailscaleKeyRenewal!
 }

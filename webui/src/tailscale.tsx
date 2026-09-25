@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from './auth'
+import { useNodeKeyRenewal } from './useNodeKeyRenewal'
 import {
   clearTailscaleCredentialRequest, isSessionError, setTailscaleCredentialRequest,
   tailscaleClientRequest, tailscaleStatusRequest,
@@ -18,6 +19,9 @@ interface TailscaleContextValue {
   refresh: () => Promise<void>
   save: (credential: TailscaleCredential) => Promise<void>
   clear: () => Promise<void>
+  keyRenewalActive: boolean
+  keyRenewal: ReturnType<typeof useNodeKeyRenewal>
+  setKeyRenewalDialogOpen: (open: boolean) => void
 }
 
 const TailscaleContext = createContext<TailscaleContextValue | null>(null)
@@ -31,6 +35,7 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
   const [routing, setRouting] = useState<TailscaleRouting | null>(null)
   const [routingError, setRoutingError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [keyRenewalDialogOpen, setKeyRenewalDialogOpen] = useState(false)
   const pending = useRef<AbortController | null>(null)
 
   const refresh = useCallback(async () => {
@@ -65,6 +70,9 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
     if (!controller.signal.aborted) setRefreshing(false)
   }, [accessToken, logout])
 
+  const keyRenewal = useNodeKeyRenewal(accessToken, logout, refresh)
+  const keyRenewalActive = keyRenewalDialogOpen || keyRenewal.pending
+
   useEffect(() => {
     void refresh()
     const interval = window.setInterval(() => { void refresh() }, 30_000)
@@ -93,7 +101,7 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
     } catch (error) { if (isSessionError(error)) logout(); throw error }
   }
 
-  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, routing, routingError, refreshing, refresh, save, clear }}>
+  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, routing, routingError, refreshing, refresh, save, clear, keyRenewalActive, keyRenewal, setKeyRenewalDialogOpen }}>
     {children}
   </TailscaleContext.Provider>
 }

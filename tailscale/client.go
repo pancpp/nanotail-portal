@@ -39,6 +39,8 @@ type Client struct {
 	timeout   time.Duration
 	runner    Runner
 	mutations chan struct{}
+	// Protected by mutations; authentication URLs are never retained here.
+	keyRenewal *keyRenewalAttempt
 }
 
 func NewClient(binary, socket string, timeout time.Duration, runner Runner) *Client {

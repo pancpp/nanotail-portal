@@ -1031,6 +1031,38 @@ input:focus-visible {
 .node-key-card--expired .status-card__body strong, .node-key-warning { color: #a23b3b; }
 .node-key-card--expiring .status-card__body strong { color: #94620c; }
 .node-key-warning { margin: 14px 0 0; font-size: 16px; line-height: 1.5; }
+.node-key-renew { margin-top: auto; padding: 16px 0 0; align-self: flex-start; border: 0; background: none; text-decoration: underline; }
+.node-key-renew:disabled { opacity: .5; cursor: not-allowed; }
+.tailscale-signin { margin-top: 12px; padding: 0; background: none; text-decoration: underline; }
+.renewal-status { margin: 20px 0; font-size: 17px; line-height: 1.6; }
+.renewal-status a { color: var(--green-dark); }
+.renewal-submit { margin-top: 18px; }
+.renewal-help { margin: 0; font-size: 16px; line-height: 1.5; color: var(--muted); }
+.signin-steps {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0 0 0.75rem;
+  padding-left: 1.5rem;
+  line-height: 1.6;
+}
+
+.renewal-dialog .lan-warning { margin-top: 0; }
+.renewal-feedback:not(:empty) { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px 18px; margin: 20px 0; border: 1px solid #dce7e1; border-radius: 14px; background: #f5f9f7; text-align: center; }
+.renewal-feedback__icon { display: grid; place-items: center; flex-shrink: 0; width: 64px; height: 64px; border-radius: 50%; background: #e3f0e9; color: var(--green-dark); }
+.renewal-feedback__icon svg { width: 32px; height: 32px; stroke-width: 2.5; }
+.renewal-feedback__text { min-width: 0; }
+.renewal-feedback__text strong { display: block; font-size: 20px; line-height: 1.4; font-weight: 650; color: var(--ink); }
+.renewal-feedback__text p { margin: 7px 0 0; font-size: 16px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
+.renewal-feedback--success:not(:empty) { border-color: #baddcb; background: #edf8f1; }
+.renewal-feedback--success .renewal-feedback__icon { color: #fff; background: var(--green-dark); }
+.renewal-feedback--success .renewal-feedback__text strong { color: var(--green-dark); }
+.renewal-feedback--error:not(:empty) { border-color: #ecdbb8; background: #fff8eb; }
+.renewal-feedback--error .renewal-feedback__icon { color: #75551f; background: #f9ebcd; }
+.renewal-feedback--compact:not(:empty) { flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px 12px; margin: 16px 0 0; text-align: left; }
+.renewal-feedback--compact .renewal-feedback__icon { width: 32px; height: 32px; }
+.renewal-feedback--compact .renewal-feedback__icon svg { width: 20px; height: 20px; }
+.renewal-feedback--compact .renewal-feedback__text strong { font-size: 16px; }
+.renewal-checking { display: flex; align-items: center; gap: 10px; }
 
 .dashboard-columns {
   display: grid;
@@ -1680,7 +1712,9 @@ a:focus-visible, dialog:focus-visible {
 .credential-intro { margin: 0 0 16px; color: var(--muted); font-size: 17px; line-height: 1.6; }
 .credential-links { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; }
 .credential-form > .credential-links { margin-bottom: 24px; }
-.credential-links a, .setup-guide a, .status-card__footer a { display: inline-flex; align-items: center; gap: 7px; color: var(--green-dark); font-size: 16px; line-height: 1.5; text-underline-offset: 4px; }
+.credential-links a, .setup-guide a, .status-card__configure { display: inline-flex; align-items: center; gap: 7px; color: var(--green-dark); font-size: 16px; line-height: 1.5; text-underline-offset: 4px; }
+.status-card__configure { font-family: inherit; font-weight: 400; }
+.routing-card > .status-card__configure { margin-top: auto; align-self: flex-start; }
 .credential-form input { min-height: 48px; font-size: 17px; }
 .credential-form .password-help { font-size: 16px; }
 .credential-state { color: var(--muted); font-size: 15px; }

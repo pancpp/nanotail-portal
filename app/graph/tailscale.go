@@ -116,10 +116,15 @@ func (r *queryResolver) tailscaleStatus(ctx context.Context) (*model.TailscaleSt
 	}
 	result := &model.TailscaleStatus{
 		Version: status.Version, Tun: status.TUN, BackendState: status.BackendState,
-		HaveNodeKey: status.HaveNodeKey, AuthURL: status.AuthURL,
+		HaveNodeKey:  status.HaveNodeKey,
 		TailscaleIPs: status.IPs, Health: status.Health, MagicDNSSuffix: status.MagicDNSSuffix,
 		CertDomains: status.CertDomains, Self: tailscalePeer(status.Self),
 		Peers: make([]*model.TailscalePeer, len(status.Peers)),
+	}
+	// Reauthentication links grant control of device enrollment. The general
+	// status query must not bypass the renewal query's administrator check.
+	if status.AuthURL != "" && requireAdmin(ctx, ErrKeyRenewalAdmin) == nil {
+		result.AuthURL = status.AuthURL
 	}
 	if tailnet := status.CurrentTailnet; tailnet != nil {
 		result.CurrentTailnet = &model.Tailnet{

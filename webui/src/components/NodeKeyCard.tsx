@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { KeyRound } from 'lucide-react'
+import { KeyRound, RefreshCw } from 'lucide-react'
 import { nodeKeyStatus } from '../nodeKey'
 import { useTailscale } from '../tailscale'
+import NodeKeyRenewalStatus from './NodeKeyRenewalStatus'
 
-export default function NodeKeyCard() {
-  const { status, statusError } = useTailscale()
+export default function NodeKeyCard({ onRenew }: { onRenew: () => void }) {
+  const { status, statusError, keyRenewalActive, keyRenewal } = useTailscale()
   const [now, setNow] = useState(Date.now)
 
   useEffect(() => {
@@ -28,5 +29,11 @@ export default function NodeKeyCard() {
       </time> (local time)</>}</p>
     </div>
     {key.state === 'expired' && <p className="node-key-warning">Reauthenticate this device to restore access.</p>}
+    <NodeKeyRenewalStatus snapshot={keyRenewal} compact signIn={status?.backendState === 'NeedsLogin' && !status.haveNodeKey} />
+    <button type="button" className="status-card__configure node-key-renew" onClick={onRenew}
+      disabled={!keyRenewalActive && (statusError !== '' || !status ||
+        (status.backendState !== 'NeedsLogin' && key.state === 'unavailable'))}>
+      Renew <RefreshCw size={16} />
+    </button>
   </article>
 }

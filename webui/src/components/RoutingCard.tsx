@@ -14,7 +14,7 @@ export default function RoutingCard() {
     <div className="status-card__body">
       <span>Exit node</span><strong>{summary.title}</strong><p>{summary.detail}</p>
     </div>
-    <Link className="text-action" to="/access-control">
+    <Link className="status-card__configure" to="/access-control">
       Configure <ChevronRight size={15} />
     </Link>
   </article>

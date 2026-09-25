@@ -76,6 +76,7 @@ func initAPIs(e *echo.Echo) error {
 				c.Request().Context(),
 				graph.QUERY_CONTEXT_KEY,
 				&graph.ContextValue{UserPID: claims.UserPID})
+			c.Response().Header().Set("Cache-Control", "no-store")
 			gqlSrv.ServeHTTP(c.Response(), c.Request().WithContext(ctx))
 			return nil
 		},

@@ -48,13 +48,29 @@ GraphQL errors are displayed even on HTTP 200. An incorrect current password
 does not sign the user out; an HTTP 401 from JWT middleware does.
 Successful changes keep the current session because existing JWTs are not revoked.
 
-## Tailscale credentials
+## Tailscale sign-in and credentials
 
 The dashboard reads `tailscaleStatus` through GraphQL every 30 seconds. A device
-in `NeedsLogin` prompts once per page session for its OAuth client ID and
-secret. Stopped devices, pending machine approval, and unavailable status do not
-trigger credential prompts. Reloading the page may show the prompt again;
-ordinary status refreshes do not. Network and the setup guide remain available.
+in `NeedsLogin` automatically opens a browser sign-in guide on each Overview
+visit, including new devices and expired logins. Dismissing the guide suppresses
+it for that visit; ordinary refreshes do not reopen it. Returning to Overview
+shows it again if sign-in is still needed. A **Sign in to Tailscale** button also
+lets users reopen it manually. Paused/offline devices, pending machine approval,
+and unavailable/loading status do not trigger the guide. Credential-query
+errors do not block browser sign-in.
+
+**KEY EXPIRY → Renew** also opens this sign-in guide when `haveNodeKey` is false,
+regardless of the daemon's connection state. For an existing node key, Renew
+opens the key-renewal panel instead. Unknown or failed status does not imply a
+missing key.
+
+Opening the guide only reads status. A portal administrator acknowledges the
+instructions, chooses **Prepare sign-in**, and then **Sign in to Tailscale** to
+authorize the device in a new browser tab. No OAuth client ID/secret is needed.
+The existing cancellable prepare/start flow is shared with node-key renewal.
+First-time login reports `SIGNED_IN` only after a usable node key and `Running`
+state are reported, displaying **Signed in to Tailscale successfully**, refreshing
+the overview and stopping polling. It does not claim an existing key was renewed.
 
 Connection state comes from `backendState` and `self.online`; `currentTailnet`
 and `self` can be `null` before login. The overview uses `tailscaleIPs` and the
@@ -135,10 +151,45 @@ browser's local timezone. Status is refreshed every 30 seconds; the countdown
 also advances locally between refreshes. Expired keys show a warning.
 
 Missing keys, missing self information, and status failures have explicit
-states. A null expiry is shown as **No expiry reported**, not an assumed 180-day
-lifetime or a claim that expiration is disabled. Failed status refreshes hide
+states. A null expiry for an existing node key is shown as **Expiry disabled**,
+without inventing an expiration date or lifetime. Failed status refreshes hide
 stale expiry values. No progress percentage is shown because the status API
 does not report the current key's issuance time or configured lifetime.
+
+**Renew** opens the administrator-only **KEY RENEW** confirmation and sign-in dialog. Connect
+over the LAN first: renewal can interrupt Tailscale, and completing login turns
+the tailnet connection on. Sign in using the same Tailscale account and tailnet.
+The dialog calls `renewTailscaleNodeKey` once after acknowledgement to prepare
+a request, without changing Tailscale. **Sign in to Tailscale** calls
+`beginTailscaleNodeKeyRenewal(attemptID)` and opens a new tab, which navigates to
+the validated sign-in link when ready. A manual link is available if popups are
+blocked. The renewal dialog uses the top-right X to close, with no **Check status**
+or **Close** buttons. Before Sign in, X and Escape call
+`cancelTailscaleNodeKeyRenewal(attemptID)` and wait for confirmed cancellation;
+failed or uncertain cancellation keeps the dialog open for status recovery.
+Prepared/cancelled requests never show a renewal success check mark. The shared
+Tailscale provider then polls the read-only `tailscaleKeyRenewal` query every two
+seconds while pending, even after closing the dialog or changing WebUI tabs. It
+shows a private, validated Tailscale sign-in link, a device-approval step when
+needed, and reports completion only when the backend sees a changed usable node
+key and a running connection. Both the dialog and **KEY EXPIRY** panel show a
+rotating indicator with **Waiting for renewal…**, then a green check mark and
+**Node key renewed successfully** once verified. The overview refreshes on
+completion, polling stops, and the success message remains for this session
+until another renewal/status check changes it. Reduced-motion preferences are
+respected, and state changes are announced by an accessible live status region.
+
+Errors stop polling; close with X and reopen **Renew** to check status before
+another explicit write. Requests have a 60-second deadline and mutations are
+never automatically retried.
+After Sign in has started, closing only dismisses the dialog: it does not cancel
+the daemon's login flow or its completion checks. On errors, the panel shows
+**Renewal not confirmed**; reopen **Renew**
+to check status. Signing out stops monitoring and clears its state. Sign-in
+URLs stay in memory only; automatic sign-in and manual renewal share a single
+dialog, so prompts cannot stack. A portal restart loses prepared requests and the comparison
+baseline. Prepare a new request and choose Sign in to resume an existing daemon
+login link; review the overview's expiry when rotation cannot be verified.
 
 ## Device status
 

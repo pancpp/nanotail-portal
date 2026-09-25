@@ -3,6 +3,10 @@
 package model
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
 	"time"
 )
 
@@ -151,6 +155,17 @@ type TailscaleDNSRecord struct {
 	Value string `json:"value"`
 }
 
+// Admin-only sign-in/renewal status. COMPLETE verifies key rotation; SIGNED_IN verifies first-time or resumed login with a usable key and Running state, without claiming rotation.
+type TailscaleKeyRenewal struct {
+	State KeyRenewalState `json:"state"`
+	// Opaque request ID; required to start or cancel this specific attempt. Empty if none is tracked.
+	AttemptID string `json:"attemptID"`
+	// Sensitive sign-in link; empty until available. Do not persist or log it.
+	AuthURL string `json:"authURL"`
+	// Whether an explicit sign-in or renewal request may be made. Never automatically retry a mutation.
+	CanRenew bool `json:"canRenew"`
+}
+
 type TailscalePeer struct {
 	ID                  string         `json:"id"`
 	NodeID              int            `json:"nodeID"`
@@ -198,10 +213,11 @@ type TailscaleRouting struct {
 }
 
 type TailscaleStatus struct {
-	Version        string                  `json:"version"`
-	Tun            bool                    `json:"tun"`
-	BackendState   string                  `json:"backendState"`
-	HaveNodeKey    bool                    `json:"haveNodeKey"`
+	Version      string `json:"version"`
+	Tun          bool   `json:"tun"`
+	BackendState string `json:"backendState"`
+	HaveNodeKey  bool   `json:"haveNodeKey"`
+	// Sensitive sign-in link, returned only to portal administrators; empty for other users.
 	AuthURL        string                  `json:"authURL"`
 	TailscaleIPs   []string                `json:"tailscaleIPs"`
 	Health         []string                `json:"health"`
@@ -227,4 +243,71 @@ type User struct {
 	Role       string    `json:"role"`
 	CreateTime time.Time `json:"createTime"`
 	UpdateTime time.Time `json:"updateTime"`
+}
+
+type KeyRenewalState string
+
+const (
+	KeyRenewalStateIdle             KeyRenewalState = "IDLE"
+	KeyRenewalStateReady            KeyRenewalState = "READY"
+	KeyRenewalStateCancelled        KeyRenewalState = "CANCELLED"
+	KeyRenewalStateStarting         KeyRenewalState = "STARTING"
+	KeyRenewalStateAwaitingLogin    KeyRenewalState = "AWAITING_LOGIN"
+	KeyRenewalStateAwaitingApproval KeyRenewalState = "AWAITING_APPROVAL"
+	KeyRenewalStateComplete         KeyRenewalState = "COMPLETE"
+	KeyRenewalStateSignedIn         KeyRenewalState = "SIGNED_IN"
+)
+
+var AllKeyRenewalState = []KeyRenewalState{
+	KeyRenewalStateIdle,
+	KeyRenewalStateReady,
+	KeyRenewalStateCancelled,
+	KeyRenewalStateStarting,
+	KeyRenewalStateAwaitingLogin,
+	KeyRenewalStateAwaitingApproval,
+	KeyRenewalStateComplete,
+	KeyRenewalStateSignedIn,
+}
+
+func (e KeyRenewalState) IsValid() bool {
+	switch e {
+	case KeyRenewalStateIdle, KeyRenewalStateReady, KeyRenewalStateCancelled, KeyRenewalStateStarting, KeyRenewalStateAwaitingLogin, KeyRenewalStateAwaitingApproval, KeyRenewalStateComplete, KeyRenewalStateSignedIn:
+		return true
+	}
+	return false
+}
+
+func (e KeyRenewalState) String() string {
+	return string(e)
+}
+
+func (e *KeyRenewalState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = KeyRenewalState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid KeyRenewalState", str)
+	}
+	return nil
+}
+
+func (e KeyRenewalState) MarshalGQL(w io.Writer) {
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *KeyRenewalState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e KeyRenewalState) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

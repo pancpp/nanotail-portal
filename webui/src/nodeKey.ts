@@ -1,5 +1,11 @@
 import type { TailscaleStatus } from './api'
 
+// Renew depends on whether a key exists, not whether the daemon currently
+// reports NeedsLogin. A device without a key needs the sign-in guide first.
+export function nodeKeyDialogMode(status: TailscaleStatus | null): 'signin' | 'renewal' {
+  return status?.haveNodeKey === false ? 'signin' : 'renewal'
+}
+
 interface NodeKeyStatus {
   state: 'loading' | 'unavailable' | 'unconfigured' | 'no-expiry' | 'active' | 'expiring' | 'expired'
   label: string
@@ -15,9 +21,8 @@ export function nodeKeyStatus(status: TailscaleStatus | null, statusError = '', 
   if (!status.haveNodeKey) return result('unconfigured', 'Not configured', 'This device does not have a Tailscale node key.')
   if (!status.self) return result('unavailable', 'Unavailable', 'Tailscale has not reported this device’s key expiry.')
   const expiresAt = status.self.keyExpiry
-  // A null date does not establish the reason: expiry may be disabled, or the
-  // daemon may lack expiry information. Do not invent a lifetime or percentage.
-  if (expiresAt === null) return result('no-expiry', 'No expiry reported', 'Tailscale returned no expiration date for this node key.')
+  // For an existing node key, a null expiration means key expiry is disabled.
+  if (expiresAt === null) return result('no-expiry', 'Expiry disabled', 'Key expiry is disabled for this device.')
   const remaining = Date.parse(expiresAt) - now
   if (!Number.isFinite(remaining)) return result('unavailable', 'Unavailable', 'Tailscale did not report a valid key expiry date.')
   if (remaining <= 0) return result('expired', 'Expired', 'Expired', expiresAt)
