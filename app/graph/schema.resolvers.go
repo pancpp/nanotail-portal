@@ -31,6 +31,11 @@ func (r *mutationResolver) SetDeviceIP(ctx context.Context, deviceIP *model.Devi
 	return r.setDeviceIP(ctx, deviceIP)
 }
 
+// SetExitNode is the resolver for the setExitNode field.
+func (r *mutationResolver) SetExitNode(ctx context.Context, input model.ExitNodeInput) (bool, error) {
+	return r.setExitNode(ctx, input)
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 	return r.user(ctx)
@@ -49,6 +54,21 @@ func (r *queryResolver) TailscaleStatus(ctx context.Context) (*model.TailscaleSt
 // DeviceStatus is the resolver for the deviceStatus field.
 func (r *queryResolver) DeviceStatus(ctx context.Context) (*model.DeviceStatus, error) {
 	return r.deviceStatus(ctx)
+}
+
+// NetworkActivity is the resolver for the networkActivity field.
+func (r *queryResolver) NetworkActivity(ctx context.Context) (*model.NetworkActivity, error) {
+	return r.networkActivity(ctx)
+}
+
+// NetworkActivityHistory is the resolver for the networkActivityHistory field.
+func (r *queryResolver) NetworkActivityHistory(ctx context.Context) (*model.NetworkActivityHistory, error) {
+	return r.networkActivityHistory(ctx)
+}
+
+// TailscaleRouting is the resolver for the tailscaleRouting field.
+func (r *queryResolver) TailscaleRouting(ctx context.Context) (*model.TailscaleRouting, error) {
+	return r.tailscaleRouting(ctx)
 }
 
 // Mutation returns MutationResolver implementation.

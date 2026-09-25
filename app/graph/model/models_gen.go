@@ -53,7 +53,56 @@ type DeviceStatus struct {
 	Health string `json:"health"`
 }
 
+type ExitNodeInput struct {
+	// Stable ID from tailscaleRouting.exitNodes; empty disables exit-node use.
+	ExitNodeID string `json:"exitNodeID"`
+	// Must be false when disabling the exit node.
+	AllowLANAccess bool `json:"allowLANAccess"`
+}
+
 type Mutation struct {
+}
+
+// A read-only snapshot of VPN IP traffic through tailscale0, excluding eth0 and encrypted transport overhead.
+type NetworkActivity struct {
+	InterfaceName string `json:"interfaceName"`
+	// Cumulative received bytes since interface reset, encoded as decimal text to preserve 64-bit precision.
+	RxBytes string `json:"rxBytes"`
+	// Cumulative transmitted bytes since interface reset, encoded as decimal text to preserve 64-bit precision.
+	TxBytes   string    `json:"txBytes"`
+	SampledAt time.Time `json:"sampledAt"`
+	// Boot and interface identity; clients must reset rate calculations when this changes.
+	CounterEpoch string `json:"counterEpoch"`
+}
+
+type NetworkActivityHistory struct {
+	WindowStart time.Time `json:"windowStart"`
+	// End of the last successful hourly save (current hour before the first save). May be stale if recording stopped.
+	WindowEnd time.Time `json:"windowEnd"`
+	// Saved records within the last 24 completed hours, oldest first. Absent hours are unknown.
+	Hours  []*NetworkActivityHour `json:"hours"`
+	Totals *NetworkActivityTotals `json:"totals"`
+}
+
+// Recorded VPN byte totals for a completed UTC hour. A partial hour is not a full-hour estimate.
+type NetworkActivityHour struct {
+	StartedAt time.Time `json:"startedAt"`
+	RxBytes   string    `json:"rxBytes"`
+	TxBytes   string    `json:"txBytes"`
+	// Seconds covered by valid samples (0–3600). Zero means unmeasured, not zero traffic.
+	ObservedSeconds float64 `json:"observedSeconds"`
+}
+
+// Both byte totals are persisted together once an hour; total traffic is retained when hourly history is pruned.
+type NetworkActivityTotals struct {
+	RxBytes24h           string  `json:"rxBytes24h"`
+	TxBytes24h           string  `json:"txBytes24h"`
+	ObservedSeconds24h   float64 `json:"observedSeconds24h"`
+	TotalRxBytes         string  `json:"totalRxBytes"`
+	TotalTxBytes         string  `json:"totalTxBytes"`
+	TotalObservedSeconds float64 `json:"totalObservedSeconds"`
+	// Earliest recorded hour included in the all-time total; null before any measurements.
+	RecordedSince *time.Time `json:"recordedSince,omitempty"`
 }
 
 type Query struct {
@@ -127,6 +176,17 @@ type TailscalePeer struct {
 	InMagicSock         bool           `json:"inMagicSock"`
 	InEngine            bool           `json:"inEngine"`
 	KeyExpiry           *time.Time     `json:"keyExpiry,omitempty"`
+}
+
+// Saved exit-node preferences and approved exit nodes visible to this device.
+type TailscaleRouting struct {
+	BackendState string `json:"backendState"`
+	// Empty when no exit node is selected (older daemons may report only exitNodeIP).
+	ExitNodeID        string           `json:"exitNodeID"`
+	ExitNodeIP        string           `json:"exitNodeIP"`
+	AllowLANAccess    bool             `json:"allowLANAccess"`
+	AdvertiseExitNode bool             `json:"advertiseExitNode"`
+	ExitNodes         []*TailscalePeer `json:"exitNodes"`
 }
 
 type TailscaleStatus struct {

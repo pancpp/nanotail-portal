@@ -4,6 +4,7 @@ import {
   clearTailscaleCredentialRequest, isSessionError, setTailscaleCredentialRequest,
   tailscaleClientRequest, tailscaleStatusRequest,
   type TailscaleClient, type TailscaleCredential, type TailscaleStatus,
+  tailscaleRoutingRequest, type TailscaleRouting,
 } from './api'
 
 interface TailscaleContextValue {
@@ -11,6 +12,8 @@ interface TailscaleContextValue {
   client: TailscaleClient | null | undefined
   statusError: string
   clientError: string
+  routing: TailscaleRouting | null
+  routingError: string
   refreshing: boolean
   refresh: () => Promise<void>
   save: (credential: TailscaleCredential) => Promise<void>
@@ -25,6 +28,8 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
   const [client, setClient] = useState<TailscaleClient | null>()
   const [statusError, setStatusError] = useState('')
   const [clientError, setClientError] = useState('')
+  const [routing, setRouting] = useState<TailscaleRouting | null>(null)
+  const [routingError, setRoutingError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const pending = useRef<AbortController | null>(null)
 
@@ -35,6 +40,13 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
     pending.current = controller
     setRefreshing(true)
     await Promise.all([
+      tailscaleRoutingRequest(accessToken, controller.signal).then((value) => {
+        if (!controller.signal.aborted) { setRouting(value); setRoutingError('') }
+      }).catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        if (isSessionError(error)) logout()
+        setRoutingError(error instanceof Error ? error.message : 'Unable to read routing settings.')
+      }),
       tailscaleStatusRequest(accessToken, controller.signal).then((value) => {
         if (!controller.signal.aborted) { setStatus(value); setStatusError('') }
       }).catch((error: unknown) => {
@@ -81,7 +93,7 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
     } catch (error) { if (isSessionError(error)) logout(); throw error }
   }
 
-  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, refreshing, refresh, save, clear }}>
+  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, routing, routingError, refreshing, refresh, save, clear }}>
     {children}
   </TailscaleContext.Provider>
 }

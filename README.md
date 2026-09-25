@@ -62,9 +62,36 @@ authentication, `/status` returns `backend_state` and `auth_url` when available.
 Initial Tailscale enrollment is still performed with the CLI. Disconnecting or
 changing routing can interrupt access to the portal through Tailscale.
 
-The WebUI shows live connection status and manages OAuth credentials through
-GraphQL. Other dashboard panels still show clearly labeled sample data; their
-live integration is a separate step.
+The WebUI shows live connection, peer, node-key, device, routing, and VPN traffic
+data through GraphQL. It also manages OAuth credentials, LAN IPv4 settings, and
+the exit node used by this device.
+
+### Exit-node routing
+
+On Overview, **Routing → Configure** opens an exit-node selection dialog. The
+authenticated `tailscaleRouting` query reads saved preferences and approved
+exit nodes visible to this device. Select an online exit node, choose whether to
+allow local-LAN access, acknowledge the connectivity warning, and apply. Choose
+**None — use local gateway** to clear a saved selection, including a missing or
+offline exit node. If no exit nodes are available, follow the linked
+[Tailscale setup guide](https://tailscale.com/docs/features/exit-nodes/how-to/setup)
+to configure and approve one on another device.
+
+`setExitNode(input: {exitNodeID: "<stable peer ID>", allowLANAccess: true})` is
+administrator-only. Clearing uses an empty ID and `allowLANAccess: false`.
+The backend validates the peer against fresh daemon status, changes only
+`--exit-node` and `--exit-node-allow-lan-access` via `tailscale set`, and checks
+the saved preferences before returning success. The portal process needs
+permission to manage tailscaled (root or a configured Tailscale operator).
+These settings persist in Tailscale, not in the portal database.
+
+This configures **nanotail's use of another exit node**. It does not advertise
+nanotail as an exit node, configure LAN-client forwarding/subnet routes, change
+tailnet policy, or start a stopped Tailscale daemon. An advertising exit node
+cannot simultaneously use another exit node. Changing routes can disconnect
+the browser or SSH; successful changes are not automatically reverted. After a
+timeout or lost connection, reconnect and reload settings before retrying.
+Readback confirms preferences, not end-to-end internet reachability.
 
 ## API
 
@@ -77,7 +104,7 @@ Login and JWT middleware errors use `{"message":"..."}`; GraphQL responses use
 | --- | --- | --- |
 | GET | `/api/health` | Public portal liveness; does not indicate Tailscale health |
 | POST | `/api/login` | Public login with `username` and `password`; returns a JWT in `token` |
-| POST | `/api/v1/query` | Authenticated GraphQL for password changes, device/Tailscale status, and OAuth credentials |
+| POST | `/api/v1/query` | Authenticated GraphQL for password changes, device/Tailscale status, VPN traffic, LAN/routing settings, and OAuth credentials |
 | GET | `/api/system` | Hostname, OS, architecture, portal uptime and build metadata |
 | GET | `/api/tailscale/status` | State, self, peers, health messages and traffic counters |
 | GET | `/api/tailscale/peers` | Sorted peer array |
@@ -123,6 +150,16 @@ with HTTP 401. Subsequent logins must use the new password. Concurrent valid
 password changes are last-write-wins; the update matches the user ID only.
 Internal failures are logged on the server and exposed only as
 `Internal Server Error`; expected authentication and validation errors remain readable.
+
+### Node key expiry
+
+The WebUI Node key card reads `tailscaleStatus.haveNodeKey` and
+`tailscaleStatus.self.keyExpiry`, which are populated from `tailscale status
+--json`. It calculates remaining time from the reported expiration timestamp,
+shows the exact date in the browser's timezone, and warns when expired. A null
+expiration is shown as **No expiry reported**; no fixed lifetime or progress
+percentage is assumed. Loading, absent keys, and failed status requests do not
+display fabricated or stale expiry values. See [Tailscale key expiry](https://tailscale.com/docs/features/access-control/key-expiry).
 
 ### Device status
 
@@ -185,6 +222,75 @@ displays these fields and refreshes every 30 seconds or via **Refresh status**.
 Restart time is displayed in the browser's local timezone. Device-query errors
 are shown separately from Tailscale errors, with a retry button; failed updates
 clear stale device measurements. The fixed health value is labeled as a placeholder.
+
+### Live VPN network activity
+
+The authenticated `networkActivity` GraphQL query returns `interfaceName`,
+`rxBytes`, `txBytes`, `sampledAt`, and `counterEpoch`. The backend reads only
+Linux `tailscale0` RX/TX byte counters; it does not sum LAN interfaces or invoke
+Tailscale/NetworkManager commands for each sample. This measures VPN IP traffic,
+including routed VPN traffic, not eth0 traffic or encrypted transport overhead.
+See the [Linux interface statistics documentation](https://docs.kernel.org/networking/statistics.html).
+
+Byte counters are decimal strings to preserve the full unsigned 64-bit values
+in JavaScript. They are cumulative since the interface was created/reset, not
+24-hour totals. The boot ID and interface index form `counterEpoch`; changing
+either invalidates previous rate samples. A missing interface (including
+userspace-networking mode) produces an explicit error, never fake zero traffic.
+
+The overview samples approximately every two seconds and computes download/RX
+and upload/TX bytes per second using counter differences and sample timestamps.
+It displays a rolling one-minute chart collected while the overview is visible.
+The live view's first sample establishes a baseline;
+restarts, decreasing counters, clock changes, long gaps, and failed requests
+reset the baseline to prevent misleading rates. Polling pauses in hidden tabs,
+stops when leaving the overview/signing out, and times out requests after five
+seconds. Errors clear stale data, retry automatically, and offer a retry button.
+
+#### Persistent 24-hour history and total traffic
+
+Apply the history and totals migrations before running this version:
+
+```sh
+./nanotail-portal db migrate
+```
+
+Use the same configuration/database as the running portal (`db init` first on
+a new installation). **Network activity → Last 24 hours** reads the authenticated
+`networkActivityHistory` query, which returns `windowStart`, `windowEnd`,
+hourly `startedAt`, `rxBytes`, `txBytes`, and `observedSeconds` records, and a
+`totals` snapshot. Both **Last 24 hours** and **Total traffic** are displayed
+together above the Live/history selector, with download/upload breakdowns.
+
+A single backend recorder samples `tailscale0` in memory once a minute, whether
+or not any browser is open. At each UTC hour boundary it saves the completed
+hour's RX/TX byte totals and measured duration to `network_activity_hours`.
+In the same hourly transaction it updates `network_activity_totals` with the
+last 24 completed hours and the all-time totals, and prunes older hourly rows.
+Queries never save traffic data. The unfinished hour is excluded from both
+saved totals. Byte totals remain exact decimal strings, including values larger
+than 64-bit integers; retries cannot count the same hour twice.
+
+**Total traffic** means all VPN traffic recorded by this portal, not the current
+interface's lifetime counter. It survives hourly history cleanup and restarts.
+On upgrade, it is initialized from existing retained hourly records; history
+already deleted before the upgrade cannot be recovered. Each saved snapshot
+includes its window end and earliest measured hour. The WebUI shows an explicit
+“as of” time: while recording is stopped or saves fail, reads retain the last
+saved 24-hour window instead of silently recalculating it.
+
+Saved hours survive process/device restarts. The unfinished hour remains in
+memory and may be lost on restart; there are no extra startup or shutdown writes.
+Missing interfaces, resets, backwards clocks, and long sampling gaps do not
+create spikes or invented zero traffic. Partial hours retain only measured bytes
+and coverage, without extrapolation; missing hours are shown explicitly. Samples
+straddling hour boundaries are prorated by elapsed time, preserving byte totals.
+Hours are stored in UTC and labeled in the browser's local timezone.
+
+Failed saves remain in bounded memory and retry at the next hourly boundary,
+not on every sample; a restart can lose those pending records too. The WebUI
+checks for new saved totals/history once a minute while the overview is visible. History
+read failures (including missing migrations) do not disable live traffic rates.
 
 ### LAN IPv4 configuration
 

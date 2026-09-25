@@ -139,11 +139,74 @@ type DeviceStatus {
   health: String!
 }
 
+"A read-only snapshot of VPN IP traffic through tailscale0, excluding eth0 and encrypted transport overhead."
+type NetworkActivity {
+  interfaceName: String!
+  "Cumulative received bytes since interface reset, encoded as decimal text to preserve 64-bit precision."
+  rxBytes: String!
+  "Cumulative transmitted bytes since interface reset, encoded as decimal text to preserve 64-bit precision."
+  txBytes: String!
+  sampledAt: Time!
+  "Boot and interface identity; clients must reset rate calculations when this changes."
+  counterEpoch: String!
+}
+
+"Recorded VPN byte totals for a completed UTC hour. A partial hour is not a full-hour estimate."
+type NetworkActivityHour {
+  startedAt: Time!
+  rxBytes: String!
+  txBytes: String!
+  "Seconds covered by valid samples (0–3600). Zero means unmeasured, not zero traffic."
+  observedSeconds: Float!
+}
+
+"Both byte totals are persisted together once an hour; total traffic is retained when hourly history is pruned."
+type NetworkActivityTotals {
+  rxBytes24h: String!
+  txBytes24h: String!
+  observedSeconds24h: Float!
+  totalRxBytes: String!
+  totalTxBytes: String!
+  totalObservedSeconds: Float!
+  "Earliest recorded hour included in the all-time total; null before any measurements."
+  recordedSince: Time
+}
+
+type NetworkActivityHistory {
+  windowStart: Time!
+  "End of the last successful hourly save (current hour before the first save). May be stale if recording stopped."
+  windowEnd: Time!
+  "Saved records within the last 24 completed hours, oldest first. Absent hours are unknown."
+  hours: [NetworkActivityHour!]!
+  totals: NetworkActivityTotals!
+}
+
+"Saved exit-node preferences and approved exit nodes visible to this device."
+type TailscaleRouting {
+  backendState: String!
+  "Empty when no exit node is selected (older daemons may report only exitNodeIP)."
+  exitNodeID: String!
+  exitNodeIP: String!
+  allowLANAccess: Boolean!
+  advertiseExitNode: Boolean!
+  exitNodes: [TailscalePeer!]!
+}
+
+input ExitNodeInput {
+  "Stable ID from tailscaleRouting.exitNodes; empty disables exit-node use."
+  exitNodeID: String!
+  "Must be false when disabling the exit node."
+  allowLANAccess: Boolean!
+}
+
 type Query {
   user: User!
   tailscaleClient: TailscaleClient
   tailscaleStatus: TailscaleStatus!
   deviceStatus: DeviceStatus!
+  networkActivity: NetworkActivity!
+  networkActivityHistory: NetworkActivityHistory!
+  tailscaleRouting: TailscaleRouting!
 }
 
 input ChangePassword {
@@ -174,4 +237,6 @@ type Mutation {
   clearTailscaleCredential: Boolean!
   "Admin only: persist and apply eth0 IPv4 settings through NetworkManager. IPv6 is unchanged; the connection may be interrupted."
   setDeviceIP(deviceIP: DeviceIP): Boolean!
+  "Admin only: persist exit-node preferences. May interrupt connectivity; does not change subnet advertisements or start Tailscale."
+  setExitNode(input: ExitNodeInput!): Boolean!
 }

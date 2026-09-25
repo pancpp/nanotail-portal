@@ -990,15 +990,23 @@ input:focus-visible {
   display: flex;
   margin-top: auto;
   padding-top: 15px;
-  align-items: center;
+  align-items: flex-end;
+  gap: 12px;
   justify-content: space-between;
   border-top: 1px solid #edf1ef;
 }
 
+.status-card__footer > a {
+  flex-shrink: 0;
+}
+
 .status-card__footer > span {
+  min-width: 0;
   color: #66756d;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .status-card__footer button,
@@ -1018,21 +1026,11 @@ input:focus-visible {
   align-self: flex-start;
 }
 
-.key-progress {
-  height: 4px;
-  margin-top: auto;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #f0f2f1;
-}
-
-.key-progress span {
-  display: block;
-  width: 72%;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #dab057, #e8c878);
-}
+.node-key-card .status-card__body p { white-space: normal; overflow: visible; font-size: 16px; line-height: 1.5; }
+.node-key-card .status-card__body strong { white-space: normal; overflow-wrap: anywhere; }
+.node-key-card--expired .status-card__body strong, .node-key-warning { color: #a23b3b; }
+.node-key-card--expiring .status-card__body strong { color: #94620c; }
+.node-key-warning { margin: 14px 0 0; font-size: 16px; line-height: 1.5; }
 
 .dashboard-columns {
   display: grid;
@@ -1197,6 +1195,19 @@ input:focus-visible {
   padding-bottom: 0;
 }
 
+.activity-views { display: flex; gap: 8px; padding: 16px 21px 0; }
+.activity-views button { padding: 8px 14px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--muted); font-size: 16px; }
+.activity-views button[aria-pressed="true"] { background: var(--soft-green); color: var(--green-dark); border-color: #bddfce; }
+.history-hour--partial { opacity: .5; }
+.history-hour__missing { stroke: #89958e; stroke-width: 2; stroke-dasharray: 3 2; }
+.history-details { padding: 0 21px 20px; font-size: 16px; }
+.history-details summary { cursor: pointer; color: var(--green-dark); }
+.history-table-scroll { margin-top: 14px; max-width: 100%; overflow-x: auto; }
+.history-details table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.history-details caption { text-align: left; color: var(--muted); padding-bottom: 10px; }
+.history-details th, .history-details td { padding: 9px 8px; text-align: left; border-bottom: 1px solid var(--line); }
+.history-details th { font-weight: 600; }
+
 .traffic-total {
   padding: 20px 21px 5px;
 }
@@ -1205,7 +1216,7 @@ input:focus-visible {
   display: block;
   margin-bottom: 3px;
   color: #949f99;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .traffic-total strong {
@@ -1214,34 +1225,42 @@ input:focus-visible {
   letter-spacing: -1px;
 }
 
-.traffic-total small {
+.traffic-caption {
+  margin: 6px 0 0;
   color: #79867f;
-  font-size: 13px;
-  font-weight: 550;
-  letter-spacing: 0;
+  font-size: 14px;
+  line-height: 1.5;
 }
+
+.saved-traffic { padding: 20px 21px 5px; }
+.saved-traffic__figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.saved-traffic__figures > div { display: flex; min-width: 0; flex-direction: column; gap: 5px; overflow-wrap: anywhere; }
+.saved-traffic__figures span { color: var(--muted); font-size: 16px; }
+.saved-traffic__figures strong { color: #223029; font-size: 25px; line-height: 1.25; letter-spacing: -.5px; }
+.saved-traffic__figures small { color: var(--muted); font-size: 14px; line-height: 1.5; }
+.saved-traffic > .traffic-caption:first-of-type { margin-top: 14px; }
 
 .activity-chart {
-  display: flex;
-  height: 70px;
-  margin: 3px 21px 13px;
-  align-items: flex-end;
-  gap: 5px;
-  border-bottom: 1px solid #e3eae6;
+  margin: 16px 21px;
 }
 
-.activity-chart span {
-  flex: 1;
-  min-width: 4px;
-  border-radius: 3px 3px 0 0;
-  background: linear-gradient(to top, #bde9d5, #4fc997);
-  opacity: 0.82;
-}
+.activity-chart svg { display: block; width: 100%; height: 110px; overflow: visible; }
+.activity-chart__scale { display: flex; justify-content: space-between; gap: 12px; color: #718078; font-size: 13px; }
+.activity-chart__grid { stroke: #e3eae6; stroke-width: 1; fill: none; }
+.activity-chart__download, .activity-chart__upload { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.activity-chart__download { stroke: #16815a; }
+.activity-chart__upload { stroke: #7761b6; }
+.activity-chart__download-dot { fill: #16815a; }
+.activity-chart__upload-dot { fill: #7761b6; }
+.activity-message { padding: 20px 21px; color: #718078; font-size: 16px; line-height: 1.6; }
+.activity-message p { margin: 0 0 14px; }
+.activity-message--error { color: #a23b3b; }
+.activity-live--muted { color: #718078; }
 
 .traffic-breakdown {
   display: grid;
-  min-height: 55px;
-  padding: 0 21px;
+  min-height: 90px;
+  padding: 16px 21px;
   align-items: center;
   grid-template-columns: 1fr 1fr;
   border-top: 1px solid #edf0ee;
@@ -1250,24 +1269,31 @@ input:focus-visible {
 .traffic-breakdown > span {
   display: grid;
   color: #909b95;
-  font-size: 10px;
+  min-width: 0;
+  font-size: 16px;
   grid-template-columns: 20px 1fr;
   row-gap: 3px;
 }
 
 .traffic-breakdown > span:first-child {
   border-right: 1px solid #edf0ee;
+  padding-right: 10px;
 }
 
+.traffic-breakdown > span:last-child { padding-left: 12px; }
+.traffic-breakdown > span:last-child svg { color: #7761b6; }
+.traffic-breakdown small { grid-column: 2; font-size: 13px; overflow-wrap: anywhere; }
+
 .traffic-breakdown svg {
-  grid-row: span 2;
+  grid-row: span 3;
   color: #43b984;
 }
 
 .traffic-breakdown strong {
   color: #46534c;
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 650;
+  overflow-wrap: anywhere;
 }
 
 .device-panel {
@@ -1668,6 +1694,13 @@ a:focus-visible, dialog:focus-visible {
 .setup-dialog h2 { line-height: 1.3; }
 .setup-dialog__description { padding: 0 24px; margin: 22px 0 0; font-size: 17px; line-height: 1.6; color: var(--muted); }
 .setup-dialog__footer { padding: 0 24px 24px; }
+.routing-card .status-card__body { overflow-wrap: anywhere; }
+.routing-card .status-card__body strong { white-space: normal; }
+.routing-card .status-card__body p { white-space: normal; overflow: visible; font-size: 16px; line-height: 1.5; }
+.routing-saved { color: var(--green-dark); font-size: 15px; }
+.routing-dialog select { min-width: 0; font-size: 17px; }
+.routing-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.routing-guide { display: inline-block; margin-top: 18px; color: var(--green-dark); font-size: 16px; text-underline-offset: 4px; }
 .setup-dialog .secondary-button, .credential-form .secondary-button, .setup-guide .secondary-button { min-height: 42px; height: auto; width: auto; padding: 10px 14px; font-size: 16px; }
 .danger-action { color: #a43939; }
 .credential-form > .danger-action { margin-top: 20px; font-size: 16px; }

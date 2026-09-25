@@ -2,9 +2,11 @@ package graph
 
 import (
 	"context"
+	"time"
 
 	"github.com/pancpp/nanotail-portal/device"
 	"github.com/pancpp/nanotail-portal/tailscale"
+	"github.com/pancpp/nanotail-portal/traffic"
 )
 
 // This file will not be regenerated automatically.
@@ -24,8 +26,24 @@ type DeviceIPConfigurator interface {
 	SetIP(context.Context, device.IPConfig) error
 }
 
+type NetworkActivityReader interface {
+	Sample(context.Context) (device.TrafficSample, error)
+}
+
+type TailscaleRouter interface {
+	Routing(context.Context) (tailscale.Routing, error)
+	SetExitNode(context.Context, string, bool) error
+}
+
+type NetworkHistoryReader interface {
+	History(context.Context, time.Time) (traffic.History, error)
+}
+
 type Resolver struct {
-	Tailscale    TailscaleStatusReader
-	Device       DeviceStatusReader
-	DeviceConfig DeviceIPConfigurator
+	Tailscale      TailscaleStatusReader
+	Device         DeviceStatusReader
+	DeviceConfig   DeviceIPConfigurator
+	Traffic        NetworkActivityReader
+	Routing        TailscaleRouter
+	TrafficHistory NetworkHistoryReader
 }

@@ -80,8 +80,44 @@ It explains the `auth_keys` permission and device tags for future enrollment.
 
 Apply the new database migration with `./nanotail-portal db migrate` before
 using credential settings (run `db init` first on a new installation).
-Connection status, peers, and device status are live; the routing, security,
-and activity panels remain previews.
+Connection status, peers, node-key expiry, device status, network activity,
+and routing settings are live.
+
+## Exit-node routing
+
+**Overview → Routing → Configure** opens a keyboard-accessible dialog with the
+current exit node, approved peer choices, and a local-LAN access checkbox.
+Routing preferences refresh every 30 seconds and with **Refresh status**. The
+dialog reads them again on opening; background updates do not overwrite edits.
+Offline nodes cannot be newly selected. A missing or offline current node can
+still be cleared by choosing **None — use local gateway**. Read failures show
+Unavailable rather than claiming traffic uses the local gateway.
+
+The form sends the administrator-only GraphQL `setExitNode` mutation with a
+stable peer ID and an explicit LAN-access boolean. LAN access defaults on when
+selecting a node from the local-gateway mode. Changes require confirmation of
+the connection warning. Only an error-free `true` result confirms saved
+preferences; after an error, reload settings before retrying. Network failures
+may mean the change already applied, and are never automatically retried.
+
+This controls nanotail's own exit-node selection, not exit-node advertising or
+forwarding other LAN devices' traffic. Tailscale persists the settings; the
+portal database is not used. The dialog links to the official exit-node setup
+guide when another device needs to be configured/approved first.
+
+## Node key expiry
+
+The Node key card uses `tailscaleStatus.haveNodeKey` and `self.keyExpiry` from
+the existing GraphQL status query. The remaining days, hours, or minutes are
+calculated from that timestamp; the exact expiration is displayed in the
+browser's local timezone. Status is refreshed every 30 seconds; the countdown
+also advances locally between refreshes. Expired keys show a warning.
+
+Missing keys, missing self information, and status failures have explicit
+states. A null expiry is shown as **No expiry reported**, not an assumed 180-day
+lifetime or a claim that expiration is disabled. Failed status refreshes hide
+stale expiry values. No progress percentage is shown because the status API
+does not report the current key's issuance time or configured lifetime.
 
 ## Device status
 
@@ -100,6 +136,47 @@ Loading and error states replace sample values. Failed refreshes clear stale
 measurements and offer **Retry device status**, without hiding working Tailscale
 information. HTTP 401 signs out; other errors leave the session usable. Pending
 requests are canceled on refresh/unmount.
+
+## Network activity
+
+The overview reads authenticated `networkActivity` snapshots from `tailscale0`
+approximately every two seconds. It shows VPN-only download/upload rates, a
+rolling one-minute chart, and separate saved 24-hour and all-time totals.
+The **Live** view does not represent all LAN traffic or encrypted transport
+overhead. Binary units (KiB, MiB, GiB) and byte-per-second rates are used.
+
+RX/TX counters arrive as decimal strings; BigInt differences prevent precision
+loss with large cumulative values. The first sample waits for a second reading
+before showing rates. Counter/boot/interface resets and gaps reset the chart.
+Unavailable data clears stale measurements and provides a retry button alongside
+automatic retries. Requests have a five-second timeout. Polling pauses in hidden
+tabs and stops on navigation/logout; HTTP 401 signs the user out.
+
+**Last 24 hours** and **Total traffic** appear together in both views. They read
+the hourly saved `totals` snapshot through `networkActivityHistory`, including
+separate download/upload totals. Total traffic covers all usage recorded by
+the portal and survives interface resets, restarts, and hourly record cleanup.
+The “as of” timestamp identifies the last successful hourly save; reads do not
+recalculate the saved window during downtime. Missing measurements are not zero.
+
+The **Last 24 hours** chart shows 24 completed UTC hours ending at that saved
+window boundary, with local-time labels, captured totals, and expandable
+hourly details. Solid bars have full coverage; faded bars are partial. Missing
+hours are dashed, not fabricated zero-traffic hours. A fully observed idle hour
+is a real zero. Empty history explains that the first data arrives after the
+next hourly save with valid samples.
+
+Recording runs in the backend independently of browser sessions. It samples in
+memory every minute and updates hourly history, the 24-hour totals, and all-time
+totals in one database transaction per hour, also pruning old hourly records.
+Persisted records survive restarts; the unfinished hour (and failed, pending
+saves) can be lost on restart. Samples crossing hour boundaries are prorated by
+elapsed time. Apply `./nanotail-portal db migrate` for the history and totals tables.
+Upgrades seed all-time totals from retained history; already-pruned records
+cannot be restored. The overview refreshes saved totals/history every minute,
+pauses requests while hidden, and cancels them on navigation. Database errors
+show a separate retry state without disabling the independent live sampler;
+live sampling failures do not hide saved totals.
 
 ## LAN settings
 

@@ -25,9 +25,13 @@ var (
 )
 
 func init() {
-	var showVersion bool
+	var (
+		showVersion bool
+		configFile  string
+	)
+
 	pflag.BoolVarP(&showVersion, "version", "V", false, "Show version information")
-	pflag.String("config", "nanotail-portal.yml", "Configuration file")
+	pflag.StringVarP(&configFile, "config", "c", "nanotail.yml", "Configuration file")
 	pflag.Parse()
 	if showVersion {
 		fmt.Println("###############################################")
@@ -54,7 +58,7 @@ func init() {
 	v.SetEnvPrefix("NANOTAIL")
 
 	// set config path
-	v.SetConfigFile("nanotail-portal.yml")
+	v.SetConfigFile(configFile)
 	gViper = v
 }
 

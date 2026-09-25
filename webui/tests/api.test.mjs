@@ -19,7 +19,54 @@ import {
   validateDeviceIP,
   setDeviceIPRequest,
   deviceReconnectURL,
+  networkActivityRequest,
 } from '../src/api.ts'
+
+function trafficSample(overrides = {}) {
+  return { interfaceName: 'tailscale0', rxBytes: '18446744073709551615', txBytes: '0', sampledAt: '2026-09-24T12:00:00Z', counterEpoch: 'boot:3', ...overrides }
+}
+
+test('VPN traffic query uses bearer authentication, preserves uint64 precision, and supports cancellation', async (t) => {
+  const sample = trafficSample(), token = jwt(), controller = new AbortController()
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { networkActivity: sample } }))
+  assert.deepEqual(await networkActivityRequest(token, controller.signal), sample)
+  const [url, options] = fetch.mock.calls[0].arguments
+  assert.equal(url, '/api/v1/query')
+  assert.equal(options.method, 'POST')
+  assert.equal(options.headers.Authorization, `Bearer ${token}`)
+  assert.equal(options.signal, controller.signal)
+  const body = JSON.parse(options.body)
+  assert.equal(body.operationName, 'NetworkActivity')
+  assert.match(body.query, /networkActivity \{ interfaceName rxBytes txBytes sampledAt counterEpoch \}/)
+  fetch.mock.mockImplementation(async (_url, options) => { options.signal.throwIfAborted() })
+  await assert.rejects(networkActivityRequest(token, AbortSignal.abort()), { name: 'AbortError' })
+})
+
+test('VPN traffic rejects malformed or non-VPN samples', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch')
+  const invalid = [null, {}, [], trafficSample({ interfaceName: 'eth0' }), trafficSample({ sampledAt: 'invalid' }), trafficSample({ counterEpoch: ' ' })]
+  for (const counter of [null, 123, -1, '', '-1', '+1', '01', '1.2', '1e3', 'NaN', '18446744073709551616', '9'.repeat(100)]) {
+    invalid.push(trafficSample({ rxBytes: counter }), trafficSample({ txBytes: counter }))
+  }
+  for (const field of Object.keys(trafficSample())) {
+    const sample = trafficSample(); delete sample[field]; invalid.push(sample)
+  }
+  for (const sample of invalid) {
+    fetch.mock.mockImplementation(async () => Response.json({ data: { networkActivity: sample } }))
+    await assert.rejects(networkActivityRequest(jwt()), /valid VPN traffic counters/)
+  }
+})
+
+test('VPN traffic preserves GraphQL and session errors without fabricating zero activity', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { networkActivity: trafficSample() }, errors: [{ message: 'Unable to read VPN traffic' }] }))
+  await assert.rejects(networkActivityRequest(jwt()), { name: 'ApiError', status: 200, message: 'Unable to read VPN traffic' })
+  fetch.mock.mockImplementation(async () => Response.json({ message: 'invalid jwt' }, { status: 401 }))
+  await assert.rejects(networkActivityRequest(jwt()), error => isSessionError(error))
+  fetch.mock.mockImplementation(async () => new Response('Bad gateway', { status: 502 }))
+  await assert.rejects(networkActivityRequest(jwt()), /VPN traffic request/)
+  fetch.mock.mockImplementation(async () => { throw new TypeError('Failed to fetch') })
+  await assert.rejects(networkActivityRequest(jwt()), /Failed to fetch/)
+})
 
 function staticDeviceIP(overrides = {}) {
   return { type: 'static', ip: '192.0.2.20/24', gateway: '192.0.2.1', dns: ['1.1.1.1'], ...overrides }
@@ -108,7 +155,7 @@ function jwt(payload = {}) {
 }
 
 function makeStatus(overrides = {}) {
-  return { backendState: 'NeedsLogin', tailscaleIPs: [], currentTailnet: null, self: null, peers: [], ...overrides }
+  return { backendState: 'NeedsLogin', haveNodeKey: false, tailscaleIPs: [], currentTailnet: null, self: null, peers: [], ...overrides }
 }
 
 function makePeer(overrides = {}) {
@@ -289,7 +336,7 @@ test('credential mutations require explicit success and preserve GraphQL errors'
 test('status query uses the new schema, bearer authentication, and abort signal', async (t) => {
   const status = makeStatus({
     backendState: 'Running', tailscaleIPs: ['100.64.0.1'], currentTailnet: { name: 'example.test' },
-    self: { online: true }, peers: [makePeer(), makePeer({ id: 'peer-b', online: false })],
+    haveNodeKey: true, self: { online: true, keyExpiry: '2027-01-01T00:00:00Z' }, peers: [makePeer(), makePeer({ id: 'peer-b', online: false })],
   })
   const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { tailscaleStatus: status } }))
   const token = jwt()
@@ -305,7 +352,7 @@ test('status query uses the new schema, bearer authentication, and abort signal'
   assert.equal(body.operationName, 'TailscaleStatus')
   assert.deepEqual(body.variables, {})
   assert.equal(body.query.replace(/\s+/g, ' ').trim(),
-    'query TailscaleStatus { tailscaleStatus { backendState tailscaleIPs currentTailnet { name } self { online } peers { id hostName dnsName os tailscaleIPs online } } }')
+    'query TailscaleStatus { tailscaleStatus { backendState haveNodeKey tailscaleIPs currentTailnet { name } self { online keyExpiry } peers { id hostName dnsName os tailscaleIPs online } } }')
   assert.doesNotMatch(body.query, /\b(connected|needsLogin|tailnet|ips|authURL)\b/)
 })
 
@@ -315,14 +362,25 @@ test('status accepts null tailnet/self and empty lists before login', async (t) 
   assert.deepEqual(await tailscaleStatusRequest(jwt()), status)
 })
 
+test('status accepts a configured key with no expiry and preserves nullable expiry metadata', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch')
+  for (const keyExpiry of [null, '2026-09-25T12:00:00Z', '2020-01-01T00:00:00Z']) {
+    const status = makeStatus({ haveNodeKey: true, self: { online: true, keyExpiry } })
+    fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleStatus: status } }))
+    assert.deepEqual(await tailscaleStatusRequest(jwt()), status)
+  }
+})
+
 test('status rejects legacy responses and malformed nested fields', async (t) => {
   const invalid = [
     null, [], {}, { backendState: 'Running', connected: true, needsLogin: false, tailnet: 'old', ips: [] },
     makeStatus({ backendState: null }), makeStatus({ tailscaleIPs: null }), makeStatus({ tailscaleIPs: [42] }),
+    makeStatus({ haveNodeKey: undefined }), makeStatus({ haveNodeKey: 'true' }),
     makeStatus({ currentTailnet: undefined }), makeStatus({ currentTailnet: [] }),
     makeStatus({ currentTailnet: 'example.test' }), makeStatus({ currentTailnet: { name: null } }),
     makeStatus({ self: undefined }), makeStatus({ self: [] }), makeStatus({ self: {} }),
     makeStatus({ self: { online: 'false' } }), makeStatus({ peers: null }), makeStatus({ peers: {} }),
+    ...[undefined, '', 123, 'not-a-date'].map(keyExpiry => makeStatus({ self: { online: true, keyExpiry } })),
     makeStatus({ peers: [null] }), makeStatus({ peers: [{}] }),
     ...['id', 'hostName', 'dnsName', 'os', 'tailscaleIPs', 'online'].map((field) =>
       makeStatus({ peers: [makePeer({ [field]: undefined })] })),

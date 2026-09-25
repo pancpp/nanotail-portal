@@ -127,9 +127,10 @@ export interface TailscalePeer {
 // Only the fields selected by the WebUI's status query are included here.
 export interface TailscaleStatus {
   backendState: string
+  haveNodeKey: boolean
   tailscaleIPs: string[]
   currentTailnet: { name: string } | null
-  self: { online: boolean } | null
+  self: { online: boolean; keyExpiry: string | null } | null
   peers: TailscalePeer[]
 }
 
@@ -161,11 +162,102 @@ export interface DeviceStatus {
   health: string
 }
 
+export interface NetworkActivity {
+  interfaceName: 'tailscale0'
+  rxBytes: string
+  txBytes: string
+  sampledAt: string
+  counterEpoch: string
+}
+
+function isByteCounter(value: unknown): value is string {
+  return typeof value === 'string' && /^(0|[1-9][0-9]{0,19})$/.test(value) && BigInt(value) <= 18446744073709551615n
+}
+
+export async function networkActivityRequest(token: string, signal?: AbortSignal): Promise<NetworkActivity> {
+  const data = await graphQLRequest(token, 'NetworkActivity', `query NetworkActivity {
+    networkActivity { interfaceName rxBytes txBytes sampledAt counterEpoch }
+  }`, {}, signal, 'VPN traffic')
+  const sample: unknown = data.networkActivity
+  if (!isRecord(sample) || sample.interfaceName !== 'tailscale0' || !isByteCounter(sample.rxBytes) || !isByteCounter(sample.txBytes) ||
+      typeof sample.sampledAt !== 'string' || !Number.isFinite(Date.parse(sample.sampledAt)) ||
+      typeof sample.counterEpoch !== 'string' || !sample.counterEpoch.trim()) {
+    throw new Error('The server did not return valid VPN traffic counters.')
+  }
+  return sample as unknown as NetworkActivity
+}
+
 export interface DeviceIP {
   type: 'static' | 'DHCP'
   ip: string
   gateway: string
   dns: string[]
+}
+
+export interface NetworkActivityHour {
+  startedAt: string
+  rxBytes: string
+  txBytes: string
+  observedSeconds: number
+}
+
+export interface NetworkActivityHistory {
+  windowStart: string
+  windowEnd: string
+  hours: NetworkActivityHour[]
+  totals: {
+    rxBytes24h: string
+    txBytes24h: string
+    observedSeconds24h: number
+    totalRxBytes: string
+    totalTxBytes: string
+    totalObservedSeconds: number
+    recordedSince: string | null
+  }
+}
+
+export async function networkActivityHistoryRequest(token: string, signal?: AbortSignal): Promise<NetworkActivityHistory> {
+  const data = await graphQLRequest(token, 'NetworkActivityHistory', `query NetworkActivityHistory {
+    networkActivityHistory {
+      windowStart windowEnd hours { startedAt rxBytes txBytes observedSeconds }
+      totals { rxBytes24h txBytes24h observedSeconds24h totalRxBytes totalTxBytes totalObservedSeconds recordedSince }
+    }
+  }`, {}, signal, 'VPN history')
+  const history: unknown = data.networkActivityHistory
+  const invalid = () => new Error('The server did not return valid VPN history.')
+  if (!isRecord(history) || typeof history.windowStart !== 'string' || typeof history.windowEnd !== 'string' ||
+    !Array.isArray(history.hours) || history.hours.length > 24) throw invalid()
+  const start = Date.parse(history.windowStart), end = Date.parse(history.windowEnd)
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end - start !== 86_400_000 || start % 3_600_000 !== 0) throw invalid()
+  let previous = start - 1
+  let rx = 0n, tx = 0n, observed = 0
+  for (const hour of history.hours) {
+    if (!isRecord(hour) || typeof hour.startedAt !== 'string' ||
+      typeof hour.rxBytes !== 'string' || !/^(0|[1-9][0-9]{0,39})$/.test(hour.rxBytes) ||
+      typeof hour.txBytes !== 'string' || !/^(0|[1-9][0-9]{0,39})$/.test(hour.txBytes) ||
+      typeof hour.observedSeconds !== 'number' || !Number.isFinite(hour.observedSeconds) || hour.observedSeconds < 0 || hour.observedSeconds > 3600) throw invalid()
+    const at = Date.parse(hour.startedAt)
+    if (!Number.isFinite(at) || at < start || at >= end || at % 3_600_000 !== 0 || at <= previous) throw invalid()
+    previous = at
+    if (hour.observedSeconds === 0 && (hour.rxBytes !== '0' || hour.txBytes !== '0')) throw invalid()
+    rx += BigInt(hour.rxBytes); tx += BigInt(hour.txBytes); observed += hour.observedSeconds
+  }
+  const totals = history.totals
+  if (!isRecord(totals)) throw invalid()
+  for (const key of ['rxBytes24h', 'txBytes24h', 'totalRxBytes', 'totalTxBytes']) {
+    if (typeof totals[key] !== 'string' || !/^(0|[1-9][0-9]{0,39})$/.test(totals[key] as string)) throw invalid()
+  }
+  if (typeof totals.observedSeconds24h !== 'number' || !Number.isFinite(totals.observedSeconds24h) ||
+    totals.observedSeconds24h < 0 || totals.observedSeconds24h > 86400 ||
+    Math.abs(totals.observedSeconds24h - observed) > 0.00001 ||
+    typeof totals.totalObservedSeconds !== 'number' || !Number.isFinite(totals.totalObservedSeconds) || totals.totalObservedSeconds < totals.observedSeconds24h ||
+    BigInt(totals.rxBytes24h as string) !== rx || BigInt(totals.txBytes24h as string) !== tx ||
+    BigInt(totals.totalRxBytes as string) < rx || BigInt(totals.totalTxBytes as string) < tx) throw invalid()
+  if (totals.totalObservedSeconds === 0) {
+    if (totals.recordedSince !== null || totals.totalRxBytes !== '0' || totals.totalTxBytes !== '0') throw invalid()
+  } else if (typeof totals.recordedSince !== 'string' || !Number.isFinite(Date.parse(totals.recordedSince)) ||
+    Date.parse(totals.recordedSince) >= end || Date.parse(totals.recordedSince) % 3_600_000 !== 0) throw invalid()
+  return history as unknown as NetworkActivityHistory
 }
 
 function ipv4Number(value: string): number | null {
@@ -262,9 +354,10 @@ function isTailscalePeer(value: unknown): value is TailscalePeer {
 }
 
 function isTailscaleStatus(value: unknown): value is TailscaleStatus {
-  return isRecord(value) && typeof value.backendState === 'string' && isStringArray(value.tailscaleIPs) &&
+  return isRecord(value) && typeof value.backendState === 'string' && typeof value.haveNodeKey === 'boolean' && isStringArray(value.tailscaleIPs) &&
     (value.currentTailnet === null || (isRecord(value.currentTailnet) && typeof value.currentTailnet.name === 'string')) &&
-    (value.self === null || (isRecord(value.self) && typeof value.self.online === 'boolean')) &&
+    (value.self === null || (isRecord(value.self) && typeof value.self.online === 'boolean' &&
+      (value.self.keyExpiry === null || (typeof value.self.keyExpiry === 'string' && Number.isFinite(Date.parse(value.self.keyExpiry)))))) &&
     Array.isArray(value.peers) && value.peers.every(isTailscalePeer)
 }
 
@@ -321,9 +414,10 @@ export async function tailscaleStatusRequest(token: string, signal?: AbortSignal
   const data = await graphQLRequest(token, 'TailscaleStatus', `query TailscaleStatus {
     tailscaleStatus {
       backendState
+      haveNodeKey
       tailscaleIPs
       currentTailnet { name }
-      self { online }
+      self { online keyExpiry }
       peers { id hostName dnsName os tailscaleIPs online }
     }
   }`, {}, signal)
@@ -332,6 +426,51 @@ export async function tailscaleStatusRequest(token: string, signal?: AbortSignal
     throw new Error('The server did not return a valid Tailscale status.')
   }
   return status
+}
+
+export interface TailscaleRouting {
+  backendState: string
+  exitNodeID: string
+  exitNodeIP: string
+  allowLANAccess: boolean
+  advertiseExitNode: boolean
+  exitNodes: TailscalePeer[]
+}
+
+export interface ExitNodeInput {
+  exitNodeID: string
+  allowLANAccess: boolean
+}
+
+export async function tailscaleRoutingRequest(token: string, signal?: AbortSignal): Promise<TailscaleRouting> {
+  const timeout = AbortSignal.timeout(20_000)
+  const data = await graphQLRequest(token, 'TailscaleRouting', `query TailscaleRouting {
+    tailscaleRouting {
+      backendState exitNodeID exitNodeIP allowLANAccess advertiseExitNode
+      exitNodes { id hostName dnsName os tailscaleIPs online }
+    }
+  }`, {}, signal ? AbortSignal.any([signal, timeout]) : timeout, 'routing')
+  const value: unknown = data.tailscaleRouting
+  if (!isRecord(value) || typeof value.backendState !== 'string' || typeof value.exitNodeID !== 'string' ||
+    typeof value.exitNodeIP !== 'string' || typeof value.allowLANAccess !== 'boolean' ||
+    typeof value.advertiseExitNode !== 'boolean' || !Array.isArray(value.exitNodes) ||
+    !value.exitNodes.every(isTailscalePeer)) throw new Error('The server did not return valid routing settings.')
+  return value as unknown as TailscaleRouting
+}
+
+export async function setExitNodeRequest(token: string, input: ExitNodeInput): Promise<void> {
+  if (typeof input.exitNodeID !== 'string' || input.exitNodeID.length > 256 || input.exitNodeID.trim() !== input.exitNodeID ||
+    typeof input.allowLANAccess !== 'boolean' || (!input.exitNodeID && input.allowLANAccess)) {
+    throw new Error('Choose an exit node, or the local gateway with LAN access unchecked.')
+  }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'SetExitNode', `mutation SetExitNode($input: ExitNodeInput!) {
+      setExitNode(input: $input)
+    }`, { input }, controller.signal, 'routing')
+    if (data.setExitNode !== true) throw new Error('The server did not confirm the routing change. Check the device before retrying.')
+  } finally { clearTimeout(timer) }
 }
 
 export async function tailscaleClientRequest(token: string, signal?: AbortSignal): Promise<TailscaleClient | null> {

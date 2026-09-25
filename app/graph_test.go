@@ -26,7 +26,7 @@ func TestGraphQLErrorPresenter(t *testing.T) {
 		t.Fatalf("nil error became %v", got)
 	}
 	for _, expected := range []error{auth.ErrUnauthorized, graph.ErrInvalidPassword, graph.ErrInvalidCredential, graph.ErrTailscaleAdmin, graph.ErrTailscaleStatus, graph.ErrDeviceStatus,
-		graph.ErrDeviceAdmin, device.ErrInvalidIP, device.ErrConfigBusy, device.ErrConfigUnavailable, device.ErrConfigApply, device.ErrConfigRecovery} {
+		graph.ErrNetworkActivity, graph.ErrNetworkActivityHistory, graph.ErrDeviceAdmin, device.ErrInvalidIP, device.ErrConfigBusy, device.ErrConfigUnavailable, device.ErrConfigApply, device.ErrConfigRecovery} {
 		wrapped := &gqlerror.Error{Err: fmt.Errorf("resolver: %w", expected), Message: expected.Error()}
 		for _, err := range []error{expected, fmt.Errorf("resolver: %w", expected), wrapped, fmt.Errorf("execution: %w", wrapped)} {
 			got := presentGraphQLError(ctx, err)
@@ -90,6 +90,16 @@ func TestDeviceStatusRequiresAuthentication(t *testing.T) {
 		w := appRequest(e, http.MethodPost, "/api/v1/query", `{"query":"query { deviceStatus { hostname lanIPType lanIP gateway dns lanIPv6Type lanIPv6 gateway6 ethAddr cpuload memory lastRestart uptime health } }"}`, authorization)
 		if w.Code != http.StatusUnauthorized {
 			t.Fatalf("unauthenticated device status returned %d: %s", w.Code, w.Body.String())
+		}
+	}
+}
+
+func TestNetworkActivityRequiresAuthentication(t *testing.T) {
+	e := newTestApp(t)
+	for _, authorization := range []string{"", "Bearer invalid"} {
+		w := appRequest(e, http.MethodPost, "/api/v1/query", `{"query":"query { networkActivity { interfaceName rxBytes txBytes sampledAt counterEpoch } }"}`, authorization)
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("unauthenticated traffic query returned %d: %s", w.Code, w.Body.String())
 		}
 	}
 }

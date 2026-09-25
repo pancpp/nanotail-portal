@@ -59,14 +59,50 @@ type ComplexityRoot struct {
 		ChangePassword           func(childComplexity int, passwords model.ChangePassword) int
 		ClearTailscaleCredential func(childComplexity int) int
 		SetDeviceIP              func(childComplexity int, deviceIP *model.DeviceIP) int
+		SetExitNode              func(childComplexity int, input model.ExitNodeInput) int
 		SetTailscaleCredential   func(childComplexity int, credential model.TailscaleCredential) int
 	}
 
+	NetworkActivity struct {
+		CounterEpoch  func(childComplexity int) int
+		InterfaceName func(childComplexity int) int
+		RxBytes       func(childComplexity int) int
+		SampledAt     func(childComplexity int) int
+		TxBytes       func(childComplexity int) int
+	}
+
+	NetworkActivityHistory struct {
+		Hours       func(childComplexity int) int
+		Totals      func(childComplexity int) int
+		WindowEnd   func(childComplexity int) int
+		WindowStart func(childComplexity int) int
+	}
+
+	NetworkActivityHour struct {
+		ObservedSeconds func(childComplexity int) int
+		RxBytes         func(childComplexity int) int
+		StartedAt       func(childComplexity int) int
+		TxBytes         func(childComplexity int) int
+	}
+
+	NetworkActivityTotals struct {
+		ObservedSeconds24h   func(childComplexity int) int
+		RecordedSince        func(childComplexity int) int
+		RxBytes24h           func(childComplexity int) int
+		TotalObservedSeconds func(childComplexity int) int
+		TotalRxBytes         func(childComplexity int) int
+		TotalTxBytes         func(childComplexity int) int
+		TxBytes24h           func(childComplexity int) int
+	}
+
 	Query struct {
-		DeviceStatus    func(childComplexity int) int
-		TailscaleClient func(childComplexity int) int
-		TailscaleStatus func(childComplexity int) int
-		User            func(childComplexity int) int
+		DeviceStatus           func(childComplexity int) int
+		NetworkActivity        func(childComplexity int) int
+		NetworkActivityHistory func(childComplexity int) int
+		TailscaleClient        func(childComplexity int) int
+		TailscaleRouting       func(childComplexity int) int
+		TailscaleStatus        func(childComplexity int) int
+		User                   func(childComplexity int) int
 	}
 
 	Tailnet struct {
@@ -133,6 +169,15 @@ type ComplexityRoot struct {
 		UserID              func(childComplexity int) int
 	}
 
+	TailscaleRouting struct {
+		AdvertiseExitNode func(childComplexity int) int
+		AllowLANAccess    func(childComplexity int) int
+		BackendState      func(childComplexity int) int
+		ExitNodeID        func(childComplexity int) int
+		ExitNodeIP        func(childComplexity int) int
+		ExitNodes         func(childComplexity int) int
+	}
+
 	TailscaleStatus struct {
 		AuthURL        func(childComplexity int) int
 		BackendState   func(childComplexity int) int
@@ -175,12 +220,16 @@ type MutationResolver interface {
 	SetTailscaleCredential(ctx context.Context, credential model.TailscaleCredential) (bool, error)
 	ClearTailscaleCredential(ctx context.Context) (bool, error)
 	SetDeviceIP(ctx context.Context, deviceIP *model.DeviceIP) (bool, error)
+	SetExitNode(ctx context.Context, input model.ExitNodeInput) (bool, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context) (*model.User, error)
 	TailscaleClient(ctx context.Context) (*model.TailscaleClient, error)
 	TailscaleStatus(ctx context.Context) (*model.TailscaleStatus, error)
 	DeviceStatus(ctx context.Context) (*model.DeviceStatus, error)
+	NetworkActivity(ctx context.Context) (*model.NetworkActivity, error)
+	NetworkActivityHistory(ctx context.Context) (*model.NetworkActivityHistory, error)
+	TailscaleRouting(ctx context.Context) (*model.TailscaleRouting, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -314,6 +363,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.SetDeviceIP(childComplexity, args["deviceIP"].(*model.DeviceIP)), true
+	case "Mutation.setExitNode":
+		if e.ComplexityRoot.Mutation.SetExitNode == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setExitNode_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetExitNode(childComplexity, args["input"].(model.ExitNodeInput)), true
 	case "Mutation.setTailscaleCredential":
 		if e.ComplexityRoot.Mutation.SetTailscaleCredential == nil {
 			break
@@ -326,6 +386,130 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.SetTailscaleCredential(childComplexity, args["credential"].(model.TailscaleCredential)), true
 
+	case "NetworkActivity.counterEpoch":
+		if e.ComplexityRoot.NetworkActivity.CounterEpoch == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivity.CounterEpoch(childComplexity), true
+	case "NetworkActivity.interfaceName":
+		if e.ComplexityRoot.NetworkActivity.InterfaceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivity.InterfaceName(childComplexity), true
+	case "NetworkActivity.rxBytes":
+		if e.ComplexityRoot.NetworkActivity.RxBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivity.RxBytes(childComplexity), true
+	case "NetworkActivity.sampledAt":
+		if e.ComplexityRoot.NetworkActivity.SampledAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivity.SampledAt(childComplexity), true
+	case "NetworkActivity.txBytes":
+		if e.ComplexityRoot.NetworkActivity.TxBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivity.TxBytes(childComplexity), true
+
+	case "NetworkActivityHistory.hours":
+		if e.ComplexityRoot.NetworkActivityHistory.Hours == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityHistory.Hours(childComplexity), true
+	case "NetworkActivityHistory.totals":
+		if e.ComplexityRoot.NetworkActivityHistory.Totals == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityHistory.Totals(childComplexity), true
+	case "NetworkActivityHistory.windowEnd":
+		if e.ComplexityRoot.NetworkActivityHistory.WindowEnd == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityHistory.WindowEnd(childComplexity), true
+	case "NetworkActivityHistory.windowStart":
+		if e.ComplexityRoot.NetworkActivityHistory.WindowStart == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityHistory.WindowStart(childComplexity), true
+
+	case "NetworkActivityHour.observedSeconds":
+		if e.ComplexityRoot.NetworkActivityHour.ObservedSeconds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityHour.ObservedSeconds(childComplexity), true
+	case "NetworkActivityHour.rxBytes":
+		if e.ComplexityRoot.NetworkActivityHour.RxBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityHour.RxBytes(childComplexity), true
+	case "NetworkActivityHour.startedAt":
+		if e.ComplexityRoot.NetworkActivityHour.StartedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityHour.StartedAt(childComplexity), true
+	case "NetworkActivityHour.txBytes":
+		if e.ComplexityRoot.NetworkActivityHour.TxBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityHour.TxBytes(childComplexity), true
+
+	case "NetworkActivityTotals.observedSeconds24h":
+		if e.ComplexityRoot.NetworkActivityTotals.ObservedSeconds24h == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityTotals.ObservedSeconds24h(childComplexity), true
+	case "NetworkActivityTotals.recordedSince":
+		if e.ComplexityRoot.NetworkActivityTotals.RecordedSince == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityTotals.RecordedSince(childComplexity), true
+	case "NetworkActivityTotals.rxBytes24h":
+		if e.ComplexityRoot.NetworkActivityTotals.RxBytes24h == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityTotals.RxBytes24h(childComplexity), true
+	case "NetworkActivityTotals.totalObservedSeconds":
+		if e.ComplexityRoot.NetworkActivityTotals.TotalObservedSeconds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityTotals.TotalObservedSeconds(childComplexity), true
+	case "NetworkActivityTotals.totalRxBytes":
+		if e.ComplexityRoot.NetworkActivityTotals.TotalRxBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityTotals.TotalRxBytes(childComplexity), true
+	case "NetworkActivityTotals.totalTxBytes":
+		if e.ComplexityRoot.NetworkActivityTotals.TotalTxBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityTotals.TotalTxBytes(childComplexity), true
+	case "NetworkActivityTotals.txBytes24h":
+		if e.ComplexityRoot.NetworkActivityTotals.TxBytes24h == nil {
+			break
+		}
+
+		return e.ComplexityRoot.NetworkActivityTotals.TxBytes24h(childComplexity), true
+
 	case "Query.deviceStatus":
 		if e.ComplexityRoot.Query.DeviceStatus == nil {
 			break
@@ -333,12 +517,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.DeviceStatus(childComplexity), true
 
+	case "Query.networkActivity":
+		if e.ComplexityRoot.Query.NetworkActivity == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.NetworkActivity(childComplexity), true
+	case "Query.networkActivityHistory":
+		if e.ComplexityRoot.Query.NetworkActivityHistory == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.NetworkActivityHistory(childComplexity), true
 	case "Query.tailscaleClient":
 		if e.ComplexityRoot.Query.TailscaleClient == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Query.TailscaleClient(childComplexity), true
+	case "Query.tailscaleRouting":
+		if e.ComplexityRoot.Query.TailscaleRouting == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.TailscaleRouting(childComplexity), true
 	case "Query.tailscaleStatus":
 		if e.ComplexityRoot.Query.TailscaleStatus == nil {
 			break
@@ -651,6 +853,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TailscalePeer.UserID(childComplexity), true
 
+	case "TailscaleRouting.advertiseExitNode":
+		if e.ComplexityRoot.TailscaleRouting.AdvertiseExitNode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.AdvertiseExitNode(childComplexity), true
+	case "TailscaleRouting.allowLANAccess":
+		if e.ComplexityRoot.TailscaleRouting.AllowLANAccess == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.AllowLANAccess(childComplexity), true
+	case "TailscaleRouting.backendState":
+		if e.ComplexityRoot.TailscaleRouting.BackendState == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.BackendState(childComplexity), true
+	case "TailscaleRouting.exitNodeID":
+		if e.ComplexityRoot.TailscaleRouting.ExitNodeID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.ExitNodeID(childComplexity), true
+	case "TailscaleRouting.exitNodeIP":
+		if e.ComplexityRoot.TailscaleRouting.ExitNodeIP == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.ExitNodeIP(childComplexity), true
+	case "TailscaleRouting.exitNodes":
+		if e.ComplexityRoot.TailscaleRouting.ExitNodes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.ExitNodes(childComplexity), true
+
 	case "TailscaleStatus.authURL":
 		if e.ComplexityRoot.TailscaleStatus.AuthURL == nil {
 			break
@@ -802,6 +1041,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputChangePassword,
 		ec.unmarshalInputDeviceIP,
+		ec.unmarshalInputExitNodeInput,
 		ec.unmarshalInputTailscaleCredential,
 	)
 	first := true
@@ -931,6 +1171,70 @@ func (ec *executionContext) childFields_DeviceStatus(ctx context.Context, field 
 	return nil, fmt.Errorf("no field named %q was found under type DeviceStatus", field.Name)
 }
 
+func (ec *executionContext) childFields_NetworkActivity(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "interfaceName":
+		return ec.fieldContext_NetworkActivity_interfaceName(ctx, field)
+	case "rxBytes":
+		return ec.fieldContext_NetworkActivity_rxBytes(ctx, field)
+	case "txBytes":
+		return ec.fieldContext_NetworkActivity_txBytes(ctx, field)
+	case "sampledAt":
+		return ec.fieldContext_NetworkActivity_sampledAt(ctx, field)
+	case "counterEpoch":
+		return ec.fieldContext_NetworkActivity_counterEpoch(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type NetworkActivity", field.Name)
+}
+
+func (ec *executionContext) childFields_NetworkActivityHistory(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "windowStart":
+		return ec.fieldContext_NetworkActivityHistory_windowStart(ctx, field)
+	case "windowEnd":
+		return ec.fieldContext_NetworkActivityHistory_windowEnd(ctx, field)
+	case "hours":
+		return ec.fieldContext_NetworkActivityHistory_hours(ctx, field)
+	case "totals":
+		return ec.fieldContext_NetworkActivityHistory_totals(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type NetworkActivityHistory", field.Name)
+}
+
+func (ec *executionContext) childFields_NetworkActivityHour(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "startedAt":
+		return ec.fieldContext_NetworkActivityHour_startedAt(ctx, field)
+	case "rxBytes":
+		return ec.fieldContext_NetworkActivityHour_rxBytes(ctx, field)
+	case "txBytes":
+		return ec.fieldContext_NetworkActivityHour_txBytes(ctx, field)
+	case "observedSeconds":
+		return ec.fieldContext_NetworkActivityHour_observedSeconds(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type NetworkActivityHour", field.Name)
+}
+
+func (ec *executionContext) childFields_NetworkActivityTotals(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "rxBytes24h":
+		return ec.fieldContext_NetworkActivityTotals_rxBytes24h(ctx, field)
+	case "txBytes24h":
+		return ec.fieldContext_NetworkActivityTotals_txBytes24h(ctx, field)
+	case "observedSeconds24h":
+		return ec.fieldContext_NetworkActivityTotals_observedSeconds24h(ctx, field)
+	case "totalRxBytes":
+		return ec.fieldContext_NetworkActivityTotals_totalRxBytes(ctx, field)
+	case "totalTxBytes":
+		return ec.fieldContext_NetworkActivityTotals_totalTxBytes(ctx, field)
+	case "totalObservedSeconds":
+		return ec.fieldContext_NetworkActivityTotals_totalObservedSeconds(ctx, field)
+	case "recordedSince":
+		return ec.fieldContext_NetworkActivityTotals_recordedSince(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type NetworkActivityTotals", field.Name)
+}
+
 func (ec *executionContext) childFields_Tailnet(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "name":
@@ -1057,6 +1361,24 @@ func (ec *executionContext) childFields_TailscalePeer(ctx context.Context, field
 		return ec.fieldContext_TailscalePeer_keyExpiry(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TailscalePeer", field.Name)
+}
+
+func (ec *executionContext) childFields_TailscaleRouting(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "backendState":
+		return ec.fieldContext_TailscaleRouting_backendState(ctx, field)
+	case "exitNodeID":
+		return ec.fieldContext_TailscaleRouting_exitNodeID(ctx, field)
+	case "exitNodeIP":
+		return ec.fieldContext_TailscaleRouting_exitNodeIP(ctx, field)
+	case "allowLANAccess":
+		return ec.fieldContext_TailscaleRouting_allowLANAccess(ctx, field)
+	case "advertiseExitNode":
+		return ec.fieldContext_TailscaleRouting_advertiseExitNode(ctx, field)
+	case "exitNodes":
+		return ec.fieldContext_TailscaleRouting_exitNodes(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type TailscaleRouting", field.Name)
 }
 
 func (ec *executionContext) childFields_TailscaleStatus(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1250,6 +1572,20 @@ func (ec *executionContext) field_Mutation_setDeviceIP_args(ctx context.Context,
 		return nil, err
 	}
 	args["deviceIP"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setExitNode_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
+		func(ctx context.Context, v any) (model.ExitNodeInput, error) {
+			return ec.unmarshalNExitNodeInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐExitNodeInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1818,6 +2154,528 @@ func (ec *executionContext) fieldContext_Mutation_setDeviceIP(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_setExitNode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setExitNode(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetExitNode(ctx, fc.Args["input"].(model.ExitNodeInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setExitNode(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setExitNode_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NetworkActivity_interfaceName(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivity_interfaceName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.InterfaceName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivity_interfaceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivity", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivity_rxBytes(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivity_rxBytes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RxBytes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivity_rxBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivity", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivity_txBytes(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivity_txBytes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TxBytes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivity_txBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivity", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivity_sampledAt(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivity_sampledAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SampledAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivity_sampledAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivity", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivity_counterEpoch(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivity_counterEpoch(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CounterEpoch, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivity_counterEpoch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivity", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityHistory_windowStart(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityHistory) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityHistory_windowStart(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.WindowStart, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityHistory_windowStart(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityHistory", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityHistory_windowEnd(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityHistory) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityHistory_windowEnd(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.WindowEnd, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityHistory_windowEnd(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityHistory", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityHistory_hours(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityHistory) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityHistory_hours(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Hours, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.NetworkActivityHour) graphql.Marshaler {
+			return ec.marshalNNetworkActivityHour2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivityHourᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityHistory_hours(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NetworkActivityHistory",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_NetworkActivityHour(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NetworkActivityHistory_totals(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityHistory) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityHistory_totals(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Totals, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.NetworkActivityTotals) graphql.Marshaler {
+			return ec.marshalNNetworkActivityTotals2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivityTotals(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityHistory_totals(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NetworkActivityHistory",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_NetworkActivityTotals(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NetworkActivityHour_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityHour) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityHour_startedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.StartedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityHour_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityHour", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityHour_rxBytes(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityHour) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityHour_rxBytes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RxBytes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityHour_rxBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityHour", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityHour_txBytes(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityHour) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityHour_txBytes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TxBytes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityHour_txBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityHour", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityHour_observedSeconds(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityHour) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityHour_observedSeconds(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ObservedSeconds, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityHour_observedSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityHour", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityTotals_rxBytes24h(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityTotals) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityTotals_rxBytes24h(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RxBytes24h, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityTotals_rxBytes24h(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityTotals", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityTotals_txBytes24h(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityTotals) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityTotals_txBytes24h(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TxBytes24h, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityTotals_txBytes24h(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityTotals", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityTotals_observedSeconds24h(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityTotals) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityTotals_observedSeconds24h(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ObservedSeconds24h, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityTotals_observedSeconds24h(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityTotals", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityTotals_totalRxBytes(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityTotals) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityTotals_totalRxBytes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalRxBytes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityTotals_totalRxBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityTotals", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityTotals_totalTxBytes(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityTotals) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityTotals_totalTxBytes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalTxBytes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityTotals_totalTxBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityTotals", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityTotals_totalObservedSeconds(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityTotals) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityTotals_totalObservedSeconds(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalObservedSeconds, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityTotals_totalObservedSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityTotals", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _NetworkActivityTotals_recordedSince(ctx context.Context, field graphql.CollectedField, obj *model.NetworkActivityTotals) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_NetworkActivityTotals_recordedSince(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RecordedSince, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_NetworkActivityTotals_recordedSince(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("NetworkActivityTotals", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1941,6 +2799,102 @@ func (ec *executionContext) fieldContext_Query_deviceStatus(_ context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_DeviceStatus(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_networkActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_networkActivity(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().NetworkActivity(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.NetworkActivity) graphql.Marshaler {
+			return ec.marshalNNetworkActivity2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivity(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_networkActivity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_NetworkActivity(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_networkActivityHistory(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_networkActivityHistory(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().NetworkActivityHistory(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.NetworkActivityHistory) graphql.Marshaler {
+			return ec.marshalNNetworkActivityHistory2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivityHistory(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_networkActivityHistory(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_NetworkActivityHistory(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_tailscaleRouting(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_tailscaleRouting(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().TailscaleRouting(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TailscaleRouting) graphql.Marshaler {
+			return ec.marshalNTailscaleRouting2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleRouting(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_tailscaleRouting(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscaleRouting(ctx, field)
 		},
 	}
 	return fc, nil
@@ -3147,6 +4101,153 @@ func (ec *executionContext) _TailscalePeer_keyExpiry(ctx context.Context, field 
 }
 func (ec *executionContext) fieldContext_TailscalePeer_keyExpiry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_backendState(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_backendState(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.BackendState, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_backendState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_exitNodeID(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_exitNodeID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExitNodeID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_exitNodeID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_exitNodeIP(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_exitNodeIP(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExitNodeIP, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_exitNodeIP(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_allowLANAccess(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_allowLANAccess(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AllowLANAccess, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_allowLANAccess(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_advertiseExitNode(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_advertiseExitNode(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AdvertiseExitNode, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_advertiseExitNode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_exitNodes(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_exitNodes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExitNodes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.TailscalePeer) graphql.Marshaler {
+			return ec.marshalNTailscalePeer2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscalePeerᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_exitNodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TailscaleRouting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TailscalePeer(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _TailscaleStatus_version(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleStatus) (ret graphql.Marshaler) {
@@ -4870,6 +5971,43 @@ func (ec *executionContext) unmarshalInputDeviceIP(ctx context.Context, obj any)
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputExitNodeInput(ctx context.Context, obj any) (model.ExitNodeInput, error) {
+	var it model.ExitNodeInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"exitNodeID", "allowLANAccess"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "exitNodeID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("exitNodeID"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExitNodeID = data
+		case "allowLANAccess":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowLANAccess"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowLANAccess = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTailscaleCredential(ctx context.Context, obj any) (model.TailscaleCredential, error) {
 	var it model.TailscaleCredential
 	if obj == nil {
@@ -5066,6 +6204,245 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "setExitNode":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setExitNode(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var networkActivityImplementors = []string{"NetworkActivity"}
+
+func (ec *executionContext) _NetworkActivity(ctx context.Context, sel ast.SelectionSet, obj *model.NetworkActivity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, networkActivityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NetworkActivity")
+		case "interfaceName":
+			out.Values[i] = ec._NetworkActivity_interfaceName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rxBytes":
+			out.Values[i] = ec._NetworkActivity_rxBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "txBytes":
+			out.Values[i] = ec._NetworkActivity_txBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sampledAt":
+			out.Values[i] = ec._NetworkActivity_sampledAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "counterEpoch":
+			out.Values[i] = ec._NetworkActivity_counterEpoch(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var networkActivityHistoryImplementors = []string{"NetworkActivityHistory"}
+
+func (ec *executionContext) _NetworkActivityHistory(ctx context.Context, sel ast.SelectionSet, obj *model.NetworkActivityHistory) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, networkActivityHistoryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NetworkActivityHistory")
+		case "windowStart":
+			out.Values[i] = ec._NetworkActivityHistory_windowStart(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "windowEnd":
+			out.Values[i] = ec._NetworkActivityHistory_windowEnd(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hours":
+			out.Values[i] = ec._NetworkActivityHistory_hours(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totals":
+			out.Values[i] = ec._NetworkActivityHistory_totals(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var networkActivityHourImplementors = []string{"NetworkActivityHour"}
+
+func (ec *executionContext) _NetworkActivityHour(ctx context.Context, sel ast.SelectionSet, obj *model.NetworkActivityHour) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, networkActivityHourImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NetworkActivityHour")
+		case "startedAt":
+			out.Values[i] = ec._NetworkActivityHour_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rxBytes":
+			out.Values[i] = ec._NetworkActivityHour_rxBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "txBytes":
+			out.Values[i] = ec._NetworkActivityHour_txBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "observedSeconds":
+			out.Values[i] = ec._NetworkActivityHour_observedSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var networkActivityTotalsImplementors = []string{"NetworkActivityTotals"}
+
+func (ec *executionContext) _NetworkActivityTotals(ctx context.Context, sel ast.SelectionSet, obj *model.NetworkActivityTotals) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, networkActivityTotalsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NetworkActivityTotals")
+		case "rxBytes24h":
+			out.Values[i] = ec._NetworkActivityTotals_rxBytes24h(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "txBytes24h":
+			out.Values[i] = ec._NetworkActivityTotals_txBytes24h(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "observedSeconds24h":
+			out.Values[i] = ec._NetworkActivityTotals_observedSeconds24h(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalRxBytes":
+			out.Values[i] = ec._NetworkActivityTotals_totalRxBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalTxBytes":
+			out.Values[i] = ec._NetworkActivityTotals_totalTxBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalObservedSeconds":
+			out.Values[i] = ec._NetworkActivityTotals_totalObservedSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recordedSince":
+			out.Values[i] = ec._NetworkActivityTotals_recordedSince(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5183,6 +6560,72 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_deviceStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "networkActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_networkActivity(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "networkActivityHistory":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_networkActivityHistory(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "tailscaleRouting":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tailscaleRouting(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -5617,6 +7060,69 @@ func (ec *executionContext) _TailscalePeer(ctx context.Context, sel ast.Selectio
 		case "keyExpiry":
 			out.Values[i] = ec._TailscalePeer_keyExpiry(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var tailscaleRoutingImplementors = []string{"TailscaleRouting"}
+
+func (ec *executionContext) _TailscaleRouting(ctx context.Context, sel ast.SelectionSet, obj *model.TailscaleRouting) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tailscaleRoutingImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TailscaleRouting")
+		case "backendState":
+			out.Values[i] = ec._TailscaleRouting_backendState(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "exitNodeID":
+			out.Values[i] = ec._TailscaleRouting_exitNodeID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "exitNodeIP":
+			out.Values[i] = ec._TailscaleRouting_exitNodeIP(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "allowLANAccess":
+			out.Values[i] = ec._TailscaleRouting_allowLANAccess(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "advertiseExitNode":
+			out.Values[i] = ec._TailscaleRouting_advertiseExitNode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "exitNodes":
+			out.Values[i] = ec._TailscaleRouting_exitNodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
 		default:
@@ -6277,6 +7783,27 @@ func (ec *executionContext) marshalNDeviceStatus2ᚖgithubᚗcomᚋpancppᚋnano
 	return ec._DeviceStatus(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNExitNodeInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐExitNodeInput(ctx context.Context, v any) (model.ExitNodeInput, error) {
+	res, err := ec.unmarshalInputExitNodeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
 func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v any) (int32, error) {
 	res, err := graphql.UnmarshalInt32(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6307,6 +7834,62 @@ func (ec *executionContext) marshalNInt642int(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNNetworkActivity2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivity(ctx context.Context, sel ast.SelectionSet, v *model.NetworkActivity) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NetworkActivity(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNetworkActivityHistory2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivityHistory(ctx context.Context, sel ast.SelectionSet, v *model.NetworkActivityHistory) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NetworkActivityHistory(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNetworkActivityHour2ᚕᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivityHourᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.NetworkActivityHour) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNNetworkActivityHour2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivityHour(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNetworkActivityHour2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivityHour(ctx context.Context, sel ast.SelectionSet, v *model.NetworkActivityHour) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NetworkActivityHour(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNetworkActivityTotals2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐNetworkActivityTotals(ctx context.Context, sel ast.SelectionSet, v *model.NetworkActivityTotals) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NetworkActivityTotals(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
@@ -6393,6 +7976,16 @@ func (ec *executionContext) marshalNTailscalePeer2ᚖgithubᚗcomᚋpancppᚋnan
 		return graphql.Null
 	}
 	return ec._TailscalePeer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTailscaleRouting2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleRouting(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleRouting) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TailscaleRouting(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTailscaleStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐTailscaleStatus(ctx context.Context, sel ast.SelectionSet, v *model.TailscaleStatus) graphql.Marshaler {

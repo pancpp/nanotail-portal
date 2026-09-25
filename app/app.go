@@ -14,6 +14,9 @@ import (
 	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
 	"github.com/pancpp/nanotail-portal/conf"
+	"github.com/pancpp/nanotail-portal/database"
+	"github.com/pancpp/nanotail-portal/device"
+	"github.com/pancpp/nanotail-portal/traffic"
 	"github.com/pancpp/nanotail-portal/webui"
 )
 
@@ -30,6 +33,9 @@ func Init(ctx context.Context) error {
 	if err := initAPIs(e); err != nil {
 		return err
 	}
+
+	// One collector per portal process, independent of logged-in browsers.
+	go traffic.NewRecorder(device.NewTrafficReader(), traffic.NewStore(database.DB())).Run(ctx)
 
 	// Start echo server
 	go func() {

@@ -1,10 +1,6 @@
 import {
-  ArrowDownToLine,
-  ArrowUpFromLine,
   ChevronRight,
   Cpu,
-  KeyRound,
-  Route,
   SlidersHorizontal,
   Users,
   Wifi,
@@ -13,6 +9,9 @@ import { Link } from 'react-router-dom'
 import { isTailscaleConnected, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
 import DeviceStatusPanel from '../components/DeviceStatusPanel'
+import NetworkActivityPanel from '../components/NetworkActivityPanel'
+import NodeKeyCard from '../components/NodeKeyCard'
+import RoutingCard from '../components/RoutingCard'
 
 export default function OverviewPage() {
   const { status, statusError } = useTailscale()
@@ -32,7 +31,7 @@ export default function OverviewPage() {
         </div>
         <div className="integration-note">
           <SlidersHorizontal size={16} />
-          Connection, peers, and device status are live · other panels are previews
+          Live device and Tailscale status
         </div>
       </section>
 
@@ -48,38 +47,14 @@ export default function OverviewPage() {
             <p>{!statusError && status?.currentTailnet?.name ? status.currentTailnet.name : 'No active tailnet connection'}</p>
           </div>
           <div className="status-card__footer">
-            <span>{!statusError && status?.tailscaleIPs.length ? status.tailscaleIPs.join(', ') : 'No Tailscale address'}</span>
             <Link to="/settings">Settings <ChevronRight size={15} /></Link>
+            <span>{!statusError && status?.tailscaleIPs.length ? status.tailscaleIPs.join(', ') : 'No Tailscale address'}</span>
           </div>
         </article>
 
-        <article className="status-card">
-          <div className="status-card__topline">
-            <span className="status-icon status-icon--violet"><Route size={20} /></span>
-            <span className="quiet-label">ROUTING PREVIEW</span>
-          </div>
-          <div className="status-card__body">
-            <span>Exit node</span>
-            <strong>Not configured</strong>
-            <p>Traffic uses the local gateway</p>
-          </div>
-          <button className="text-action" type="button">
-            Configure <ChevronRight size={15} />
-          </button>
-        </article>
+        <RoutingCard />
 
-        <article className="status-card">
-          <div className="status-card__topline">
-            <span className="status-icon status-icon--amber"><KeyRound size={20} /></span>
-            <span className="quiet-label">SECURITY PREVIEW</span>
-          </div>
-          <div className="status-card__body">
-            <span>Node key</span>
-            <strong>178 days remaining</strong>
-            <p>Expires March 19, 2027</p>
-          </div>
-          <div className="key-progress"><span /></div>
-        </article>
+        <NodeKeyCard />
       </section>
 
       <section className="dashboard-columns">
@@ -116,31 +91,7 @@ export default function OverviewPage() {
           </div>
         </article>
 
-        <article className="panel activity-panel">
-          <div className="panel__header">
-            <div>
-              <span className="panel__eyebrow">LAST 24 HOURS</span>
-              <h2>Network activity</h2>
-            </div>
-            <span className="activity-live">Preview</span>
-          </div>
-
-          <div className="traffic-total">
-            <span>Total traffic</span>
-            <strong>1.84 <small>GB</small></strong>
-          </div>
-
-          <div className="activity-chart" aria-label="Illustrative traffic chart">
-            {[30, 44, 28, 52, 48, 72, 62, 88, 66, 78, 56, 70].map((height, index) => (
-              <span key={index} style={{ height: `${height}%` }} />
-            ))}
-          </div>
-
-          <div className="traffic-breakdown">
-            <span><ArrowDownToLine size={16} /> Download <strong>1.42 GB</strong></span>
-            <span><ArrowUpFromLine size={16} /> Upload <strong>420 MB</strong></span>
-          </div>
-        </article>
+        <NetworkActivityPanel />
       </section>
 
       <DeviceStatusPanel />

@@ -124,6 +124,42 @@ func TestTailscaleStatusGraphQLMapping(t *testing.T) {
 	}
 }
 
+func TestTailscaleSelfKeyExpiry(t *testing.T) {
+	for _, expiry := range []string{"", "0001-01-01T00:00:00Z", "2027-01-01T00:00:00Z", "2020-01-01T00:00:00Z"} {
+		t.Run(expiry, func(t *testing.T) {
+			self := map[string]any{"ID": "self", "Online": true, "Created": "2019-01-01T00:00:00Z"}
+			if expiry != "" {
+				self["KeyExpiry"] = expiry
+			}
+			body, err := json.Marshal(map[string]any{"BackendState": "Running", "HaveNodeKey": true, "Self": self})
+			if err != nil {
+				t.Fatal(err)
+			}
+			status, fields := queryStatus(t, body)
+			if !status.HaveNodeKey || status.Self == nil {
+				t.Fatalf("node key metadata lost: %+v", status)
+			}
+			var rawSelf map[string]json.RawMessage
+			if err := json.Unmarshal(fields["self"], &rawSelf); err != nil {
+				t.Fatal(err)
+			}
+			if expiry == "" || expiry == "0001-01-01T00:00:00Z" {
+				if status.Self.KeyExpiry != nil || string(rawSelf["keyExpiry"]) != "null" {
+					t.Fatalf("absent expiry became a date: %s", fields["self"])
+				}
+			} else {
+				want, err := time.Parse(time.RFC3339, expiry)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if status.Self.KeyExpiry == nil || !status.Self.KeyExpiry.Equal(want) {
+					t.Fatalf("expiry lost: %+v", status.Self.KeyExpiry)
+				}
+			}
+		})
+	}
+}
+
 func TestTailscaleStatusGraphQLOptionalFields(t *testing.T) {
 	for _, data := range []string{
 		`{"BackendState":"NeedsLogin","AuthURL":"https://login.tailscale.com/a/test"}`,
