@@ -1,13 +1,10 @@
-import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ChevronRight, Route } from 'lucide-react'
 import { useTailscale } from '../tailscale'
 import { routingSummary } from '../routing'
-import ExitNodeDialog from './ExitNodeDialog'
 
 export default function RoutingCard() {
-  const { routing, routingError, refresh } = useTailscale()
-  const [open, setOpen] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const { routing, routingError } = useTailscale()
   const summary = routingSummary(routing, routingError)
   return <article className="status-card routing-card">
     <div className="status-card__topline">
@@ -17,12 +14,8 @@ export default function RoutingCard() {
     <div className="status-card__body">
       <span>Exit node</span><strong>{summary.title}</strong><p>{summary.detail}</p>
     </div>
-    {saved && <p className="routing-saved" role="status">Routing settings saved.</p>}
-    <button className="text-action" type="button" aria-haspopup="dialog" onClick={() => { setSaved(false); setOpen(true) }}>
+    <Link className="text-action" to="/access-control">
       Configure <ChevronRight size={15} />
-    </button>
-    {open && <ExitNodeDialog onClose={() => setOpen(false)} onSaved={() => {
-      setSaved(true); setOpen(false); void refresh()
-    }} />}
+    </Link>
   </article>
 }

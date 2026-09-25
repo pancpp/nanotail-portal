@@ -437,6 +437,35 @@ export interface TailscaleRouting {
   exitNodes: TailscalePeer[]
 }
 
+export interface TailscaleConnection {
+  enabled: boolean
+  backendState: string
+  canEnable: boolean
+}
+
+export async function tailscaleConnectionRequest(token: string, signal?: AbortSignal): Promise<TailscaleConnection> {
+  const timeout = AbortSignal.timeout(20_000)
+  const data = await graphQLRequest(token, 'TailscaleConnection', `query TailscaleConnection {
+    tailscaleConnection { enabled backendState canEnable }
+  }`, {}, signal ? AbortSignal.any([signal, timeout]) : timeout, 'tailnet connection')
+  const value: unknown = data.tailscaleConnection
+  if (!isRecord(value) || typeof value.enabled !== 'boolean' || typeof value.canEnable !== 'boolean' ||
+    typeof value.backendState !== 'string' || !value.backendState) throw new Error('The server did not return valid tailnet connection settings.')
+  return value as unknown as TailscaleConnection
+}
+
+export async function setTailscaleEnabledRequest(token: string, enabled: boolean): Promise<void> {
+  if (typeof enabled !== 'boolean') throw new Error('Choose whether the tailnet connection is enabled.')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'SetTailscaleEnabled', `mutation SetTailscaleEnabled($enabled: Boolean!) {
+      setTailscaleEnabled(enabled: $enabled)
+    }`, { enabled }, controller.signal, 'tailnet connection')
+    if (data.setTailscaleEnabled !== true) throw new Error('The server did not confirm the connection change. Reload settings before retrying.')
+  } finally { clearTimeout(timer) }
+}
+
 export interface ExitNodeInput {
   exitNodeID: string
   allowLANAccess: boolean

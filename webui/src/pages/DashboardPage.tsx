@@ -21,8 +21,8 @@ import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 
 const navItems = [
   { label: 'Overview', icon: CircleGauge, path: '/' },
-  { label: 'Network', icon: Network },
-  { label: 'Access control', icon: ShieldCheck },
+  { label: 'Network', icon: Network, path: '/network' },
+  { label: 'Access control', icon: ShieldCheck, path: '/access-control' },
   { label: 'Settings', icon: Settings, path: '/settings' },
   { label: 'Setup guide', icon: BookOpen, path: '/tailscale-setup' },
 ]
@@ -33,7 +33,7 @@ export default function DashboardPage() {
   const { status: deviceStatus, refreshing: deviceRefreshing, refresh: refreshDevice } = useDevice()
   const refreshing = tailscaleRefreshing || deviceRefreshing
   const { pathname } = useLocation()
-  const pageTitle = pathname === '/settings' ? 'Settings' : pathname === '/tailscale-setup' ? 'Setup guide' : 'Overview'
+  const pageTitle = navItems.find((item) => item.path === pathname)?.label ?? 'Overview'
   const [menuOpen, setMenuOpen] = useState(false)
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptDismissed, setPromptDismissed] = useState(false)
@@ -89,7 +89,7 @@ export default function DashboardPage() {
 
         <nav className="sidebar__nav" aria-label="Main navigation">
           <span className="sidebar__label">Workspace</span>
-          {navItems.map(({ label, icon: Icon, path }) => path ? (
+          {navItems.map(({ label, icon: Icon, path }) => (
             <NavLink
               key={label}
               to={path}
@@ -100,18 +100,6 @@ export default function DashboardPage() {
               <Icon size={19} />
               <span>{label}</span>
             </NavLink>
-          ) : (
-            <button
-              type="button"
-              key={label}
-              className="nav-item"
-              title={`${label} is coming soon`}
-              disabled
-            >
-              <Icon size={19} />
-              <span>{label}</span>
-              <small>Soon</small>
-            </button>
           ))}
         </nav>
 
@@ -140,7 +128,7 @@ export default function DashboardPage() {
             <span>Workspace</span>
             <strong>{pageTitle}</strong>
           </div>
-          {pathname === '/' && (
+          {['/', '/network', '/access-control'].includes(pathname) && (
             <div className="topbar__actions">
               <span className="updated-at">Auto-refresh every 30s</span>
               <button
@@ -163,7 +151,7 @@ export default function DashboardPage() {
             <button className="secondary-button" disabled={refreshing} onClick={() => { void refresh() }}>Retry status</button></div>}
           {needsSetup && <div className="connection-notice" role="status"><strong>This device is not signed in to a tailnet.</strong>
             <p>{client?.hasClientSecret ? 'Credentials are saved. Saving alone does not connect the device.' : 'Add your OAuth client ID and secret to prepare the device for setup.'}</p>
-            <div className="credential-links"><Link to="/settings">Manage credentials</Link><Link to="/tailscale-setup">Read the setup guide</Link></div></div>}
+            <div className="credential-links"><Link to="/network">Manage credentials</Link><Link to="/tailscale-setup">Read the setup guide</Link></div></div>}
           <Outlet />
         </main>
       </div>

@@ -54,14 +54,14 @@ The dashboard reads `tailscaleStatus` through GraphQL every 30 seconds. A device
 in `NeedsLogin` prompts once per page session for its OAuth client ID and
 secret. Stopped devices, pending machine approval, and unavailable status do not
 trigger credential prompts. Reloading the page may show the prompt again;
-ordinary status refreshes do not. Settings and the setup guide remain available.
+ordinary status refreshes do not. Network and the setup guide remain available.
 
 Connection state comes from `backendState` and `self.online`; `currentTailnet`
 and `self` can be `null` before login. The overview uses `tailscaleIPs` and the
 live `peers` list, including device names, addresses, operating systems, and
 online state. Unavailable status hides stale connection and peer information.
 
-Settings supports saving, replacing, and removing credentials using
+Network supports saving, replacing, and removing credentials using
 `setTailscaleCredential` and `clearTailscaleCredential`. These operations require
 a portal administrator. The `tailscaleClient` query returns `null` before setup,
 or the client ID, `hasClientSecret`, and timestamp; it never returns the secret.
@@ -85,10 +85,10 @@ and routing settings are live.
 
 ## Exit-node routing
 
-**Overview → Routing → Configure** opens a keyboard-accessible dialog with the
+**Overview → Routing → Configure** opens **Access control**, with the
 current exit node, approved peer choices, and a local-LAN access checkbox.
 Routing preferences refresh every 30 seconds and with **Refresh status**. The
-dialog reads them again on opening; background updates do not overwrite edits.
+form reads them again on entering the tab; background updates do not overwrite edits.
 Offline nodes cannot be newly selected. A missing or offline current node can
 still be cleared by choosing **None — use local gateway**. Read failures show
 Unavailable rather than claiming traffic uses the local gateway.
@@ -102,8 +102,29 @@ may mean the change already applied, and are never automatically retried.
 
 This controls nanotail's own exit-node selection, not exit-node advertising or
 forwarding other LAN devices' traffic. Tailscale persists the settings; the
-portal database is not used. The dialog links to the official exit-node setup
+portal database is not used. The form links to the official exit-node setup
 guide when another device needs to be configured/approved first.
+
+## Tailnet connection
+
+**Overview → Tailscale status → Configure** opens **Network**, which also
+contains LAN IPv4 settings and OAuth credentials. **Settings** retains Change
+password. All sidebar tabs support direct links and active navigation states.
+
+**Network → Tailnet connection** reads `tailscaleConnection` on entry and with
+**Reload connection**. On/Off reflects the saved `enabled` preference rather
+than inferring it from online status; the daemon state is displayed separately.
+The administrator-only `setTailscaleEnabled` mutation resumes or pauses an
+already enrolled device without logging out or resetting routing preferences.
+Unenrolled, expired, or unapproved devices must complete sign-in/approval first;
+the stored OAuth secret is not used for automatic enrollment.
+
+Changes require acknowledgment of the connectivity warning. Keep LAN or
+console access available: after disabling Tailscale, reconnect over the LAN to
+turn it on. There is no optimistic success state or automatic write retry.
+Loading/read failures disable the control; rejected, timed-out, or disconnected
+writes require reloading current settings before another attempt. The form
+prevents duplicate submissions, and reads are canceled when leaving the tab.
 
 ## Node key expiry
 
@@ -157,7 +178,9 @@ the hourly saved `totals` snapshot through `networkActivityHistory`, including
 separate download/upload totals. Total traffic covers all usage recorded by
 the portal and survives interface resets, restarts, and hourly record cleanup.
 The “as of” timestamp identifies the last successful hourly save; reads do not
-recalculate the saved window during downtime. Missing measurements are not zero.
+recalculate the saved window during downtime. Totals and their download/upload
+breakdowns display `0 B` before measurements arrive; hourly coverage still marks
+missing samples separately. Loading and request errors keep their own states.
 
 The **Last 24 hours** chart shows 24 completed UTC hours ending at that saved
 window boundary, with local-time labels, captured totals, and expandable
@@ -180,7 +203,7 @@ live sampling failures do not hide saved totals.
 
 ## LAN settings
 
-**Settings → LAN IPv4 settings** configures eth0 through `setDeviceIP` using
+**Network → LAN IPv4 settings** configures eth0 through `setDeviceIP` using
 authenticated GraphQL variables. Choose DHCP or static IPv4 with a CIDR prefix,
 optional same-subnet gateway, and comma/space-separated IPv4 DNS servers.
 IPv6 configuration is kept. Empty gateway/DNS fields clear their IPv4 settings;

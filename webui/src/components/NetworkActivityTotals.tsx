@@ -12,12 +12,12 @@ export default function NetworkActivityTotals({ history, error, retry }: {
   return <section className="saved-traffic" aria-label="Saved VPN traffic totals">
     <div className="saved-traffic__figures">
       <div className="saved-traffic__24h"><span>Last 24 hours</span>
-        <strong>{view.last24Bytes === null ? 'No measurements' : formatTrafficBytes(view.last24Bytes)}</strong>
-        {view.last24Bytes !== null && <small>↓ {formatTrafficBytes(Number(totals.rxBytes24h))} · ↑ {formatTrafficBytes(Number(totals.txBytes24h))}</small>}
+        <strong>{formatTrafficBytes(view.last24Bytes)}</strong>
+        <small>↓ {formatTrafficBytes(Number(totals.rxBytes24h))} · ↑ {formatTrafficBytes(Number(totals.txBytes24h))}</small>
       </div>
       <div className="saved-traffic__total"><span>Total traffic</span>
-        <strong>{view.totalBytes === null ? 'No measurements yet' : formatTrafficBytes(view.totalBytes)}</strong>
-        {view.totalBytes !== null && <small>↓ {formatTrafficBytes(Number(totals.totalRxBytes))} · ↑ {formatTrafficBytes(Number(totals.totalTxBytes))}</small>}
+        <strong>{formatTrafficBytes(view.totalBytes)}</strong>
+        <small>↓ {formatTrafficBytes(Number(totals.totalRxBytes))} · ↑ {formatTrafficBytes(Number(totals.totalTxBytes))}</small>
       </div>
     </div>
     <p className="traffic-caption">Saved hourly · as of {historyHourLabel(Date.parse(history.windowEnd))}. Last 24 hours covers completed hours only.</p>

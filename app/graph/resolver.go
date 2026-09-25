@@ -39,6 +39,11 @@ type NetworkHistoryReader interface {
 	History(context.Context, time.Time) (traffic.History, error)
 }
 
+type TailscaleConnector interface {
+	Connection(context.Context) (tailscale.Connection, error)
+	SetEnabled(context.Context, bool) error
+}
+
 type Resolver struct {
 	Tailscale      TailscaleStatusReader
 	Device         DeviceStatusReader
@@ -46,4 +51,5 @@ type Resolver struct {
 	Traffic        NetworkActivityReader
 	Routing        TailscaleRouter
 	TrafficHistory NetworkHistoryReader
+	Connection     TailscaleConnector
 }

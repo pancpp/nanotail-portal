@@ -23,7 +23,7 @@ export default function TailscaleSetupPrompt({ onClose }: { onClose: () => void 
       <div><span className="panel__eyebrow">TAILSCALE SETUP</span><h2 id="setup-dialog-title">Add your tailnet credentials</h2></div>
       <button className="icon-button" type="button" aria-label="Close setup dialog" disabled={busy} onClick={onClose}><X size={22} /></button>
     </div>
-    <p className="setup-dialog__description" id="setup-dialog-description">This device needs to sign in to a tailnet. Save your OAuth client ID and secret to prepare its setup. You can also do this later in Settings.</p>
+    <p className="setup-dialog__description" id="setup-dialog-description">This device needs to sign in to a tailnet. Save your OAuth client ID and secret to prepare its setup. You can also do this later in Network.</p>
     <TailscaleCredentialForm onSaved={onClose} onGuide={onClose} onBusy={setBusy} />
     <div className="setup-dialog__footer"><button className="secondary-button" type="button" disabled={busy} onClick={onClose}>Set up later</button></div>
   </dialog>

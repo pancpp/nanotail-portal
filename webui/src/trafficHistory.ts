@@ -22,11 +22,12 @@ export function historyHourLabel(at: number) {
 }
 
 // Both figures come from the same hourly database snapshot, not live interface
-// counters and not a browser-maintained running total.
+// counters and not a browser-maintained running total. Empty totals display zero;
+// missing hourly coverage is still tracked separately by trafficHistoryView.
 export function trafficTotalsView(history: NetworkActivityHistory) {
   const totals = history.totals
   return {
-    last24Bytes: totals.observedSeconds24h > 0 ? Number(BigInt(totals.rxBytes24h) + BigInt(totals.txBytes24h)) : null,
-    totalBytes: totals.totalObservedSeconds > 0 ? Number(BigInt(totals.totalRxBytes) + BigInt(totals.totalTxBytes)) : null,
+    last24Bytes: Number(BigInt(totals.rxBytes24h) + BigInt(totals.txBytes24h)),
+    totalBytes: Number(BigInt(totals.totalRxBytes) + BigInt(totals.totalTxBytes)),
   }
 }

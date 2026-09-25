@@ -47,7 +47,7 @@ export default function OverviewPage() {
             <p>{!statusError && status?.currentTailnet?.name ? status.currentTailnet.name : 'No active tailnet connection'}</p>
           </div>
           <div className="status-card__footer">
-            <Link to="/settings">Settings <ChevronRight size={15} /></Link>
+            <Link to="/network">Configure <ChevronRight size={15} /></Link>
             <span>{!statusError && status?.tailscaleIPs.length ? status.tailscaleIPs.join(', ') : 'No Tailscale address'}</span>
           </div>
         </article>

@@ -1659,7 +1659,8 @@ input:focus-visible {
 }
 
 /* Tailscale credential setup */
-.lan-settings { margin-bottom: 18px; }
+.lan-settings, .tailnet-settings { margin-bottom: 18px; }
+.tailnet-state { color: var(--muted); font-size: 17px; }
 .lan-form select { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font: inherit; }
 .lan-form select:focus-visible { outline: 3px solid #27c283; outline-offset: 2px; }
 .lan-form > label:not(:first-child) { margin-top: 18px; }
@@ -1697,8 +1698,7 @@ a:focus-visible, dialog:focus-visible {
 .routing-card .status-card__body { overflow-wrap: anywhere; }
 .routing-card .status-card__body strong { white-space: normal; }
 .routing-card .status-card__body p { white-space: normal; overflow: visible; font-size: 16px; line-height: 1.5; }
-.routing-saved { color: var(--green-dark); font-size: 15px; }
-.routing-dialog select { min-width: 0; font-size: 17px; }
+.routing-settings select { min-width: 0; font-size: 17px; }
 .routing-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
 .routing-guide { display: inline-block; margin-top: 18px; color: var(--green-dark); font-size: 16px; text-underline-offset: 4px; }
 .setup-dialog .secondary-button, .credential-form .secondary-button, .setup-guide .secondary-button { min-height: 42px; height: auto; width: auto; padding: 10px 14px; font-size: 16px; }

@@ -64,11 +64,33 @@ changing routing can interrupt access to the portal through Tailscale.
 
 The WebUI shows live connection, peer, node-key, device, routing, and VPN traffic
 data through GraphQL. It also manages OAuth credentials, LAN IPv4 settings, and
-the exit node used by this device.
+the exit node used by this device. **Network** contains LAN IPv4 settings, the
+tailnet connection control, and OAuth credentials; **Access control** contains
+exit-node configuration. **Settings** contains portal account settings.
+
+### Tailnet connection
+
+**Tailscale status → Configure** opens **Network → Tailnet connection**.
+The authenticated `tailscaleConnection` query returns this device's saved
+`enabled` preference, `backendState`, and whether an existing login can be
+resumed (`canEnable`). Enabled is not a claim that the daemon is connected.
+
+Administrators can use `setTailscaleEnabled(enabled: true/false)` to resume or
+pause the device. The backend validates fresh preferences/status, serializes
+the change with routing writes, executes bare `tailscale up`/`tailscale down`,
+and checks the saved preference afterward. It does not reset DNS, routing, or
+login settings; see the [Tailscale CLI reference](https://tailscale.com/docs/reference/tailscale-cli#down).
+Initial sign-in, expired-key reauthentication, and device approval must be
+completed separately; saved OAuth credentials are still storage-only.
+
+The form requires acknowledgment that connectivity may be interrupted. Keep
+LAN or console access available to re-enable Tailscale after disconnecting.
+Command/request timeouts do not imply rollback. Unknown outcomes require a
+fresh read before another attempt; mutations are never retried automatically.
 
 ### Exit-node routing
 
-On Overview, **Routing → Configure** opens an exit-node selection dialog. The
+On Overview, **Routing → Configure** opens the **Access control** tab. The
 authenticated `tailscaleRouting` query reads saved preferences and approved
 exit nodes visible to this device. Select an online exit node, choose whether to
 allow local-LAN access, acknowledge the connectivity warning, and apply. Choose
@@ -104,7 +126,7 @@ Login and JWT middleware errors use `{"message":"..."}`; GraphQL responses use
 | --- | --- | --- |
 | GET | `/api/health` | Public portal liveness; does not indicate Tailscale health |
 | POST | `/api/login` | Public login with `username` and `password`; returns a JWT in `token` |
-| POST | `/api/v1/query` | Authenticated GraphQL for password changes, device/Tailscale status, VPN traffic, LAN/routing settings, and OAuth credentials |
+| POST | `/api/v1/query` | Authenticated GraphQL for password changes, device/Tailscale status, VPN traffic, tailnet connection, LAN/routing settings, and OAuth credentials |
 | GET | `/api/system` | Hostname, OS, architecture, portal uptime and build metadata |
 | GET | `/api/tailscale/status` | State, self, peers, health messages and traffic counters |
 | GET | `/api/tailscale/peers` | Sorted peer array |
@@ -294,7 +316,7 @@ read failures (including missing migrations) do not disable live traffic rates.
 
 ### LAN IPv4 configuration
 
-In **Settings → LAN IPv4 settings**, administrators can choose DHCP or a static
+In **Network → LAN IPv4 settings**, administrators can choose DHCP or a static
 IPv4 address with CIDR prefix, optional gateway, and up to eight IPv4 DNS servers.
 The form starts with current device values and keeps unsaved edits during status
 refreshes. IPv6 settings are not changed. Device-status reads remain read-only.
@@ -340,7 +362,7 @@ and HTTPS needs a certificate valid for the new address.
 ### Tailscale credential setup
 
 The WebUI checks the device's `tailscaleStatus` GraphQL query and offers an OAuth
-credential dialog when Tailscale reports `NeedsLogin`. Settings lets portal
+credential dialog when Tailscale reports `NeedsLogin`. Network lets portal
 administrators save, replace, or remove the device-wide client ID and secret.
 The setup guide at `/#/tailscale-setup` includes a link to the Tailscale Trust
 credentials console and explains the OAuth client creation process.

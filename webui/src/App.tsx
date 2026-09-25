@@ -4,6 +4,8 @@ import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import OverviewPage from './pages/OverviewPage'
 import SettingsPage from './pages/SettingsPage'
+import NetworkPage from './pages/NetworkPage'
+import AccessControlPage from './pages/AccessControlPage'
 import TailscaleSetupPage from './pages/TailscaleSetupPage'
 import { TailscaleProvider } from './tailscale'
 import { DeviceProvider } from './device'
@@ -40,6 +42,8 @@ export default function App() {
         <Route path="/" element={<TailscaleProvider><DeviceProvider><DashboardPage /></DeviceProvider></TailscaleProvider>}>
           <Route index element={<OverviewPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="network" element={<NetworkPage />} />
+          <Route path="access-control" element={<AccessControlPage />} />
           <Route path="tailscale-setup" element={<TailscaleSetupPage />} />
         </Route>
       </Route>

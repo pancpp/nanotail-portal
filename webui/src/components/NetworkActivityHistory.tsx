@@ -29,8 +29,8 @@ export default function NetworkActivityHistory({ history }: { history: History }
       <p className="traffic-caption">{view.completeHours}/24 complete hours. Faded bars are partial; dashed marks are missing. Missing traffic is not counted as zero.</p>
     </div>
     <div className="traffic-breakdown">
-      <span><ArrowDownToLine size={18} /> Download <strong>{view.observedSeconds > 0 ? formatTrafficBytes(Number(history.totals.rxBytes24h)) : 'Unavailable'}</strong></span>
-      <span><ArrowUpFromLine size={18} /> Upload <strong>{view.observedSeconds > 0 ? formatTrafficBytes(Number(history.totals.txBytes24h)) : 'Unavailable'}</strong></span>
+      <span><ArrowDownToLine size={18} /> Download <strong>{formatTrafficBytes(Number(history.totals.rxBytes24h))}</strong></span>
+      <span><ArrowUpFromLine size={18} /> Upload <strong>{formatTrafficBytes(Number(history.totals.txBytes24h))}</strong></span>
     </div>
     <details className="history-details"><summary>Hourly details</summary>
       <div className="history-table-scroll" tabIndex={0} role="region" aria-label="Hourly VPN traffic details">

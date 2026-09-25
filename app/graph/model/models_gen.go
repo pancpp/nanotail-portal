@@ -131,6 +131,14 @@ type TailscaleClientVersion struct {
 	NotifyText           string `json:"notifyText"`
 }
 
+// This device's saved connection preference; enabled does not guarantee connectivity.
+type TailscaleConnection struct {
+	Enabled      bool   `json:"enabled"`
+	BackendState string `json:"backendState"`
+	// Whether an existing, unexpired, approved login can be resumed.
+	CanEnable bool `json:"canEnable"`
+}
+
 type TailscaleCredential struct {
 	ClientID string `json:"clientId"`
 	// Omit to retain the saved secret when the client ID is unchanged.

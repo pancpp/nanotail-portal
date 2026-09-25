@@ -199,6 +199,14 @@ input ExitNodeInput {
   allowLANAccess: Boolean!
 }
 
+"This device's saved connection preference; enabled does not guarantee connectivity."
+type TailscaleConnection {
+  enabled: Boolean!
+  backendState: String!
+  "Whether an existing, unexpired, approved login can be resumed."
+  canEnable: Boolean!
+}
+
 type Query {
   user: User!
   tailscaleClient: TailscaleClient
@@ -207,6 +215,7 @@ type Query {
   networkActivity: NetworkActivity!
   networkActivityHistory: NetworkActivityHistory!
   tailscaleRouting: TailscaleRouting!
+  tailscaleConnection: TailscaleConnection!
 }
 
 input ChangePassword {
@@ -239,4 +248,6 @@ type Mutation {
   setDeviceIP(deviceIP: DeviceIP): Boolean!
   "Admin only: persist exit-node preferences. May interrupt connectivity; does not change subnet advertisements or start Tailscale."
   setExitNode(input: ExitNodeInput!): Boolean!
+  "Admin only: resume or pause this device without logging out or changing routing preferences. May disconnect this browser."
+  setTailscaleEnabled(enabled: Boolean!): Boolean!
 }

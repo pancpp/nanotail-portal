@@ -60,11 +60,14 @@ test('saved lifetime totals survive an empty 24-hour window without precision lo
   Object.assign(saved.totals, { totalRxBytes: '36893488147419103230', totalTxBytes: '10', totalObservedSeconds: 3600, recordedSince: '2026-09-01T12:00:00Z' })
   t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { networkActivityHistory: saved } }))
   assert.deepEqual(await networkActivityHistoryRequest('token'), saved)
-  assert.deepEqual(trafficTotalsView(saved), { last24Bytes: null, totalBytes: Number(36893488147419103240n) })
+  assert.deepEqual(trafficTotalsView(saved), { last24Bytes: 0, totalBytes: Number(36893488147419103240n) })
 })
 
-test('saved total display distinguishes measured zero from missing data and uses cached totals', () => {
-  assert.deepEqual(trafficTotalsView(history({ hours: [] })), { last24Bytes: null, totalBytes: null })
+test('saved total display shows zero without measurements and uses cached totals', () => {
+  assert.deepEqual(trafficTotalsView(history({ hours: [] })), { last24Bytes: 0, totalBytes: 0 })
+  const unmeasured = history({ hours: [hour({ rxBytes: '0', txBytes: '0', observedSeconds: 0 })] })
+  assert.deepEqual(trafficTotalsView(unmeasured), { last24Bytes: 0, totalBytes: 0 })
+  assert.ok(trafficHistoryView(unmeasured).hours.every(hour => hour.coverage === 'Missing'))
   const zero = history({ hours: [hour({ rxBytes: '0', txBytes: '0' })] })
   assert.deepEqual(trafficTotalsView(zero), { last24Bytes: 0, totalBytes: 0 })
   const saved = history()

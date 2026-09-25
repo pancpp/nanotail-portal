@@ -36,6 +36,11 @@ func (r *mutationResolver) SetExitNode(ctx context.Context, input model.ExitNode
 	return r.setExitNode(ctx, input)
 }
 
+// SetTailscaleEnabled is the resolver for the setTailscaleEnabled field.
+func (r *mutationResolver) SetTailscaleEnabled(ctx context.Context, enabled bool) (bool, error) {
+	return r.setTailscaleEnabled(ctx, enabled)
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 	return r.user(ctx)
@@ -69,6 +74,11 @@ func (r *queryResolver) NetworkActivityHistory(ctx context.Context) (*model.Netw
 // TailscaleRouting is the resolver for the tailscaleRouting field.
 func (r *queryResolver) TailscaleRouting(ctx context.Context) (*model.TailscaleRouting, error) {
 	return r.tailscaleRouting(ctx)
+}
+
+// TailscaleConnection is the resolver for the tailscaleConnection field.
+func (r *queryResolver) TailscaleConnection(ctx context.Context) (*model.TailscaleConnection, error) {
+	return r.tailscaleConnection(ctx)
 }
 
 // Mutation returns MutationResolver implementation.

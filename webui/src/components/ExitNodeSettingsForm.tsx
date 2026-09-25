@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { X } from 'lucide-react'
+import { Route } from 'lucide-react'
 import { ApiError, isSessionError, setExitNodeRequest, tailscaleRoutingRequest, type TailscaleRouting } from '../api'
 import { useAuth } from '../auth'
 import { selectedExitNode } from '../routing'
+import { useTailscale } from '../tailscale'
 
-export default function ExitNodeDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+export default function ExitNodeSettingsForm() {
   const { accessToken, logout } = useAuth()
-  const dialog = useRef<HTMLDialogElement>(null)
+  const { refresh } = useTailscale()
   const pending = useRef<AbortController | null>(null)
   const submitting = useRef(false)
   const mounted = useRef(false)
@@ -18,8 +19,9 @@ export default function ExitNodeDialog({ onClose, onSaved }: { onClose: () => vo
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [needsReload, setNeedsReload] = useState(false)
+  const [saved, setSaved] = useState(false)
 
-  // Read fresh preferences on opening, but never overwrite an in-progress draft
+  // Read fresh preferences on entering this tab, but never overwrite an in-progress draft
   // with the dashboard's periodic refreshes.
   const reload = useCallback(async () => {
     if (!accessToken) { logout(); return }
@@ -42,21 +44,9 @@ export default function ExitNodeDialog({ onClose, onSaved }: { onClose: () => vo
 
   useEffect(() => {
     mounted.current = true
-    const element = dialog.current!
-    const previousFocus = document.activeElement as HTMLElement | null
-    const previousOverflow = document.body.style.overflow
-    element.showModal(); document.body.style.overflow = 'hidden'
-    // Disabling the focused form control can move focus to the body. Capture
-    // Escape there too, including browsers without the closedby attribute.
-    const guardEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && submitting.current) event.preventDefault()
-    }
-    document.addEventListener('keydown', guardEscape, true)
     void reload()
     return () => {
       mounted.current = false; pending.current?.abort()
-      document.removeEventListener('keydown', guardEscape, true)
-      element.close(); document.body.style.overflow = previousOverflow; previousFocus?.focus()
     }
   }, [reload])
 
@@ -69,10 +59,10 @@ export default function ExitNodeDialog({ onClose, onSaved }: { onClose: () => vo
     event.preventDefault()
     if (submitting.current || loading || needsReload || !valid || !changed || !acknowledged) return
     if (!accessToken) { logout(); return }
-    submitting.current = true; setBusy(true); setError('')
+    submitting.current = true; setBusy(true); setError(''); setSaved(false)
     try {
       await setExitNodeRequest(accessToken, { exitNodeID: selected, allowLANAccess: selected ? allowLAN : false })
-      if (mounted.current) onSaved()
+      if (mounted.current) { setSaved(true); void refresh(); await reload() }
     } catch (error) {
       if (!mounted.current) return
       if (isSessionError(error)) { logout(); return }
@@ -85,21 +75,20 @@ export default function ExitNodeDialog({ onClose, onSaved }: { onClose: () => vo
     }
   }
 
-  return <dialog ref={dialog} className="setup-dialog routing-dialog" closedby={busy ? 'none' : 'closerequest'} aria-labelledby="routing-dialog-title" aria-describedby="routing-description"
-    onCancel={(event) => { event.preventDefault(); if (!submitting.current) onClose() }}>
+  return <section className="panel routing-settings" aria-labelledby="routing-settings-title">
     <div className="panel__header">
-      <div><span className="panel__eyebrow">TAILSCALE ROUTING</span><h2 id="routing-dialog-title">Configure exit node</h2></div>
-      <button className="icon-button" type="button" aria-label="Close routing dialog" disabled={busy} onClick={onClose}><X size={22} /></button>
+      <div><span className="panel__eyebrow">TAILSCALE ROUTING</span><h2 id="routing-settings-title">Exit node configuration</h2></div><Route size={20} />
     </div>
     <form className="login-form credential-form lan-form" onSubmit={submit} aria-busy={busy || loading}>
       <p className="credential-intro" id="routing-description">Route this device’s internet traffic through another device in your tailnet, or use its local gateway. Only portal administrators can apply changes.</p>
       {loading && <p role="status">Loading routing settings…</p>}
       {error && <div className="form-error" role="alert">{error}</div>}
+      {saved && <p className="form-success" role="status">Routing settings saved.</p>}
       {routing && !loading && <>
         <label htmlFor="routing-exit-node">Exit node</label>
         <select id="routing-exit-node" name="exit_node" value={selected} disabled={busy || needsReload} onChange={(event) => {
           const next = event.target.value
-          setSelected(next); setAllowLAN(next ? selected ? allowLAN : true : false); setAcknowledged(false)
+          setSelected(next); setAllowLAN(next ? selected ? allowLAN : true : false); setAcknowledged(false); setSaved(false)
         }}>
           <option value="">None — use local gateway</option>
           {selected && !peer && <option value={selected} disabled>Unavailable — {routing.exitNodeIP || routing.exitNodeID}</option>}
@@ -112,7 +101,7 @@ export default function ExitNodeDialog({ onClose, onSaved }: { onClose: () => vo
         {routing.advertiseExitNode && <p className="password-help">This device advertises itself as an exit node. Using another exit node is unavailable; this form does not change its advertisements.</p>}
         <label className="lan-acknowledgement" htmlFor="routing-allow-lan">
           <input id="routing-allow-lan" type="checkbox" name="exit_node_allow_lan" disabled={busy || needsReload || !selected} checked={!!selected && allowLAN}
-            onChange={(event) => { setAllowLAN(event.target.checked); setAcknowledged(false) }} />
+            onChange={(event) => { setAllowLAN(event.target.checked); setAcknowledged(false); setSaved(false) }} />
           <span>Allow access to the local LAN while using the exit node</span>
         </label>
         <div className="lan-warning" id="routing-warning">Changing routes may interrupt this browser, SSH, or internet access. Keep local access available, especially if you turn off LAN access. Changes are not automatically reverted.</div>
@@ -127,9 +116,8 @@ export default function ExitNodeDialog({ onClose, onSaved }: { onClose: () => vo
       </>}
       <div className="routing-actions">
         <button className="secondary-button" type="button" disabled={busy || loading} onClick={() => { void reload() }}>Reload settings</button>
-        <button className="secondary-button" type="button" disabled={busy} onClick={onClose}>Cancel</button>
       </div>
       <a className="routing-guide" href="https://tailscale.com/docs/features/exit-nodes/how-to/setup" target="_blank" rel="noopener noreferrer">Exit-node setup guide ↗</a>
     </form>
-  </dialog>
+  </section>
 }
