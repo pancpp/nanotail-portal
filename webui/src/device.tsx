@@ -42,8 +42,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
     setStatus(null)
     setError('')
     void refresh()
-    const interval = window.setInterval(() => { void refresh() }, 30_000)
-    return () => { window.clearInterval(interval); pending.current?.abort() }
+    return () => { pending.current?.abort() }
   }, [refresh])
 
   return <DeviceContext.Provider value={{ status, error, refreshing, refresh }}>

@@ -1,5 +1,5 @@
 import { useI18n, T } from '../i18n'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   CircleGauge,
@@ -19,6 +19,7 @@ import LanguageSelector from '../components/LanguageSelector'
 import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
 import { useDevice } from '../device'
+import { useAutoRefresh } from '../useAutoRefresh'
 
 const navItems = [
   { label: 'Overview', icon: CircleGauge, path: '/' },
@@ -33,7 +34,11 @@ export default function DashboardPage() {
   const { logout } = useAuth()
   const { status, statusError, refreshing: tailscaleRefreshing, refresh, keyRenewalActive } = useTailscale()
   const { status: deviceStatus, refreshing: deviceRefreshing, refresh: refreshDevice } = useDevice()
-  const refreshing = tailscaleRefreshing || deviceRefreshing
+  const refreshAll = useCallback(async () => {
+    await Promise.all([refresh(), refreshDevice()])
+  }, [refresh, refreshDevice])
+  const { secondsRemaining, refreshNow, autoRefreshing } = useAutoRefresh(refreshAll)
+  const refreshing = tailscaleRefreshing || deviceRefreshing || autoRefreshing
   const { pathname } = useLocation()
   const pageTitle = navItems.find((item) => item.path === pathname || (item.path !== '/' && pathname.startsWith(item.path + '/')))?.label ?? 'Overview'
   const [menuOpen, setMenuOpen] = useState(false)
@@ -121,12 +126,14 @@ export default function DashboardPage() {
           </div>
           {['/', '/network', '/access-control'].includes(pathname) && (
             <div className="topbar__actions">
-              <span className="updated-at">{t("Auto-refresh every 30s")}</span>
+              <span className="updated-at" role="timer" aria-live="off">
+                {refreshing ? t("Updating…") : t("Auto-refresh in {seconds}s", { seconds: secondsRemaining })}
+              </span>
               <button
                 className="secondary-button"
                 type="button"
                 aria-label={t("Refresh Tailscale and device status")}
-                onClick={() => { void refresh(); void refreshDevice() }}
+                onClick={() => { void refreshNow() }}
                 disabled={refreshing}
               >
                 <RefreshCw size={16} className={refreshing ? 'spin' : ''} />

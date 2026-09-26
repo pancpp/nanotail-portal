@@ -313,7 +313,7 @@ export const zhCN: Record<string, string> = {
   "Portal version": "门户版本",
   "{0}Sign out": "{0}退出登录",
   "Open navigation": "打开导航",
-  "Auto-refresh every 30s": "每 30 秒自动刷新",
+  "Auto-refresh in {seconds}s": "{seconds} 秒后自动刷新",
   "Refresh Tailscale and device status": "刷新 Tailscale 和设备状态",
   "Refresh status": "刷新状态",
   "Tailscale status unavailable": "Tailscale 状态不可用",

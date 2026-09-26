@@ -796,6 +796,7 @@ input:focus-visible {
 .updated-at {
   color: #919b96;
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .secondary-button {

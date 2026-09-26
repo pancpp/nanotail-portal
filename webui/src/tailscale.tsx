@@ -75,8 +75,7 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refresh()
-    const interval = window.setInterval(() => { void refresh() }, 30_000)
-    return () => { window.clearInterval(interval); pending.current?.abort() }
+    return () => { pending.current?.abort() }
   }, [refresh])
 
   async function save(credential: TailscaleCredential) {

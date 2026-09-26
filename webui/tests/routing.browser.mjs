@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, extname } from 'node:path'
 import { spawn } from 'node:child_process'
 import { checkLocalization } from './localization.browser.mjs'
+import { checkRefreshCountdown } from './refresh-countdown.browser.mjs'
 
 const dist = fileURLToPath(new URL('../dist', import.meta.url))
 const server = createServer(async (req, res) => {
@@ -81,6 +82,7 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url })
   await waitFor("Boolean(document.getElementById('routing-subnets'))")
+  await checkRefreshCountdown({evaluate, waitFor, click, pause})
   const reloadSettingsStyle = await buttonStyle('Reload settings')
   const localLANStyle = await buttonStyle('Use local LAN')
   assert.equal(await evaluate("document.getElementById('routing-subnets').value"), '192.168.42.0/24\nfd00:1234::/64')
