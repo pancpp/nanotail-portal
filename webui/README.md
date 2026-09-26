@@ -108,6 +108,15 @@ and `self` can be `null` before login. The overview uses `tailscaleIPs` and the
 live `peers` list, including device names, addresses, operating systems, and
 online state. Unavailable status hides stale connection and peer information.
 
+The **Tailnet peers → Latency** column measures round-trip time from this device
+with one Tailscale TSMP ping per online peer. Overview requests the nullable
+`latencyMs` field separately after each status refresh so probes do not delay
+status. Hidden tabs pause measurements; navigation, sign-out, and newer status
+cancel pending requests. Offline peers show a dash; failed probes show
+**Unavailable**. The backend probes only when `latencyMs` is explicitly selected,
+limits concurrent pings to four, and uses a two-second probe timeout. Ordinary
+status requests and background services never measure latency.
+
 Access control supports saving, replacing, and removing credentials using
 `setTailscaleCredential` and `clearTailscaleCredential`. These operations require
 a portal administrator. The `tailscaleClient` query returns `null` before setup,

@@ -32,6 +32,7 @@ type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	TailscalePeer() TailscalePeerResolver
 }
 
 type DirectiveRoot struct {
@@ -174,6 +175,7 @@ type ComplexityRoot struct {
 		LastHandshake       func(childComplexity int) int
 		LastSeen            func(childComplexity int) int
 		LastWrite           func(childComplexity int) int
+		LatencyMs           func(childComplexity int) int
 		NoFileSharingReason func(childComplexity int) int
 		NodeID              func(childComplexity int) int
 		Online              func(childComplexity int) int
@@ -267,6 +269,9 @@ type QueryResolver interface {
 	TailscaleRouting(ctx context.Context) (*model.TailscaleRouting, error)
 	TailscaleConnection(ctx context.Context) (*model.TailscaleConnection, error)
 	TailscaleKeyRenewal(ctx context.Context) (*model.TailscaleKeyRenewal, error)
+}
+type TailscalePeerResolver interface {
+	LatencyMs(ctx context.Context, obj *model.TailscalePeer) (*float64, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -912,6 +917,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TailscalePeer.LastWrite(childComplexity), true
+	case "TailscalePeer.latencyMs":
+		if e.ComplexityRoot.TailscalePeer.LatencyMs == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscalePeer.LatencyMs(childComplexity), true
 	case "TailscalePeer.noFileSharingReason":
 		if e.ComplexityRoot.TailscalePeer.NoFileSharingReason == nil {
 			break
@@ -1577,6 +1588,8 @@ func (ec *executionContext) childFields_TailscalePeer(ctx context.Context, field
 		return ec.fieldContext_TailscalePeer_inEngine(ctx, field)
 	case "keyExpiry":
 		return ec.fieldContext_TailscalePeer_keyExpiry(ctx, field)
+	case "latencyMs":
+		return ec.fieldContext_TailscalePeer_latencyMs(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type TailscalePeer", field.Name)
 }
@@ -4814,6 +4827,29 @@ func (ec *executionContext) fieldContext_TailscalePeer_keyExpiry(_ context.Conte
 	return graphql.NewScalarFieldContext("TailscalePeer", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
+func (ec *executionContext) _TailscalePeer_latencyMs(ctx context.Context, field graphql.CollectedField, obj *model.TailscalePeer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscalePeer_latencyMs(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.TailscalePeer().LatencyMs(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *float64) graphql.Marshaler {
+			return ec.marshalOFloat2ᚖfloat64(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscalePeer_latencyMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscalePeer", field, true, true, errors.New("field of type Float does not have child fields"))
+}
+
 func (ec *executionContext) _TailscaleRouting_routeApprovalState(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7986,163 +8022,201 @@ func (ec *executionContext) _TailscalePeer(ctx context.Context, sel ast.Selectio
 		case "id":
 			out.Values[i] = ec._TailscalePeer_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "nodeID":
 			out.Values[i] = ec._TailscalePeer_nodeID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "publicKey":
 			out.Values[i] = ec._TailscalePeer_publicKey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "hostName":
 			out.Values[i] = ec._TailscalePeer_hostName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "dnsName":
 			out.Values[i] = ec._TailscalePeer_dnsName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "os":
 			out.Values[i] = ec._TailscalePeer_os(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "userID":
 			out.Values[i] = ec._TailscalePeer_userID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "tailscaleIPs":
 			out.Values[i] = ec._TailscalePeer_tailscaleIPs(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "allowedIPs":
 			out.Values[i] = ec._TailscalePeer_allowedIPs(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "tags":
 			out.Values[i] = ec._TailscalePeer_tags(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "addrs":
 			out.Values[i] = ec._TailscalePeer_addrs(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "curAddr":
 			out.Values[i] = ec._TailscalePeer_curAddr(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "relay":
 			out.Values[i] = ec._TailscalePeer_relay(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "peerRelay":
 			out.Values[i] = ec._TailscalePeer_peerRelay(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "rxBytes":
 			out.Values[i] = ec._TailscalePeer_rxBytes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "txBytes":
 			out.Values[i] = ec._TailscalePeer_txBytes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "created":
 			out.Values[i] = ec._TailscalePeer_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "lastWrite":
 			out.Values[i] = ec._TailscalePeer_lastWrite(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "lastSeen":
 			out.Values[i] = ec._TailscalePeer_lastSeen(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "lastHandshake":
 			out.Values[i] = ec._TailscalePeer_lastHandshake(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "online":
 			out.Values[i] = ec._TailscalePeer_online(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "exitNode":
 			out.Values[i] = ec._TailscalePeer_exitNode(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "exitNodeOption":
 			out.Values[i] = ec._TailscalePeer_exitNodeOption(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "active":
 			out.Values[i] = ec._TailscalePeer_active(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "peerAPIURL":
 			out.Values[i] = ec._TailscalePeer_peerAPIURL(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "taildropTarget":
 			out.Values[i] = ec._TailscalePeer_taildropTarget(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "noFileSharingReason":
 			out.Values[i] = ec._TailscalePeer_noFileSharingReason(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "capMap":
 			out.Values[i] = ec._TailscalePeer_capMap(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "inNetworkMap":
 			out.Values[i] = ec._TailscalePeer_inNetworkMap(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "inMagicSock":
 			out.Values[i] = ec._TailscalePeer_inMagicSock(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "inEngine":
 			out.Values[i] = ec._TailscalePeer_inEngine(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "keyExpiry":
 			out.Values[i] = ec._TailscalePeer_keyExpiry(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "latencyMs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TailscalePeer_latencyMs(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9351,6 +9425,23 @@ func (ec *executionContext) unmarshalODeviceIP2ᚖgithubᚗcomᚋpancppᚋnanota
 	}
 	res, err := ec.unmarshalInputDeviceIP(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalFloatContext(*v)
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {

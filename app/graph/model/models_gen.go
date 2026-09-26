@@ -197,6 +197,8 @@ type TailscalePeer struct {
 	InMagicSock         bool           `json:"inMagicSock"`
 	InEngine            bool           `json:"inEngine"`
 	KeyExpiry           *time.Time     `json:"keyExpiry,omitempty"`
+	// Round-trip latency in milliseconds, probed only when selected. Null for offline or unreachable peers.
+	LatencyMs *float64 `json:"latencyMs,omitempty"`
 }
 
 // This device's routing advertisements, cached OAuth approval, and host readiness; not end-to-end reachability.

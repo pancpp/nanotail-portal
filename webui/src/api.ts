@@ -126,6 +126,11 @@ export interface TailscalePeer {
   online: boolean
 }
 
+export interface TailscalePeerLatency {
+  id: string
+  latencyMs: number | null
+}
+
 // Only the fields selected by the WebUI's status query are included here.
 export interface TailscaleStatus {
   backendState: string
@@ -440,6 +445,19 @@ export async function tailscaleStatusRequest(token: string, signal?: AbortSignal
     throw new Error('The server did not return a valid Tailscale status.')
   }
   return status
+}
+
+// Keep active probes separate from ordinary status reads and background services.
+export async function tailscalePeerLatenciesRequest(token: string, signal?: AbortSignal): Promise<TailscalePeerLatency[]> {
+  const data = await graphQLRequest(token, 'TailscalePeerLatencies', `query TailscalePeerLatencies {
+    tailscaleStatus { peers { id latencyMs } }
+  }`, {}, signal)
+  const peers: unknown = data.tailscaleStatus?.peers
+  if (!Array.isArray(peers) || !peers.every((peer) => isRecord(peer) && typeof peer.id === 'string' &&
+    (peer.latencyMs === null || (typeof peer.latencyMs === 'number' && Number.isFinite(peer.latencyMs) && peer.latencyMs >= 0)))) {
+    throw new Error('The server did not return valid peer latencies.')
+  }
+  return peers as TailscalePeerLatency[]
 }
 
 export interface TailscaleRouting {

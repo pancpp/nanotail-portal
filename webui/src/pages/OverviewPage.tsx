@@ -10,6 +10,7 @@ import {
 import { Link } from 'react-router-dom'
 import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
+import { usePeerLatencies } from '../usePeerLatencies'
 import { nodeKeyDialogMode } from '../nodeKey'
 import DeviceStatusPanel from '../components/DeviceStatusPanel'
 import NetworkActivityPanel from '../components/NetworkActivityPanel'
@@ -19,8 +20,9 @@ import NodeKeyRenewalDialog from '../components/NodeKeyRenewalDialog'
 import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 
 export default function OverviewPage() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { status, statusError, setKeyRenewalDialogOpen } = useTailscale()
+  const latencies = usePeerLatencies(status, statusError)
   const [dialogMode, setDialogMode] = useState<'signin' | 'renewal' | null>(null)
   const [promptDismissed, setPromptDismissed] = useState(false)
   const needsSignIn = shouldPromptForTailscale(status, statusError)
@@ -93,6 +95,7 @@ export default function OverviewPage() {
               <span>{t("Device")}</span>
               <span>{t("Address")}</span>
               <span>{t("Status")}</span>
+              <span title={t("Round-trip latency from this device")}>{t("Latency")}</span>
             </div>
             {peers.map((peer) => (
               <div className="peer-row" key={peer.id}>
@@ -103,6 +106,11 @@ export default function OverviewPage() {
                 <code>{peer.tailscaleIPs.join(', ') || t('No address')}</code>
                 <span className={`peer-status${peer.online ? '' : ' peer-status--offline'}`}>
                   <i /> {peer.online ? t("Online") : t("Offline")}
+                </span>
+                <span className="peer-latency" aria-label={t("Latency")}>
+                  {!peer.online ? '—' : latencies.loading ? t("Checking…") : latencies.values.get(peer.id) != null
+                    ? t('{latency} ms', { latency: latencies.values.get(peer.id)!.toLocaleString(locale, { maximumFractionDigits: 1 }) })
+                    : t("Unavailable")}
                 </span>
               </div>
             ))}

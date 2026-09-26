@@ -81,6 +81,8 @@ type TailscalePeer {
   inMagicSock: Boolean!
   inEngine: Boolean!
   keyExpiry: Time
+  "Round-trip latency in milliseconds, probed only when selected. Null for offline or unreachable peers."
+  latencyMs: Float
 }
 
 type TailscaleStatus {

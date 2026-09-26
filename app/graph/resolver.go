@@ -18,6 +18,10 @@ type TailscaleStatusReader interface {
 	Status(context.Context) (tailscale.Status, error)
 }
 
+type TailscalePinger interface {
+	Ping(context.Context, string) (time.Duration, error)
+}
+
 type DeviceStatusReader interface {
 	Status(context.Context) (device.Status, error)
 }
@@ -63,6 +67,7 @@ type OAuthCredentialWriter interface {
 type Resolver struct {
 	CredentialWriter OAuthCredentialWriter
 	Tailscale        TailscaleStatusReader
+	PeerPinger       TailscalePinger
 	Device           DeviceStatusReader
 	DeviceConfig     DeviceIPConfigurator
 	Traffic          NetworkActivityReader

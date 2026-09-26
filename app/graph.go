@@ -42,7 +42,7 @@ func newGraphQLServer() *handler.Server {
 
 func newGraphQLServerWithClient(client *tailscale.Client) *handler.Server {
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
-		Tailscale: client, Routing: client, Connection: client, KeyRenewer: client, Device: device.NewReader(), DeviceConfig: device.NewConfigurator(), Traffic: device.NewTrafficReader(),
+		Tailscale: client, PeerPinger: client, Routing: client, Connection: client, KeyRenewer: client, Device: device.NewReader(), DeviceConfig: device.NewConfigurator(), Traffic: device.NewTrafficReader(),
 		TrafficHistory:   traffic.NewStore(database.DB()),
 		RoutingHost:      device.NewReader(),
 		CredentialWriter: client,

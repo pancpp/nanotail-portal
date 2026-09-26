@@ -39,6 +39,7 @@ type Client struct {
 	timeout   time.Duration
 	runner    Runner
 	mutations chan struct{}
+	pings     chan struct{}
 	// Protected by mutations; authentication URLs are never retained here.
 	keyRenewal     *keyRenewalAttempt
 	subnetDefaults SubnetDefaultsStore
@@ -50,7 +51,7 @@ func NewClient(binary, socket string, timeout time.Duration, runner Runner) *Cli
 	if runner == nil {
 		runner = execRunner{}
 	}
-	return &Client{binary: binary, socket: socket, timeout: timeout, runner: runner, mutations: make(chan struct{}, 1)}
+	return &Client{binary: binary, socket: socket, timeout: timeout, runner: runner, mutations: make(chan struct{}, 1), pings: make(chan struct{}, 4)}
 }
 
 func (c *Client) run(ctx context.Context, args ...string) ([]byte, error) {

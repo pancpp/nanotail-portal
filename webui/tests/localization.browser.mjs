@@ -96,7 +96,7 @@ export async function checkLocalization({evaluate, send, waitFor, click, fill, p
 
   await evaluate("location.hash='#/network'")
   await waitFor("document.querySelector('.tailnet-settings h2')?.textContent === 'Tailnet 连接'")
-  assert.ok(await evaluate("document.querySelector('.tailnet-settings').textContent.includes('关闭 tailnet 连接')"))
+  await waitFor("document.querySelector('.tailnet-settings').textContent.includes('关闭 tailnet 连接')")
   await noOverflow('Chinese Network on mobile')
 
   // Every guide is translated; command/scope strings and safe links survive.

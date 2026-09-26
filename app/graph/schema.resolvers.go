@@ -113,13 +113,22 @@ func (r *queryResolver) TailscaleKeyRenewal(ctx context.Context) (*model.Tailsca
 	return r.tailscaleKeyRenewal(ctx)
 }
 
+// LatencyMs is the resolver for the latencyMs field.
+func (r *tailscalePeerResolver) LatencyMs(ctx context.Context, obj *model.TailscalePeer) (*float64, error) {
+	return r.peerLatency(ctx, obj)
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// TailscalePeer returns TailscalePeerResolver implementation.
+func (r *Resolver) TailscalePeer() TailscalePeerResolver { return &tailscalePeerResolver{r} }
+
 type (
-	mutationResolver struct{ *Resolver }
-	queryResolver    struct{ *Resolver }
+	mutationResolver      struct{ *Resolver }
+	queryResolver         struct{ *Resolver }
+	tailscalePeerResolver struct{ *Resolver }
 )
