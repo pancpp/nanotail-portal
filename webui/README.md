@@ -108,6 +108,15 @@ and `self` can be `null` before login. The overview uses `tailscaleIPs` and the
 live `peers` list, including device names, addresses, operating systems, and
 online state. Unavailable status hides stale connection and peer information.
 
+The **Connection** column shows **Direct**, **Peer relay** with its full relay
+endpoint, or **DERP** with its region code. It uses the daemon's existing
+`active`, `curAddr`, `peerRelay`, and `relay` status fields without extra probes.
+Direct addresses take precedence over peer relays, then DERP. Idle peers show
+**Idle** rather than inferring a route from their saved DERP region; offline
+peers show a dash, and missing route information shows **Unknown**. When this
+device is disconnected, connection types show **Unavailable**. On narrow tables,
+the connection details appear below each device and wrap long relay endpoints.
+
 The **Tailnet peers → Latency** column measures round-trip time from this device
 with one Tailscale TSMP ping per online peer. Overview requests the nullable
 `latencyMs` field separately after each status refresh so probes do not delay

@@ -18,6 +18,7 @@ import NodeKeyCard from '../components/NodeKeyCard'
 import RoutingCard from '../components/RoutingCard'
 import NodeKeyRenewalDialog from '../components/NodeKeyRenewalDialog'
 import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
+import PeerConnection from '../components/PeerConnection'
 
 export default function OverviewPage() {
   const { t, locale } = useI18n()
@@ -95,6 +96,7 @@ export default function OverviewPage() {
               <span>{t("Device")}</span>
               <span>{t("Address")}</span>
               <span>{t("Status")}</span>
+              <span>{t("Connection")}</span>
               <span title={t("Round-trip latency from this device")}>{t("Latency")}</span>
             </div>
             {peers.map((peer) => (
@@ -107,6 +109,7 @@ export default function OverviewPage() {
                 <span className={`peer-status${peer.online ? '' : ' peer-status--offline'}`}>
                   <i /> {peer.online ? t("Online") : t("Offline")}
                 </span>
+                <PeerConnection peer={peer} connected={connected} />
                 <span className="peer-latency" aria-label={t("Latency")}>
                   {!peer.online ? '—' : latencies.loading ? t("Checking…") : latencies.values.get(peer.id) != null
                     ? t('{latency} ms', { latency: latencies.values.get(peer.id)!.toLocaleString(locale, { maximumFractionDigits: 1 }) })

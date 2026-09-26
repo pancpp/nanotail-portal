@@ -161,7 +161,8 @@ function makeStatus(overrides = {}) {
 function makePeer(overrides = {}) {
   return {
     id: 'peer-a', hostName: 'desktop', dnsName: 'desktop.example.ts.net.', os: 'linux',
-    tailscaleIPs: ['100.64.0.2', 'fd7a:115c:a1e0::2'], online: true, ...overrides,
+    tailscaleIPs: ['100.64.0.2', 'fd7a:115c:a1e0::2'], online: true,
+    active: true, curAddr: '203.0.113.10:41641', peerRelay: '', relay: 'sea', ...overrides,
   }
 }
 
@@ -352,7 +353,7 @@ test('status query uses the new schema, bearer authentication, and abort signal'
   assert.equal(body.operationName, 'TailscaleStatus')
   assert.deepEqual(body.variables, {})
   assert.equal(body.query.replace(/\s+/g, ' ').trim(),
-    'query TailscaleStatus { tailscaleStatus { backendState haveNodeKey tailscaleIPs currentTailnet { name } self { online keyExpiry } peers { id hostName dnsName os tailscaleIPs online } } }')
+    'query TailscaleStatus { tailscaleStatus { backendState haveNodeKey tailscaleIPs currentTailnet { name } self { online keyExpiry } peers { id hostName dnsName os tailscaleIPs online active curAddr peerRelay relay } } }')
   assert.doesNotMatch(body.query, /\b(connected|needsLogin|tailnet|ips|authURL)\b/)
 })
 
@@ -382,9 +383,12 @@ test('status rejects legacy responses and malformed nested fields', async (t) =>
     makeStatus({ self: { online: 'false' } }), makeStatus({ peers: null }), makeStatus({ peers: {} }),
     ...[undefined, '', 123, 'not-a-date'].map(keyExpiry => makeStatus({ self: { online: true, keyExpiry } })),
     makeStatus({ peers: [null] }), makeStatus({ peers: [{}] }),
-    ...['id', 'hostName', 'dnsName', 'os', 'tailscaleIPs', 'online'].map((field) =>
+    ...['id', 'hostName', 'dnsName', 'os', 'tailscaleIPs', 'online', 'active', 'curAddr', 'peerRelay', 'relay'].map((field) =>
       makeStatus({ peers: [makePeer({ [field]: undefined })] })),
     makeStatus({ peers: [makePeer({ online: 'true' })] }),
+    makeStatus({ peers: [makePeer({ active: 'true' })] }),
+    ...['curAddr', 'peerRelay', 'relay'].flatMap((field) => [null, 1, {}].map((value) =>
+      makeStatus({ peers: [makePeer({ [field]: value })] }))),
     makeStatus({ peers: [makePeer({ tailscaleIPs: [42] })] }),
   ]
   const fetch = t.mock.method(globalThis, 'fetch')

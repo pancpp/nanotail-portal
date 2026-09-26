@@ -124,6 +124,10 @@ export interface TailscalePeer {
   os: string
   tailscaleIPs: string[]
   online: boolean
+  active: boolean
+  curAddr: string
+  peerRelay: string
+  relay: string
 }
 
 export interface TailscalePeerLatency {
@@ -357,7 +361,8 @@ function isStringArray(value: unknown): value is string[] {
 function isTailscalePeer(value: unknown): value is TailscalePeer {
   return isRecord(value) && typeof value.id === 'string' && typeof value.hostName === 'string' &&
     typeof value.dnsName === 'string' && typeof value.os === 'string' &&
-    isStringArray(value.tailscaleIPs) && typeof value.online === 'boolean'
+    isStringArray(value.tailscaleIPs) && typeof value.online === 'boolean' && typeof value.active === 'boolean' &&
+    typeof value.curAddr === 'string' && typeof value.peerRelay === 'string' && typeof value.relay === 'string'
 }
 
 function isTailscaleStatus(value: unknown): value is TailscaleStatus {
@@ -437,7 +442,7 @@ export async function tailscaleStatusRequest(token: string, signal?: AbortSignal
       tailscaleIPs
       currentTailnet { name }
       self { online keyExpiry }
-      peers { id hostName dnsName os tailscaleIPs online }
+      peers { id hostName dnsName os tailscaleIPs online active curAddr peerRelay relay }
     }
   }`, {}, signal)
   const status: unknown = data.tailscaleStatus
