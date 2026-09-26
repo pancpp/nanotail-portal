@@ -175,6 +175,30 @@ cloud approvals are preserved; disabling subnet advertisement does not revoke
 them. The backend rechecks approvals periodically and can restore a manually
 revoked approval while that route is still advertised and credentials are saved.
 
+## Peer relay
+
+**Overview → Peer relay → Configure** opens the peer relay form in **Access
+control**. Enable the relay, choose a UDP port (default **40001**), and select
+**Save peer relay**. Only portal administrators can save. Opening either page
+reads settings and never enables the relay automatically. Background refreshes
+update the Overview card without replacing unsaved form edits.
+
+The portal reads Tailscale's saved relay listener preference alongside routing
+status. The separate `setPeerRelay` mutation runs only `tailscale set
+--relay-server-port=<port>` and verifies the saved preference. Disabling passes
+an empty port, not zero: zero means an automatically assigned port in Tailscale.
+Existing automatic-port configurations are displayed accurately; saving an
+enabled relay chooses a fixed port. A disabled relay starts with 40001 in the
+form. Other routing, static relay endpoints, and console policies are preserved.
+
+Tailscale 1.86 or later, a reachable UDP port, and a tailnet grant for
+`tailscale.com/cap/relay` are required. See the official
+[peer relay setup guide](https://tailscale.com/docs/features/peer-relay).
+Saving confirms local configuration; it does not verify firewall access or
+tailnet policy. Settings can be saved while Tailscale is stopped; Overview shows
+**Paused** until it is running. Failed or uncertain writes require **Reload peer
+relay settings** before another attempt; writes are never automatically retried.
+
 ## Tailnet connection
 
 **Overview → Tailscale status → Configure** opens **Network**, which also

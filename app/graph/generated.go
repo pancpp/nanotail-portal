@@ -64,6 +64,7 @@ type ComplexityRoot struct {
 		LogoutTailscale               func(childComplexity int) int
 		RenewTailscaleNodeKey         func(childComplexity int) int
 		SetDeviceIP                   func(childComplexity int, deviceIP *model.DeviceIP) int
+		SetPeerRelay                  func(childComplexity int, input model.PeerRelayInput) int
 		SetRouting                    func(childComplexity int, input model.RoutingInput) int
 		SetTailscaleCredential        func(childComplexity int, credential model.TailscaleCredential) int
 		SetTailscaleEnabled           func(childComplexity int, enabled bool) int
@@ -201,6 +202,8 @@ type ComplexityRoot struct {
 		Ipv6Forwarding        func(childComplexity int) int
 		LanInterface          func(childComplexity int) int
 		LanWarning            func(childComplexity int) int
+		PeerRelayEnabled      func(childComplexity int) int
+		PeerRelayPort         func(childComplexity int) int
 		RouteApprovalMessage  func(childComplexity int) int
 		RouteApprovalState    func(childComplexity int) int
 		SnatEnabled           func(childComplexity int) int
@@ -247,6 +250,7 @@ type ComplexityRoot struct {
 // region    ************************** generated!.gotpl **************************
 
 type MutationResolver interface {
+	SetPeerRelay(ctx context.Context, input model.PeerRelayInput) (bool, error)
 	ChangePassword(ctx context.Context, passwords model.ChangePassword) (bool, error)
 	SetTailscaleCredential(ctx context.Context, credential model.TailscaleCredential) (bool, error)
 	ClearTailscaleCredential(ctx context.Context) (bool, error)
@@ -439,6 +443,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.SetDeviceIP(childComplexity, args["deviceIP"].(*model.DeviceIP)), true
+	case "Mutation.setPeerRelay":
+		if e.ComplexityRoot.Mutation.SetPeerRelay == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setPeerRelay_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetPeerRelay(childComplexity, args["input"].(model.PeerRelayInput)), true
 	case "Mutation.setRouting":
 		if e.ComplexityRoot.Mutation.SetRouting == nil {
 			break
@@ -1056,6 +1071,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TailscaleRouting.LanWarning(childComplexity), true
+	case "TailscaleRouting.peerRelayEnabled":
+		if e.ComplexityRoot.TailscaleRouting.PeerRelayEnabled == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.PeerRelayEnabled(childComplexity), true
+	case "TailscaleRouting.peerRelayPort":
+		if e.ComplexityRoot.TailscaleRouting.PeerRelayPort == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TailscaleRouting.PeerRelayPort(childComplexity), true
 	case "TailscaleRouting.routeApprovalMessage":
 		if e.ComplexityRoot.TailscaleRouting.RouteApprovalMessage == nil {
 			break
@@ -1244,6 +1271,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputChangePassword,
 		ec.unmarshalInputDeviceIP,
+		ec.unmarshalInputPeerRelayInput,
 		ec.unmarshalInputRoutingInput,
 		ec.unmarshalInputTailscaleCredential,
 	)
@@ -1604,6 +1632,10 @@ func (ec *executionContext) childFields_TailscaleRouting(ctx context.Context, fi
 		return ec.fieldContext_TailscaleRouting_backendState(ctx, field)
 	case "advertiseExitNode":
 		return ec.fieldContext_TailscaleRouting_advertiseExitNode(ctx, field)
+	case "peerRelayEnabled":
+		return ec.fieldContext_TailscaleRouting_peerRelayEnabled(ctx, field)
+	case "peerRelayPort":
+		return ec.fieldContext_TailscaleRouting_peerRelayPort(ctx, field)
 	case "subnetRoutes":
 		return ec.fieldContext_TailscaleRouting_subnetRoutes(ctx, field)
 	case "subnetDefaultsPending":
@@ -1847,6 +1879,20 @@ func (ec *executionContext) field_Mutation_setDeviceIP_args(ctx context.Context,
 		return nil, err
 	}
 	args["deviceIP"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setPeerRelay_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
+		func(ctx context.Context, v any) (model.PeerRelayInput, error) {
+			return ec.unmarshalNPeerRelayInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐPeerRelayInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -2286,6 +2332,50 @@ func (ec *executionContext) _DeviceStatus_health(ctx context.Context, field grap
 }
 func (ec *executionContext) fieldContext_DeviceStatus_health(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Mutation_setPeerRelay(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setPeerRelay(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetPeerRelay(ctx, fc.Args["input"].(model.PeerRelayInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setPeerRelay(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setPeerRelay_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Mutation_changePassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4942,6 +5032,52 @@ func (ec *executionContext) fieldContext_TailscaleRouting_advertiseExitNode(_ co
 	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
+func (ec *executionContext) _TailscaleRouting_peerRelayEnabled(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_peerRelayEnabled(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PeerRelayEnabled, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_peerRelayEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _TailscaleRouting_peerRelayPort(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_TailscaleRouting_peerRelayPort(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PeerRelayPort, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *int32) graphql.Marshaler {
+			return ec.marshalOInt2ᚖint32(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_TailscaleRouting_peerRelayPort(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("TailscaleRouting", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
 func (ec *executionContext) _TailscaleRouting_subnetRoutes(ctx context.Context, field graphql.CollectedField, obj *model.TailscaleRouting) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6893,6 +7029,47 @@ func (ec *executionContext) unmarshalInputDeviceIP(ctx context.Context, obj any)
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPeerRelayInput(ctx context.Context, obj any) (model.PeerRelayInput, error) {
+	var it model.PeerRelayInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["port"]; !present {
+		asMap["port"] = 40001
+	}
+
+	fieldsInOrder := [...]string{"enabled", "port"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "port":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("port"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Port = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRoutingInput(ctx context.Context, obj any) (model.RoutingInput, error) {
 	var it model.RoutingInput
 	if obj == nil {
@@ -7091,6 +7268,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "setPeerRelay":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setPeerRelay(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "changePassword":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_changePassword(ctx, field)
@@ -8270,6 +8454,16 @@ func (ec *executionContext) _TailscaleRouting(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "peerRelayEnabled":
+			out.Values[i] = ec._TailscaleRouting_peerRelayEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "peerRelayPort":
+			out.Values[i] = ec._TailscaleRouting_peerRelayPort(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "subnetRoutes":
 			out.Values[i] = ec._TailscaleRouting_subnetRoutes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9092,6 +9286,11 @@ func (ec *executionContext) marshalNNetworkActivityTotals2ᚖgithubᚗcomᚋpanc
 	return ec._NetworkActivityTotals(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNPeerRelayInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐPeerRelayInput(ctx context.Context, v any) (model.PeerRelayInput, error) {
+	res, err := ec.unmarshalInputPeerRelayInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNRoutingInput2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐRoutingInput(ctx context.Context, v any) (model.RoutingInput, error) {
 	res, err := ec.unmarshalInputRoutingInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9442,6 +9641,24 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	_ = sel
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint32(ctx context.Context, v any) (*int32, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt32(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint32(ctx context.Context, sel ast.SelectionSet, v *int32) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalInt32(*v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {

@@ -19,6 +19,7 @@ import RoutingCard from '../components/RoutingCard'
 import NodeKeyRenewalDialog from '../components/NodeKeyRenewalDialog'
 import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 import PeerConnection from '../components/PeerConnection'
+import PeerRelayCard from '../components/PeerRelayCard'
 
 export default function OverviewPage() {
   const { t, locale } = useI18n()
@@ -77,6 +78,7 @@ export default function OverviewPage() {
 
         <RoutingCard />
         <RoutingCard kind="subnet" />
+        <PeerRelayCard />
 
         <NodeKeyCard onRenew={() => openDialog(nodeKeyDialogMode(status))} />
       </section>

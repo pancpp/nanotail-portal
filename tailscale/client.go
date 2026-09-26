@@ -250,6 +250,7 @@ type Config struct {
 	AdvertiseRoutes        []string `json:"advertise_routes"`
 	AdvertiseExitNode      bool     `json:"advertise_exit_node"`
 	SNATEnabled            bool     `json:"snat_enabled"`
+	RelayServerPort        *uint16  `json:"relay_server_port"`
 	exitRoutes             []string
 }
 
@@ -270,6 +271,7 @@ func (c *Client) Config(ctx context.Context) (Config, error) {
 		ExitNodeIP, ExitNodeID                               string
 		AdvertiseRoutes                                      []string
 		NoSNAT                                               bool
+		RelayServerPort                                      *uint16
 	}
 	if err := json.Unmarshal(data, &raw); err != nil || raw.WantRunning == nil {
 		return Config{}, ErrInvalidOutput
@@ -279,7 +281,8 @@ func (c *Client) Config(ctx context.Context) (Config, error) {
 		AcceptRoutes: raw.RouteAll, ShieldsUp: raw.ShieldsUp, ExitNode: raw.ExitNodeIP,
 		ExitNodeID:             raw.ExitNodeID,
 		ExitNodeAllowLANAccess: raw.ExitNodeAllowLANAccess, AdvertiseRoutes: []string{},
-		SNATEnabled: !raw.NoSNAT,
+		SNATEnabled:     !raw.NoSNAT,
+		RelayServerPort: raw.RelayServerPort,
 	}
 	for _, route := range raw.AdvertiseRoutes {
 		if route == "0.0.0.0/0" || route == "::/0" {

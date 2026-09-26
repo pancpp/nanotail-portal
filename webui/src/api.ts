@@ -466,6 +466,8 @@ export async function tailscalePeerLatenciesRequest(token: string, signal?: Abor
 }
 
 export interface TailscaleRouting {
+  peerRelayEnabled: boolean
+  peerRelayPort: number | null
   routeApprovalState: 'DISABLED' | 'PENDING' | 'APPROVED' | 'ERROR'
   routeApprovalMessage: string
   backendState: string
@@ -526,11 +528,33 @@ export interface RoutingInput {
   subnetRoutes: string[]
 }
 
+export const DEFAULT_PEER_RELAY_PORT = 40001
+
+export interface PeerRelayInput {
+  enabled: boolean
+  port: number
+}
+
+export async function setPeerRelayRequest(token: string, input: PeerRelayInput): Promise<void> {
+  if (!isRecord(input) || typeof input.enabled !== 'boolean' || !Number.isInteger(input.port) || input.port < 1 || input.port > 65535) {
+    throw new Error('Enter a UDP port from 1 to 65535')
+  }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60_000)
+  try {
+    const data = await graphQLRequest(token, 'SetPeerRelay', `mutation SetPeerRelay($input: PeerRelayInput!) {
+      setPeerRelay(input: $input)
+    }`, { input }, controller.signal, 'peer relay')
+    if (data.setPeerRelay !== true) throw new Error('The server did not confirm the peer relay change. Reload peer relay settings before retrying.')
+  } finally { clearTimeout(timer) }
+}
+
 export async function tailscaleRoutingRequest(token: string, signal?: AbortSignal): Promise<TailscaleRouting> {
   const timeout = AbortSignal.timeout(20_000)
   const data = await graphQLRequest(token, 'TailscaleRouting', `query TailscaleRouting {
     tailscaleRouting {
       backendState advertiseExitNode subnetRoutes subnetDefaultsPending usingExitNode snatEnabled health
+      peerRelayEnabled peerRelayPort
       lanInterface defaultSubnetRoutes lanWarning ipv4Forwarding ipv6Forwarding
       routeApprovalState routeApprovalMessage
     }
@@ -538,6 +562,11 @@ export async function tailscaleRoutingRequest(token: string, signal?: AbortSigna
   const value: unknown = data.tailscaleRouting
   const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every(item => typeof item === 'string')
   const forwarding = (v: unknown) => v === null || typeof v === 'boolean'
+  const relayPort = (v: unknown) => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 65535
+  if (!isRecord(value) || typeof value.peerRelayEnabled !== 'boolean' ||
+    (value.peerRelayEnabled ? !relayPort(value.peerRelayPort) : value.peerRelayPort !== null)) {
+    throw new Error('The server did not return valid routing settings.')
+  }
   if (!isRecord(value) || typeof value.backendState !== 'string' || !value.backendState ||
     !['DISABLED', 'PENDING', 'APPROVED', 'ERROR'].includes(value.routeApprovalState as string) || typeof value.routeApprovalMessage !== 'string' ||
     typeof value.subnetDefaultsPending !== 'boolean' || typeof value.advertiseExitNode !== 'boolean' || typeof value.usingExitNode !== 'boolean' ||

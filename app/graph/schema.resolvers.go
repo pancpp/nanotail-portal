@@ -12,6 +12,11 @@ import (
 	"github.com/pancpp/nanotail-portal/conf"
 )
 
+// SetPeerRelay is the resolver for the setPeerRelay field.
+func (r *mutationResolver) SetPeerRelay(ctx context.Context, input model.PeerRelayInput) (bool, error) {
+	return r.setPeerRelay(ctx, input)
+}
+
 // ChangePassword is the resolver for the changePassword field.
 func (r *mutationResolver) ChangePassword(ctx context.Context, passwords model.ChangePassword) (bool, error) {
 	return r.changePassword(ctx, passwords)

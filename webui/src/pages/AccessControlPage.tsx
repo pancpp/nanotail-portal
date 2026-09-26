@@ -2,13 +2,21 @@ import { useI18n } from '../i18n'
 import ExitNodeSettingsForm from '../components/ExitNodeSettingsForm'
 import TailscaleCredentialForm from '../components/TailscaleCredentialForm'
 import { useTailscale } from '../tailscale'
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+import PeerRelaySettingsForm from '../components/PeerRelaySettingsForm'
 
 export default function AccessControlPage() {
   const { t } = useI18n()
   const { client, clientError, refresh } = useTailscale()
+  const { hash } = useLocation()
+  useEffect(() => {
+    if (hash === '#peer-relay') document.getElementById('peer-relay')?.scrollIntoView({ block: 'start' })
+  }, [hash])
   return <>
-    <section className="page-heading"><div><h1>{t("Access control")}</h1><p>{t("Offer this device as an exit node, share LAN subnets, and manage Tailscale OAuth credentials.")}</p></div></section>
+    <section className="page-heading"><div><h1>{t("Access control")}</h1><p>{t("Configure exit-node, subnet, and peer relay services, and manage Tailscale OAuth credentials.")}</p></div></section>
     <ExitNodeSettingsForm />
+    <PeerRelaySettingsForm />
     <section className="panel credential-settings" aria-labelledby="credential-heading">
       <div className="panel__header"><div><span className="panel__eyebrow">TAILSCALE</span><h2 id="credential-heading">{t("OAuth client credentials")}</h2></div>
         <span className="credential-state">{clientError ? t("Unavailable") : client === undefined ? t("Loading…") : client?.hasClientSecret ? t("Secret saved") : t("Not configured")}</span></div>

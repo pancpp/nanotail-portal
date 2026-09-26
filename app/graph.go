@@ -46,6 +46,7 @@ func newGraphQLServerWithClient(client *tailscale.Client) *handler.Server {
 		TrafficHistory:   traffic.NewStore(database.DB()),
 		RoutingHost:      device.NewReader(),
 		CredentialWriter: client,
+		PeerRelay:        client,
 	}}))
 	srv.SetErrorPresenter(presentGraphQLError)
 
@@ -73,6 +74,8 @@ func presentGraphQLError(ctx context.Context, err error) *gqlerror.Error {
 		errors.Is(err, device.ErrConfigBusy) || errors.Is(err, device.ErrConfigUnavailable) ||
 		errors.Is(err, device.ErrConfigApply) || errors.Is(err, device.ErrConfigRecovery) ||
 		errors.Is(err, graph.ErrRoutingAdmin) || errors.Is(err, tailscale.ErrRoutingUnavailable) ||
+		errors.Is(err, graph.ErrPeerRelayAdmin) || errors.Is(err, tailscale.ErrPeerRelayPort) ||
+		errors.Is(err, tailscale.ErrPeerRelayUnavailable) || errors.Is(err, tailscale.ErrPeerRelayApply) ||
 		errors.Is(err, tailscale.ErrSubnetRoutesInvalid) || errors.Is(err, tailscale.ErrRoutingStopped) ||
 		errors.Is(err, tailscale.ErrRoutingApply) ||
 		errors.Is(err, tailscale.ErrRoutingPersistence) ||

@@ -39,6 +39,10 @@ type TailscaleRouter interface {
 	SetRouting(context.Context, []string) error
 }
 
+type PeerRelayConfigurator interface {
+	SetPeerRelay(context.Context, bool, int) error
+}
+
 type RoutingHostReader interface {
 	RoutingStatus(context.Context) (device.RoutingStatus, error)
 }
@@ -72,6 +76,7 @@ type Resolver struct {
 	DeviceConfig     DeviceIPConfigurator
 	Traffic          NetworkActivityReader
 	Routing          TailscaleRouter
+	PeerRelay        PeerRelayConfigurator
 	RoutingHost      RoutingHostReader
 	TrafficHistory   NetworkHistoryReader
 	Connection       TailscaleConnector

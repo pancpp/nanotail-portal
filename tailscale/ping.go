@@ -14,6 +14,7 @@ func (c *Client) Ping(ctx context.Context, address string) (time.Duration, error
 	if err != nil || ip.Zone() != "" {
 		return 0, ErrInvalidConfig
 	}
+	requestCtx := ctx
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 	select {
@@ -21,6 +22,10 @@ func (c *Client) Ping(ctx context.Context, address string) (time.Duration, error
 		defer func() { <-c.pings }()
 	case <-ctx.Done():
 		return 0, ctx.Err()
+	}
+	// Parent cancellation may still be propagating to queued child contexts.
+	if err := requestCtx.Err(); err != nil {
+		return 0, err
 	}
 	if err := ctx.Err(); err != nil {
 		return 0, err

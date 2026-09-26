@@ -903,7 +903,7 @@ input:focus-visible {
 .status-grid {
   display: grid;
   margin-bottom: 18px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 17px;
 }
 
@@ -1548,7 +1548,14 @@ input:focus-visible {
   display: none;
 }
 
+@media (max-width: 1500px) {
+  .status-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .status-card--primary { grid-column: span 2; }
+}
+
 @media (max-width: 1100px) {
+  .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .status-card--primary { grid-column: 1 / -1; }
   .login-story {
     padding-inline: 45px;
   }
@@ -1659,10 +1666,6 @@ input:focus-visible {
 
   .status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .status-card--primary {
-    grid-column: auto;
   }
 
 }
@@ -1779,7 +1782,9 @@ input:focus-visible {
 }
 
 /* Tailscale credential setup */
-.lan-settings, .tailnet-settings, .routing-settings { margin-bottom: 18px; }
+.lan-settings, .tailnet-settings, .routing-settings, .peer-relay-settings { margin-bottom: 18px; }
+.peer-relay-settings { scroll-margin-top: 90px; }
+.peer-relay-card .status-card__body p { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
 .tailnet-state { color: var(--muted); font-size: 17px; }
 .lan-form select { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font: inherit; }
 .lan-form select:focus-visible { outline: 3px solid #27c283; outline-offset: 2px; }

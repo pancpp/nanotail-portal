@@ -27,6 +27,11 @@ func (r *queryResolver) tailscaleRouting(ctx context.Context) (*model.TailscaleR
 		LanInterface: "eth0", DefaultSubnetRoutes: []string{},
 		LanWarning: "Unable to detect the local LAN. Enter subnet routes manually.",
 	}
+	if routing.PeerRelayPort != nil {
+		port := int32(*routing.PeerRelayPort)
+		result.PeerRelayEnabled = true
+		result.PeerRelayPort = &port
+	}
 	if r.RoutingHost != nil {
 		if host, err := r.RoutingHost.RoutingStatus(ctx); err == nil {
 			result.LanInterface, result.LanWarning = host.LANInterface, host.LANWarning

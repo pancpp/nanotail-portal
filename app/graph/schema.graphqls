@@ -191,6 +191,10 @@ type TailscaleRouting {
 	routeApprovalMessage: String!
   backendState: String!
   advertiseExitNode: Boolean!
+  "Whether a peer relay listener is configured; does not verify policy, firewall, or reachability."
+  peerRelayEnabled: Boolean!
+  "Configured UDP port. Null means disabled; zero means Tailscale chooses a port automatically."
+  peerRelayPort: Int
   subnetRoutes: [String!]!
   "Local LAN advertisement defaults are enabled and waiting for first-time setup."
   subnetDefaultsPending: Boolean!
@@ -209,6 +213,12 @@ type TailscaleRouting {
 input RoutingInput {
   "Canonical subnet CIDRs. An empty list disables subnet advertisements."
   subnetRoutes: [String!]!
+}
+
+input PeerRelayInput {
+  enabled: Boolean!
+  "UDP port from 1 to 65535; used when enabling."
+  port: Int! = 40001
 }
 
 "This device's saved connection preference; enabled does not guarantee connectivity."
@@ -278,6 +288,8 @@ input DeviceIP {
 }
 
 type Mutation {
+  "Admin only: configure this device as a peer relay without changing routing or tailnet policy."
+  setPeerRelay(input: PeerRelayInput!): Boolean!
   changePassword(passwords: ChangePassword!): Boolean!
   setTailscaleCredential(credential: TailscaleCredential!): Boolean!
   clearTailscaleCredential: Boolean!

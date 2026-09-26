@@ -7,6 +7,7 @@ import { canonicalSubnetRoutes, parseSubnetRouteText } from '../src/subnetRoutes
 const settings = (overrides = {}) => ({
   routeApprovalState: 'DISABLED', routeApprovalMessage: 'Use manual approval or auto-approvers.',
   backendState: 'Running', advertiseExitNode: false, subnetDefaultsPending: false, subnetRoutes: [], usingExitNode: false,
+  peerRelayEnabled: false, peerRelayPort: null,
   snatEnabled: true, health: [], lanInterface: 'eth0', defaultSubnetRoutes: ['192.168.42.0/24'],
   lanWarning: '', ipv4Forwarding: true, ipv6Forwarding: true, ...overrides,
 })
@@ -23,7 +24,9 @@ test('routing query is authenticated, cancellable, and validates the response in
   controller.abort(); assert.equal(options.signal.aborted, true)
   const invalid = [null, {}, settings({ subnetRoutes: [null] }), settings({ advertiseExitNode: 'true' }),
     settings({ ipv4Forwarding: 1 }), settings({ defaultSubnetRoutes: '192.168.0.0/24' }), settings({ health: [1] }),
-    settings({ routeApprovalState: 'UNKNOWN' }), settings({ routeApprovalMessage: null })]
+    settings({ routeApprovalState: 'UNKNOWN' }), settings({ routeApprovalMessage: null }),
+    settings({ peerRelayEnabled: true }), settings({ peerRelayPort: 40001 }),
+    ...[-1, 65536, 1.5, '40001'].map(peerRelayPort => settings({ peerRelayEnabled: true, peerRelayPort }))]
   for (const field of Object.keys(settings())) { const value = settings(); delete value[field]; invalid.push(value) }
   for (const value of invalid) {
     fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleRouting: value } }))
@@ -31,6 +34,10 @@ test('routing query is authenticated, cancellable, and validates the response in
   }
   fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleRouting: settings({ ipv4Forwarding: null, ipv6Forwarding: false }) } }))
   assert.equal((await tailscaleRoutingRequest('token')).ipv4Forwarding, null)
+  for (const peerRelayPort of [0, 40001, 65535]) {
+    fetch.mock.mockImplementation(async () => Response.json({ data: { tailscaleRouting: settings({ peerRelayEnabled: true, peerRelayPort }) } }))
+    assert.equal((await tailscaleRoutingRequest('token')).peerRelayPort, peerRelayPort)
+  }
 })
 
 test('router mutation sends explicit advertisements and handles errors without trusting partial success', async t => {

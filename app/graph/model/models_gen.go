@@ -102,6 +102,12 @@ type NetworkActivityTotals struct {
 	RecordedSince *time.Time `json:"recordedSince,omitempty"`
 }
 
+type PeerRelayInput struct {
+	Enabled bool `json:"enabled"`
+	// UDP port from 1 to 65535; used when enabling.
+	Port int32 `json:"port"`
+}
+
 type Query struct {
 }
 
@@ -204,11 +210,15 @@ type TailscalePeer struct {
 // This device's routing advertisements, cached OAuth approval, and host readiness; not end-to-end reachability.
 type TailscaleRouting struct {
 	// DISABLED (no credentials), PENDING, APPROVED, or ERROR. Reads never trigger approval.
-	RouteApprovalState   string   `json:"routeApprovalState"`
-	RouteApprovalMessage string   `json:"routeApprovalMessage"`
-	BackendState         string   `json:"backendState"`
-	AdvertiseExitNode    bool     `json:"advertiseExitNode"`
-	SubnetRoutes         []string `json:"subnetRoutes"`
+	RouteApprovalState   string `json:"routeApprovalState"`
+	RouteApprovalMessage string `json:"routeApprovalMessage"`
+	BackendState         string `json:"backendState"`
+	AdvertiseExitNode    bool   `json:"advertiseExitNode"`
+	// Whether a peer relay listener is configured; does not verify policy, firewall, or reachability.
+	PeerRelayEnabled bool `json:"peerRelayEnabled"`
+	// Configured UDP port. Null means disabled; zero means Tailscale chooses a port automatically.
+	PeerRelayPort *int32   `json:"peerRelayPort,omitempty"`
+	SubnetRoutes  []string `json:"subnetRoutes"`
 	// Local LAN advertisement defaults are enabled and waiting for first-time setup.
 	SubnetDefaultsPending bool `json:"subnetDefaultsPending"`
 	// Legacy use of another exit node. Applying routing settings clears it.

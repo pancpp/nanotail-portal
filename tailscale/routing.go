@@ -24,6 +24,7 @@ type Routing struct {
 	SNATEnabled           bool
 	Health                []string
 	Approval              RouteApproval
+	PeerRelayPort         *uint16
 }
 
 func (c *Client) Routing(ctx context.Context) (Routing, error) {
@@ -47,6 +48,7 @@ func (c *Client) Routing(ctx context.Context) (Routing, error) {
 		SNATEnabled: prefs.SNATEnabled, Health: nonNil(status.Health),
 		SubnetDefaultsPending: pending && len(prefs.AdvertiseRoutes) == 0,
 		Approval:              c.routeApprovalStatus(ctx, status, prefs),
+		PeerRelayPort:         prefs.RelayServerPort,
 	}, nil
 }
 
