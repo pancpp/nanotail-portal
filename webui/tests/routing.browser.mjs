@@ -5,6 +5,7 @@ import { readFile, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, extname } from 'node:path'
 import { spawn } from 'node:child_process'
+import { checkLocalization } from './localization.browser.mjs'
 
 const dist = fileURLToPath(new URL('../dist', import.meta.url))
 const server = createServer(async (req, res) => {
@@ -418,6 +419,7 @@ try {
   assert.equal(await evaluate("document.querySelector('.nav-item--active').textContent"), 'Setup guides', 'deep link lost navigation context')
   assert.equal(await evaluate("window.apiWrites.length"), 0, 'opening a direct guide link sent a mutation')
 
+  await checkLocalization({evaluate, send, waitFor, click, fill, pause})
   console.log('PASS: setup guide navigation/deep links, contextual approval help, draft-preserving new-tab links, first sign-in and awaiting approval, mobile guides, OAuth approval status polling without losing drafts, confirmed credential removal, cancellation, failure recovery, pending-state protection, local-only removal, consistent text-action styles and tailnet button layout, Network pause/resume without logout, expiry-disabled Renew, enabled LAN defaults, persistent explicit off, validation, acknowledgement, always-on exit role, subnet withdrawal and preservation, readback, uncertain-save recovery, no retries, stopped withdrawal, missing LAN, forwarding warnings, Overview, and responsive layout')
 } finally {
   socket?.close()

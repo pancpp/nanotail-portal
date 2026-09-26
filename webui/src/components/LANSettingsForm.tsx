@@ -1,3 +1,4 @@
+import { useI18n, T } from '../i18n'
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Network } from 'lucide-react'
 import { ApiError, deviceReconnectURL, isSessionError, setDeviceIPRequest, validateDeviceIP, type DeviceIP, type DeviceStatus } from '../api'
@@ -13,6 +14,7 @@ function initialValues(status: DeviceStatus) {
 }
 
 export default function LANSettingsForm() {
+  const { t } = useI18n()
   const { accessToken, logout } = useAuth()
   const { status, error: statusError, refreshing, refresh } = useDevice()
   const [draft, setDraft] = useState<ReturnType<typeof initialValues> | null>(null)
@@ -61,41 +63,40 @@ export default function LANSettingsForm() {
   }
 
   return <section className="panel lan-settings" aria-labelledby={`${id}-heading`}>
-    <div className="panel__header"><div><span className="panel__eyebrow">NETWORK · ETH0</span><h2 id={`${id}-heading`}>LAN IPv4 settings</h2></div><Network size={20} /></div>
+    <div className="panel__header"><div><span className="panel__eyebrow">{t("NETWORK · ETH0")}</span><h2 id={`${id}-heading`}>{t("LAN IPv4 settings")}</h2></div><Network size={20} /></div>
     <form className="login-form credential-form lan-form" onSubmit={submit} aria-busy={busy}>
-      <p className="credential-intro">Choose DHCP or a static IPv4 address for eth0. IPv6 configuration is unchanged. Only portal administrators can apply changes.</p>
-      {statusError && <div className="form-error" role="status">Current device status is unavailable. {statusError}
-        <button className="secondary-button" type="button" disabled={busy || refreshing} onClick={() => { void refresh() }}>Retry status</button></div>}
-      {!draft ? <p role="status">{statusError ? 'Load device status before editing LAN settings.' : 'Loading LAN settings…'}</p> : <>
-        <label htmlFor={`${id}-type`}>IPv4 configuration</label>
+      <p className="credential-intro">{t("Choose DHCP or a static IPv4 address for eth0. IPv6 configuration is unchanged. Only portal administrators can apply changes.")}</p>
+      {statusError && <div className="form-error" role="status"><T message="Current device status is unavailable. {0}{1}" values={{ 0: t(statusError), 1: <button className="secondary-button" type="button" disabled={busy || refreshing} onClick={() => { void refresh() }}>{t("Retry status")}</button> }} /></div>}
+      {!draft ? <p role="status">{statusError ? t("Load device status before editing LAN settings.") : t("Loading LAN settings…")}</p> : <>
+        <label htmlFor={`${id}-type`}>{t("IPv4 configuration")}</label>
         <select id={`${id}-type`} name="lan_type" required disabled={busy} value={draft.type} onChange={(event) => change('type', event.target.value)}>
-          <option value="" disabled>Select a mode</option><option value="DHCP">Automatic (DHCP)</option><option value="static">Static IPv4</option>
+          <option value="" disabled>{t("Select a mode")}</option><option value="DHCP">{t("Automatic (DHCP)")}</option><option value="static">{t("Static IPv4")}</option>
         </select>
         {draft.type === 'static' ? <>
-          <label htmlFor={`${id}-ip`}>IPv4 address / CIDR prefix</label>
+          <label htmlFor={`${id}-ip`}>{t("IPv4 address / CIDR prefix")}</label>
           <input id={`${id}-ip`} name="lan_ip" placeholder="192.168.1.20/24" autoComplete="off" spellCheck={false} maxLength={32}
             required disabled={busy} value={draft.ip} onChange={(event) => change('ip', event.target.value)} />
-          <label htmlFor={`${id}-gateway`}>IPv4 gateway (optional)</label>
+          <label htmlFor={`${id}-gateway`}>{t("IPv4 gateway (optional)")}</label>
           <input id={`${id}-gateway`} name="lan_gateway" placeholder="192.168.1.1" autoComplete="off" spellCheck={false} maxLength={32}
             disabled={busy} value={draft.gateway} onChange={(event) => change('gateway', event.target.value)} />
-          <label htmlFor={`${id}-dns`}>IPv4 DNS servers (optional)</label>
+          <label htmlFor={`${id}-dns`}>{t("IPv4 DNS servers (optional)")}</label>
           <input id={`${id}-dns`} name="lan_dns" placeholder="192.168.1.1, 1.1.1.1" autoComplete="off" spellCheck={false} maxLength={256}
             disabled={busy} value={draft.dns} onChange={(event) => change('dns', event.target.value)} aria-describedby={`${id}-dns-help`} />
-          <p className="password-help" id={`${id}-dns-help`}>Separate addresses with commas or spaces. Empty fields clear the IPv4 gateway or DNS servers; IPv6 DNS is kept.</p>
-        </> : draft.type === 'DHCP' && <p className="password-help">DHCP obtains the IPv4 address, gateway, and DNS automatically, clearing saved manual IPv4 values.</p>}
-        <div className="lan-warning" id={`${id}-warning`}>Applying a different address may disconnect this browser and SSH. Use an unused address and keep local access available. Successful changes are not automatically reverted if you lose access.</div>
+          <p className="password-help" id={`${id}-dns-help`}>{t("Separate addresses with commas or spaces. Empty fields clear the IPv4 gateway or DNS servers; IPv6 DNS is kept.")}</p>
+        </> : draft.type === 'DHCP' && <p className="password-help">{t("DHCP obtains the IPv4 address, gateway, and DNS automatically, clearing saved manual IPv4 values.")}</p>}
+        <div className="lan-warning" id={`${id}-warning`}>{t("Applying a different address may disconnect this browser and SSH. Use an unused address and keep local access available. Successful changes are not automatically reverted if you lose access.")}</div>
         <label className="lan-acknowledgement" htmlFor={`${id}-ack`}>
           <input id={`${id}-ack`} type="checkbox" name="lan_acknowledge" required disabled={busy} checked={acknowledged}
             onChange={(event) => setAcknowledged(event.target.checked)} aria-describedby={`${id}-warning`} />
-          <span>I understand that changing LAN settings may disconnect me.</span>
+          <span>{t("I understand that changing LAN settings may disconnect me.")}</span>
         </label>
-        {error && <div className="form-error" role="alert">{error}</div>}
-        {success && <div className="form-success" role="status">{success}</div>}
-        {reconnect && <p className="lan-reconnect"><a href={reconnect} target="_blank" rel="noopener noreferrer">Open portal at the new IPv4 address</a><br />Sign in again at the new address. HTTPS requires a certificate valid for that address.</p>}
-        <button className="login-submit" type="submit" disabled={busy || !draft.type || !acknowledged}>{busy ? 'Applying LAN settings…' : 'Save and apply LAN settings'}</button>
+        {error && <div className="form-error" role="alert">{t(error)}</div>}
+        {success && <div className="form-success" role="status">{t(success)}</div>}
+        {reconnect && <p className="lan-reconnect"><T message="{0}{1}Sign in again at the new address. HTTPS requires a certificate valid for that address." values={{ 0: <a href={reconnect} target="_blank" rel="noopener noreferrer">{t("Open portal at the new IPv4 address")}</a>, 1: <br /> }} /></p>}
+        <button className="login-submit" type="submit" disabled={busy || !draft.type || !acknowledged}>{busy ? t("Applying LAN settings…") : t("Save and apply LAN settings")}</button>
         <button className="text-action" type="button" disabled={busy || !status || !!statusError} onClick={() => {
           if (status) { setDraft(initialValues(status)); setAcknowledged(false); setError(''); setSuccess(''); setReconnect(null) }
-        }}>Discard edits and use current values</button>
+        }}>{t("Discard edits and use current values")}</button>
       </>}
     </form>
   </section>

@@ -1,3 +1,4 @@
+import { useI18n, T } from '../i18n'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth'
 import Brand from '../components/Brand'
+import LanguageSelector from '../components/LanguageSelector'
 import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
 import { useDevice } from '../device'
@@ -27,6 +29,7 @@ const navItems = [
 ]
 
 export default function DashboardPage() {
+  const { t } = useI18n()
   const { logout } = useAuth()
   const { status, statusError, refreshing: tailscaleRefreshing, refresh, keyRenewalActive } = useTailscale()
   const { status: deviceStatus, refreshing: deviceRefreshing, refresh: refreshDevice } = useDevice()
@@ -53,7 +56,7 @@ export default function DashboardPage() {
       {menuOpen && (
         <button
           className="sidebar-backdrop"
-          aria-label="Close navigation"
+          aria-label={t("Close navigation")}
           onClick={() => setMenuOpen(false)}
         />
       )}
@@ -64,7 +67,7 @@ export default function DashboardPage() {
           <button
             className="icon-button sidebar__close"
             onClick={() => setMenuOpen(false)}
-            aria-label="Close navigation"
+            aria-label={t("Close navigation")}
           >
             <X size={19} />
           </button>
@@ -74,12 +77,12 @@ export default function DashboardPage() {
           <span className="device-chip__icon"><Cpu size={18} /></span>
           <span>
             <strong title={deviceStatus?.hostname}>{deviceStatus?.hostname || 'nanotail'}</strong>
-            <small className={connected ? '' : 'connection-muted'}><i /> {connectionLabel}</small>
+            <small className={connected ? '' : 'connection-muted'}><i /> {t(connectionLabel)}</small>
           </span>
         </div>
 
-        <nav className="sidebar__nav" aria-label="Main navigation">
-          <span className="sidebar__label">Workspace</span>
+        <nav className="sidebar__nav" aria-label={t("Main navigation")}>
+          <span className="sidebar__label">{t("Workspace")}</span>
           {navItems.map(({ label, icon: Icon, path }) => (
             <NavLink
               key={label}
@@ -89,20 +92,17 @@ export default function DashboardPage() {
               onClick={() => setMenuOpen(false)}
             >
               <Icon size={19} />
-              <span>{label}</span>
+              <span>{t(label)}</span>
             </NavLink>
           ))}
         </nav>
 
         <div className="sidebar__footer">
           <div className="sidebar__version">
-            <span>Portal version</span>
+            <span>{t("Portal version")}</span>
             <strong>0.1.0</strong>
           </div>
-          <button type="button" className="logout-button" onClick={logout}>
-            <LogOut size={18} />
-            Sign out
-          </button>
+          <button type="button" className="logout-button" onClick={logout}><T message="{0}Sign out" values={{ 0: <LogOut size={18} /> }} /></button>
         </div>
       </aside>
 
@@ -111,38 +111,39 @@ export default function DashboardPage() {
           <button
             className="icon-button topbar__menu"
             onClick={() => setMenuOpen(true)}
-            aria-label="Open navigation"
+            aria-label={t("Open navigation")}
           >
             <Menu size={21} />
           </button>
           <div className="topbar__title">
-            <span>Workspace</span>
-            <strong>{pageTitle}</strong>
+            <span>{t("Workspace")}</span>
+            <strong>{t(pageTitle)}</strong>
           </div>
           {['/', '/network', '/access-control'].includes(pathname) && (
             <div className="topbar__actions">
-              <span className="updated-at">Auto-refresh every 30s</span>
+              <span className="updated-at">{t("Auto-refresh every 30s")}</span>
               <button
                 className="secondary-button"
                 type="button"
-                aria-label="Refresh Tailscale and device status"
+                aria-label={t("Refresh Tailscale and device status")}
                 onClick={() => { void refresh(); void refreshDevice() }}
                 disabled={refreshing}
               >
                 <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
-                <span>Refresh status</span>
+                <span>{t("Refresh status")}</span>
               </button>
             </div>
           )}
+          <LanguageSelector />
         </header>
 
         <main className="dashboard-content">
-          {statusError && <div className="connection-notice connection-notice--error" role="status"><strong>Tailscale status unavailable</strong>
-            <p>{statusError}</p><p>This does not mean your credentials are missing.</p>
-            <button className="secondary-button" disabled={refreshing} onClick={() => { void refresh() }}>Retry status</button></div>}
-          {needsSetup && <div className="connection-notice" role="status"><strong>This device is not signed in to a tailnet.</strong>
-            <p>Use Sign in to Tailscale on the Overview to connect this device. Your portal login is separate from your Tailscale account.</p>
-            {pathname !== '/' && <Link to="/">Open the sign-in guide</Link>}</div>}
+          {statusError && <div className="connection-notice connection-notice--error" role="status"><strong>{t("Tailscale status unavailable")}</strong>
+            <p>{t(statusError)}</p><p>{t("This does not mean your credentials are missing.")}</p>
+            <button className="secondary-button" disabled={refreshing} onClick={() => { void refresh() }}>{t("Retry status")}</button></div>}
+          {needsSetup && <div className="connection-notice" role="status"><strong>{t("This device is not signed in to a tailnet.")}</strong>
+            <p>{t("Use Sign in to Tailscale on the Overview to connect this device. Your portal login is separate from your Tailscale account.")}</p>
+            {pathname !== '/' && <Link to="/">{t("Open the sign-in guide")}</Link>}</div>}
           <Outlet />
         </main>
       </div>

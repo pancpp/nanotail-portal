@@ -1,3 +1,4 @@
+import { useI18n, T } from '../i18n'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Network, Route } from 'lucide-react'
@@ -8,6 +9,7 @@ import { parseSubnetRouteText } from '../subnetRoutes'
 import { useTailscale } from '../tailscale'
 
 export default function ExitNodeSettingsForm() {
+  const { t, language } = useI18n()
   const { accessToken, logout } = useAuth()
   const { refresh, routing: liveRouting, routingError } = useTailscale()
   const pending = useRef<AbortController | null>(null)
@@ -60,7 +62,7 @@ export default function ExitNodeSettingsForm() {
   const canApply = !validation && (!!routing && (routing.backendState === 'Running' || !routes.length))
   const changed = !!routing && (routing.subnetDefaultsPending || !routing.advertiseExitNode || routing.usingExitNode ||
     JSON.stringify(routes) !== JSON.stringify([...routing.subnetRoutes].sort()))
-  const warnings = routing ? forwardingWarnings(routing, true, routes) : []
+  const warnings = routing ? forwardingWarnings(routing, true, routes, language) : []
   const approval = liveRouting ?? routing
   function edited() { setAcknowledged(false); setSaved(false) }
 
@@ -86,75 +88,75 @@ export default function ExitNodeSettingsForm() {
 
   return <section className="panel routing-settings" aria-labelledby="routing-settings-title">
     <div className="panel__header">
-      <div><span className="panel__eyebrow">TAILSCALE ROUTING</span><h2 id="routing-settings-title">Exit node & subnet routes</h2></div><Route size={20} />
+      <div><span className="panel__eyebrow">{t("TAILSCALE ROUTING")}</span><h2 id="routing-settings-title">{t("Exit node & subnet routes")}</h2></div><Route size={20} />
     </div>
     <form className="login-form credential-form lan-form" onSubmit={submit} aria-busy={busy || loading}>
-      <p className="credential-intro">Use this device as an internet gateway and a gateway to your local LAN for other tailnet devices. Only portal administrators can apply changes.</p>
-      {loading && <p role="status">Loading routing settings…</p>}
-      {error && <div className="form-error" role="alert">{error}</div>}
-      {saved && <p className="form-success" role="status">Routing advertisements saved. OAuth approval runs automatically when credentials are configured; check Tailnet approval below.</p>}
+      <p className="credential-intro">{t("Use this device as an internet gateway and a gateway to your local LAN for other tailnet devices. Only portal administrators can apply changes.")}</p>
+      {loading && <p role="status">{t("Loading routing settings…")}</p>}
+      {error && <div className="form-error" role="alert">{t(error)}</div>}
+      {saved && <p className="form-success" role="status">{t("Routing advertisements saved. OAuth approval runs automatically when credentials are configured; check Tailnet approval below.")}</p>}
       {routing && !loading && <>
         <fieldset className="routing-section" disabled={busy || needsReload}>
-          <legend><Route size={18} /> Exit node</legend>
-          <p className="credential-state">Always enabled · managed by this portal</p>
-          <p className="password-help">This device is an exit node for other tailnet devices. The portal ensures this setting automatically; it cannot be disabled here.</p>
-          <p className="password-help">Current advertisement: {routing.advertiseExitNode ? 'Advertised' : 'Pending'}. Tailscale must be signed in and running to carry traffic; admin approval may still be required.</p>
-          <p className="password-help">Approve this device for exit-node use in Tailscale unless OAuth or tailnet policy already approved it. <Link to="/tailscale-setup/exit-node" target="_blank" rel="noopener noreferrer">Exit-node approval guide (new tab)</Link>.</p>
-          {!routing.advertiseExitNode && <p className="lan-warning">The portal will configure the advertisement when Tailscale is available. If it stays pending, check the service logs and daemon permissions.</p>}
+          <legend><T message="{0} Exit node" values={{ 0: <Route size={18} /> }} /></legend>
+          <p className="credential-state">{t("Always enabled · managed by this portal")}</p>
+          <p className="password-help">{t("This device is an exit node for other tailnet devices. The portal ensures this setting automatically; it cannot be disabled here.")}</p>
+          <p className="password-help"><T message="Current advertisement: {0}. Tailscale must be signed in and running to carry traffic; admin approval may still be required." values={{ 0: routing.advertiseExitNode ? t("Advertised") : t("Pending") }} /></p>
+          <p className="password-help"><T message="Approve this device for exit-node use in Tailscale unless OAuth or tailnet policy already approved it. {0}." values={{ 0: <Link to="/tailscale-setup/exit-node" target="_blank" rel="noopener noreferrer">{t("Exit-node approval guide (new tab)")}</Link> }} /></p>
+          {!routing.advertiseExitNode && <p className="lan-warning">{t("The portal will configure the advertisement when Tailscale is available. If it stays pending, check the service logs and daemon permissions.")}</p>}
         </fieldset>
 
         <fieldset className="routing-section" disabled={busy || needsReload}>
-          <legend><Network size={18} /> Subnet routes</legend>
-          <p className="password-help">Enabled by default using the local LAN. Give tailnet devices access to networks behind this device, including devices without Tailscale.</p>
-          {routing.subnetDefaultsPending && <p className="lan-warning">Local LAN advertisement is pending. The portal will apply it automatically when Tailscale is connected and LAN addresses are available. You can save custom routes or disable it below.</p>}
+          <legend><T message="{0} Subnet routes" values={{ 0: <Network size={18} /> }} /></legend>
+          <p className="password-help">{t("Enabled by default using the local LAN. Give tailnet devices access to networks behind this device, including devices without Tailscale.")}</p>
+          {routing.subnetDefaultsPending && <p className="lan-warning">{t("Local LAN advertisement is pending. The portal will apply it automatically when Tailscale is connected and LAN addresses are available. You can save custom routes or disable it below.")}</p>}
           <label className="lan-acknowledgement" htmlFor="routing-subnet-enabled">
             <input id="routing-subnet-enabled" type="checkbox" checked={subnetEnabled}
               aria-describedby="routing-subnet-approval"
               onChange={event => { setSubnetEnabled(event.target.checked); edited() }} />
-            <span>Advertise subnet routes</span>
+            <span>{t("Advertise subnet routes")}</span>
           </label>
-          <p className="password-help" id="routing-subnet-approval">After enabling and saving subnet advertisements, approve the intended routes in Tailscale unless OAuth or tailnet policy already approved them. Advertising alone does not grant access. <Link to="/tailscale-setup/subnet-routes" target="_blank" rel="noopener noreferrer">Subnet route approval guide (new tab)</Link>.</p>
-          <label htmlFor="routing-subnets">Subnet CIDRs</label>
+          <p className="password-help" id="routing-subnet-approval"><T message="After enabling and saving subnet advertisements, approve the intended routes in Tailscale unless OAuth or tailnet policy already approved them. Advertising alone does not grant access. {0}." values={{ 0: <Link to="/tailscale-setup/subnet-routes" target="_blank" rel="noopener noreferrer">{t("Subnet route approval guide (new tab)")}</Link> }} /></p>
+          <label htmlFor="routing-subnets">{t("Subnet CIDRs")}</label>
           <textarea id="routing-subnets" rows={4} value={routeText} disabled={!subnetEnabled} maxLength={8192}
             placeholder="192.168.1.0/24" aria-describedby="routing-subnet-help" aria-invalid={subnetEnabled && !!validation}
             onChange={event => { setRouteText(event.target.value); edited() }} />
-          <p className="password-help" id="routing-subnet-help">One network per line, or separate with commas. IPv4 and IPv6 are supported. Default routes are managed automatically for the exit node.</p>
-          <p className="password-help">Local LAN ({routing.lanInterface}): {routing.defaultSubnetRoutes.join(', ') || 'Not detected'}. Used automatically for initial setup; later LAN changes do not replace saved routes. Disabling subnet advertising is remembered across restarts.</p>
-          {routing.lanWarning && <p className="form-error">{routing.lanWarning}</p>}
+          <p className="password-help" id="routing-subnet-help">{t("One network per line, or separate with commas. IPv4 and IPv6 are supported. Default routes are managed automatically for the exit node.")}</p>
+          <p className="password-help"><T message="Local LAN ({0}): {1}. Used automatically for initial setup; later LAN changes do not replace saved routes. Disabling subnet advertising is remembered across restarts." values={{ 0: routing.lanInterface, 1: routing.defaultSubnetRoutes.join(', ') || t("Not detected") }} /></p>
+          {routing.lanWarning && <p className="form-error">{t(routing.lanWarning)}</p>}
           <button className="text-action" type="button" disabled={!subnetEnabled || !routing.defaultSubnetRoutes.length}
-            onClick={() => { setRouteText(routing.defaultSubnetRoutes.join('\n')); edited() }}>Use local LAN</button>
-          {validation && <p className="form-error" role="alert">{validation}</p>}
+            onClick={() => { setRouteText(routing.defaultSubnetRoutes.join('\n')); edited() }}>{t("Use local LAN")}</button>
+          {validation && <p className="form-error" role="alert">{t(validation)}</p>}
         </fieldset>
 
         <div className="routing-readiness">
-          <strong>OS forwarding</strong>
-          <p>IPv4: {forwardingLabel(routing.ipv4Forwarding)} · IPv6: {forwardingLabel(routing.ipv6Forwarding)}</p>
-          <p className="password-help">Managed in the OS, not by this portal. Saving advertisements does not configure forwarding or the firewall.</p>
-          {warnings.map(warning => <p className="lan-warning" key={warning}>{warning}</p>)}
-          {!routing.snatEnabled && <p className="lan-warning">Subnet SNAT is disabled. Verify return routes and exit-node compatibility; this portal preserves the existing SNAT setting.</p>}
-          {!!routing.health.length && <ul className="routing-health">{routing.health.map((message, index) => <li key={index}>{message}</li>)}</ul>}
+          <strong>{t("OS forwarding")}</strong>
+          <p><T message="IPv4: {0} · IPv6: {1}" values={{ 0: t(forwardingLabel(routing.ipv4Forwarding)), 1: t(forwardingLabel(routing.ipv6Forwarding)) }} /></p>
+          <p className="password-help">{t("Managed in the OS, not by this portal. Saving advertisements does not configure forwarding or the firewall.")}</p>
+          {warnings.map(warning => <p className="lan-warning" key={warning}>{t(warning)}</p>)}
+          {!routing.snatEnabled && <p className="lan-warning">{t("Subnet SNAT is disabled. Verify return routes and exit-node compatibility; this portal preserves the existing SNAT setting.")}</p>}
+          {!!routing.health.length && <ul className="routing-health">{routing.health.map((message, index) => <li key={index}>{t(message)}</li>)}</ul>}
         </div>
         <div className="routing-readiness routing-approval" aria-live="polite">
-          <strong>Tailnet approval · {routingError ? 'Unavailable' : approval?.routeApprovalState === 'APPROVED' ? 'Approved' : approval?.routeApprovalState === 'ERROR' ? 'Needs attention' : approval?.routeApprovalState === 'DISABLED' ? 'Manual or policy-based' : 'Pending'}</strong>
+          <strong><T message="Tailnet approval · {0}" values={{ 0: routingError ? t("Unavailable") : approval?.routeApprovalState === 'APPROVED' ? t("Approved") : approval?.routeApprovalState === 'ERROR' ? t("Needs attention") : approval?.routeApprovalState === 'DISABLED' ? t("Manual or policy-based") : t("Pending") }} /></strong>
           <p className={approval?.routeApprovalState === 'ERROR' || routingError ? 'form-error' : 'password-help'}>
-            {routingError ? 'Unable to refresh approval status. Reload settings to check again.' : approval?.routeApprovalMessage}
+            {routingError ? t("Unable to refresh approval status. Reload settings to check again.") : t(approval?.routeApprovalMessage)}
           </p>
-          <p className="password-help">Saved OAuth credentials automatically approve this device’s advertised exit node and subnets using devices:routes write permission. Approval runs in the background, including after startup or sign-in. This status is for saved advertisements, not unsaved edits.</p>
-          <p className="password-help">Without OAuth credentials, approve routes in the <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">Tailscale admin console ↗</a> or configure auto-approvers. Tailnet access rules and client settings must still allow their use.</p>
+          <p className="password-help">{t("Saved OAuth credentials automatically approve this device’s advertised exit node and subnets using devices:routes write permission. Approval runs in the background, including after startup or sign-in. This status is for saved advertisements, not unsaved edits.")}</p>
+          <p className="password-help"><T message="Without OAuth credentials, approve routes in the {0} or configure auto-approvers. Tailnet access rules and client settings must still allow their use." values={{ 0: <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">{t("Tailscale admin console ↗")}</a> }} /></p>
         </div>
-        {routing.backendState !== 'Running' && <p className="lan-warning">Tailscale is not running. Connect it before advertising routes. You can still remove subnet advertisements. The exit-node setting remains enabled.</p>}
-        {routing.usingExitNode && <p className="lan-warning">This device still has another exit node selected. The portal will clear that selection automatically to enforce this device’s exit-node role.</p>}
-        <div className="lan-warning" id="routing-warning">Advertising routes can expose your LAN to permitted tailnet devices. Changing subnet routes may disconnect this browser, SSH, or other clients. Keep local access available. Changes are not automatically reverted.</div>
+        {routing.backendState !== 'Running' && <p className="lan-warning">{t("Tailscale is not running. Connect it before advertising routes. You can still remove subnet advertisements. The exit-node setting remains enabled.")}</p>}
+        {routing.usingExitNode && <p className="lan-warning">{t("This device still has another exit node selected. The portal will clear that selection automatically to enforce this device’s exit-node role.")}</p>}
+        <div className="lan-warning" id="routing-warning">{t("Advertising routes can expose your LAN to permitted tailnet devices. Changing subnet routes may disconnect this browser, SSH, or other clients. Keep local access available. Changes are not automatically reverted.")}</div>
         <label className="lan-acknowledgement" htmlFor="routing-ack">
           <input id="routing-ack" type="checkbox" required disabled={busy || needsReload} checked={acknowledged}
             onChange={event => setAcknowledged(event.target.checked)} aria-describedby="routing-warning" />
-          <span>I understand the access and connectivity changes.</span>
+          <span>{t("I understand the access and connectivity changes.")}</span>
         </label>
         <button className="login-submit" type="submit" disabled={busy || needsReload || !changed || !canApply || !acknowledged}>
-          {busy ? 'Applying routing settings…' : 'Save and apply routing'}
+          {busy ? t("Applying routing settings…") : t("Save and apply routing")}
         </button>
       </>}
-      <button className="text-action" type="button" disabled={busy || loading} onClick={() => { setSaved(false); void refresh(); void reload() }}>Reload settings</button>
+      <button className="text-action" type="button" disabled={busy || loading} onClick={() => { setSaved(false); void refresh(); void reload() }}>{t("Reload settings")}</button>
     </form>
   </section>
 }

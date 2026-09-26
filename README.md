@@ -621,6 +621,27 @@ the UI offers a link using the existing protocol/port; DHCP addresses can be
 found in the router's client list. A changed origin requires signing in again,
 and HTTPS needs a certificate valid for the new address.
 
+### WebUI language
+
+The login page and dashboard header offer **English** and **简体中文**.
+On the first visit, the WebUI selects English or Simplified Chinese from the
+browser's preferred languages; unsupported languages fall back to English.
+The selected language is saved per browser/origin in `nanotail_language` and
+survives sign-out and reloads. Switching languages does not reload the app,
+discard form edits, or change device settings. If browser storage is blocked,
+the selection still works for the current page.
+
+Navigation, forms, dialogs, setup guides, known status/validation messages, and
+dates/durations follow the selected language. Technical values (addresses,
+credentials, commands, filenames, and the `RESET` confirmation phrase) are
+unchanged. Unrecognized backend diagnostics retain their original text.
+
+Translations live in `webui/src/locales/zh-CN.ts`, keyed by English source
+messages. Use `useI18n().t` for text and `T` for rich messages with React-node
+placeholders; do not translate user/device data or render translations as HTML.
+Unit tests check catalog coverage and placeholder parity. The mocked browser
+suite also checks both languages, persistence, mobile layouts, and form safety.
+
 ### Tailscale credential setup
 
 The WebUI offers browser sign-in when Tailscale reports `NeedsLogin`.

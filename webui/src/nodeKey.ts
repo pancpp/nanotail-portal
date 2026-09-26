@@ -1,4 +1,5 @@
 import type { TailscaleStatus } from './api'
+import { translate, type Language } from './localization.ts'
 
 export function nodeKeyExpiryDisabled(status: TailscaleStatus | null): boolean {
   return status?.haveNodeKey === true && status.self?.keyExpiry === null
@@ -23,7 +24,7 @@ interface NodeKeyStatus {
   expiresAt: string | null
 }
 
-export function nodeKeyStatus(status: TailscaleStatus | null, statusError = '', now = Date.now()): NodeKeyStatus {
+export function nodeKeyStatus(status: TailscaleStatus | null, statusError = '', now = Date.now(), language: Language = 'en'): NodeKeyStatus {
   const result = (state: NodeKeyStatus['state'], label: string, description: string, expiresAt: string | null = null): NodeKeyStatus =>
     ({ state, label, description, expiresAt })
   if (statusError) return result('unavailable', 'Unavailable', 'Unable to read Tailscale key expiry. Refresh status to retry.')
@@ -41,6 +42,6 @@ export function nodeKeyStatus(status: TailscaleStatus | null, statusError = '', 
   const minutes = Math.floor(remaining / 60_000)
   const quantity = days || hours || minutes
   const unit = days ? 'day' : hours ? 'hour' : 'minute'
-  const label = quantity ? `${quantity} ${unit}${quantity === 1 ? '' : 's'} remaining` : 'Less than a minute remaining'
+  const label = quantity ? translate(`{count} ${unit}${quantity === 1 ? '' : 's'} remaining`, language, { count: quantity }) : 'Less than a minute remaining'
   return result(remaining <= 7 * 86_400_000 ? 'expiring' : 'active', label, 'Expires', expiresAt)
 }

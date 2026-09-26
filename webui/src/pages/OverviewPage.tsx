@@ -1,3 +1,4 @@
+import { useI18n, T } from '../i18n'
 import { useEffect, useState } from 'react'
 import {
   ChevronRight,
@@ -18,6 +19,7 @@ import NodeKeyRenewalDialog from '../components/NodeKeyRenewalDialog'
 import TailscaleSetupPrompt from '../components/TailscaleSetupPrompt'
 
 export default function OverviewPage() {
+  const { t } = useI18n()
   const { status, statusError, setKeyRenewalDialogOpen } = useTailscale()
   const [dialogMode, setDialogMode] = useState<'signin' | 'renewal' | null>(null)
   const [promptDismissed, setPromptDismissed] = useState(false)
@@ -46,30 +48,27 @@ export default function OverviewPage() {
             <span className="eyebrow__dot" />
             nanotail portal
           </div>
-          <h1>Good to see you.</h1>
-          <p>Here’s what’s happening on your private network.</p>
+          <h1>{t("Good to see you.")}</h1>
+          <p>{t("Here’s what’s happening on your private network.")}</p>
         </div>
-        <div className="integration-note">
-          <SlidersHorizontal size={16} />
-          Live device and Tailscale status
-        </div>
+        <div className="integration-note"><T message="{0}Live device and Tailscale status" values={{ 0: <SlidersHorizontal size={16} /> }} /></div>
       </section>
 
-      <section className="status-grid" aria-label="Network status">
+      <section className="status-grid" aria-label={t("Network status")}>
         <article className="status-card status-card--primary">
           <div className="status-card__topline">
             <span className="status-icon"><Wifi size={20} /></span>
-            <span className={`status-pill${connected ? '' : ' connection-muted'}`}><i /> {label}</span>
+            <span className={`status-pill${connected ? '' : ' connection-muted'}`}><i /> {t(label)}</span>
           </div>
           <div className="status-card__body">
-            <span>Tailscale status</span>
-            <strong>{connected ? 'Connected to your tailnet' : label}</strong>
-            <p>{!statusError && status?.currentTailnet?.name ? status.currentTailnet.name : 'No active tailnet connection'}</p>
-            {needsSignIn && <button type="button" className="status-card__configure tailscale-signin" onClick={() => openDialog('signin')}>Sign in to Tailscale <ChevronRight size={15} /></button>}
+            <span>{t("Tailscale status")}</span>
+            <strong>{connected ? t("Connected to your tailnet") : t(label)}</strong>
+            <p>{!statusError && status?.currentTailnet?.name ? status.currentTailnet.name : t("No active tailnet connection")}</p>
+            {needsSignIn && <button type="button" className="status-card__configure tailscale-signin" onClick={() => openDialog('signin')}><T message="Sign in to Tailscale {0}" values={{ 0: <ChevronRight size={15} /> }} /></button>}
           </div>
           <div className="status-card__footer">
-            <Link className="status-card__configure" to="/network">Configure <ChevronRight size={15} /></Link>
-            <span>{!statusError && status?.tailscaleIPs.length ? status.tailscaleIPs.join(', ') : 'No Tailscale address'}</span>
+            <Link className="status-card__configure" to="/network"><T message="Configure {0}" values={{ 0: <ChevronRight size={15} /> }} /></Link>
+            <span>{!statusError && status?.tailscaleIPs.length ? status.tailscaleIPs.join(', ') : t("No Tailscale address")}</span>
           </div>
         </article>
 
@@ -84,31 +83,31 @@ export default function OverviewPage() {
           <div className="panel__header">
             <div>
               <span className="panel__eyebrow">TAILNET</span>
-              <h2>Tailnet peers</h2>
+              <h2>{t("Tailnet peers")}</h2>
             </div>
-            <span className="peer-count"><Users size={15} /> {statusError ? 'Unavailable' : !status ? 'Checking…' : `${peers.length} ${peers.length === 1 ? 'device' : 'devices'}`}</span>
+            <span className="peer-count"><Users size={15} /> {statusError ? t("Unavailable") : !status ? t("Checking…") : t(peers.length === 1 ? '{count} device' : '{count} devices', { count: peers.length })}</span>
           </div>
 
           <div className="peer-table">
             <div className="peer-table__head">
-              <span>Device</span>
-              <span>Address</span>
-              <span>Status</span>
+              <span>{t("Device")}</span>
+              <span>{t("Address")}</span>
+              <span>{t("Status")}</span>
             </div>
             {peers.map((peer) => (
               <div className="peer-row" key={peer.id}>
                 <div className="peer-device">
                   <span className="peer-device__icon"><Cpu size={17} /></span>
-                  <span><strong title={peer.hostName || peer.dnsName || peer.id}>{peer.hostName || peer.dnsName || peer.id}</strong><small>{peer.os || 'Unknown OS'}</small></span>
+                  <span><strong title={peer.hostName || peer.dnsName || peer.id}>{peer.hostName || peer.dnsName || peer.id}</strong><small>{peer.os || t("Unknown OS")}</small></span>
                 </div>
-                <code>{peer.tailscaleIPs.join(', ') || 'No address'}</code>
+                <code>{peer.tailscaleIPs.join(', ') || t('No address')}</code>
                 <span className={`peer-status${peer.online ? '' : ' peer-status--offline'}`}>
-                  <i /> {peer.online ? 'Online' : 'Offline'}
+                  <i /> {peer.online ? t("Online") : t("Offline")}
                 </span>
               </div>
             ))}
             {peers.length === 0 && <p className="peer-table__empty" role="status">
-              {statusError ? 'Unable to load peers. Retry the status request.' : !status ? 'Loading peers…' : 'No peers are visible to this device.'}
+              {statusError ? t("Unable to load peers. Retry the status request.") : !status ? t("Loading peers…") : t("No peers are visible to this device.")}
             </p>}
           </div>
         </article>

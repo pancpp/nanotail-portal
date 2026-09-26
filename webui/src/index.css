@@ -780,6 +780,13 @@ input:focus-visible {
   font-weight: 650;
 }
 
+.language-selector { display: inline-flex; align-items: center; flex-shrink: 0; gap: 6px; color: var(--green-dark); }
+.language-selector select { width: auto; min-height: 36px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.topbar > .language-selector { margin-left: 16px; }
+.topbar__actions { margin-left: auto; }
+.login-panel > .language-selector { align-self: flex-end; margin-bottom: 24px; }
+:lang(zh-CN) { line-break: auto; }
+
 .topbar__actions {
   display: flex;
   align-items: center;
@@ -1610,6 +1617,11 @@ input:focus-visible {
     height: 61px;
     padding-inline: 17px;
   }
+  .topbar > .language-selector { margin-left: 10px; }
+  .topbar > .language-selector > svg { display: none; }
+  .topbar__title { min-width: 0; }
+  .topbar__title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .language-selector select { font-size: 13px; max-width: 105px; }
 
   .topbar__title span,
   .updated-at,

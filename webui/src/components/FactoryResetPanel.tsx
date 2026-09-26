@@ -1,3 +1,4 @@
+import { useI18n, T } from '../i18n'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { RotateCcw, X } from 'lucide-react'
 import { useAuth } from '../auth'
@@ -5,22 +6,24 @@ import { isSessionError } from '../api'
 import { canConfirmReset, factoryResetRequest, ResetOutcomeUnknown } from '../factoryReset'
 
 export default function FactoryResetPanel() {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   return <section className="panel factory-reset-settings" aria-labelledby="factory-reset-heading">
     <div className="panel__header">
-      <div><span className="panel__eyebrow">FACTORY RESET</span><h2 id="factory-reset-heading">Reset this portal</h2></div>
+      <div><span className="panel__eyebrow">{t("FACTORY RESET")}</span><h2 id="factory-reset-heading">{t("Reset this portal")}</h2></div>
       <RotateCcw size={22} aria-hidden="true" />
     </div>
     <div className="credential-form">
-      <p className="credential-intro">Erase portal settings, accounts, saved OAuth credentials, traffic history, and logs. Log out of Tailscale and restart the portal. Only portal administrators can reset this device.</p>
-      <p className="password-help">This cannot be undone. Ensure you can access the portal without Tailscale before continuing.</p>
-      <button type="button" className="secondary-button danger-button" onClick={() => setOpen(true)}>Factory reset</button>
+      <p className="credential-intro">{t("Erase portal settings, accounts, saved OAuth credentials, traffic history, and logs. Log out of Tailscale and restart the portal. Only portal administrators can reset this device.")}</p>
+      <p className="password-help">{t("This cannot be undone. Ensure you can access the portal without Tailscale before continuing.")}</p>
+      <button type="button" className="secondary-button danger-button" onClick={() => setOpen(true)}>{t("Factory reset")}</button>
     </div>
     {open && <FactoryResetDialog onClose={() => setOpen(false)} />}
   </section>
 }
 
 function FactoryResetDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n()
   const { accessToken, logout, logoutAfterFactoryReset } = useAuth()
   const dialog = useRef<HTMLDialogElement>(null)
   const confirmationInput = useRef<HTMLInputElement>(null)
@@ -83,30 +86,30 @@ function FactoryResetDialog({ onClose }: { onClose: () => void }) {
   return <dialog ref={dialog} className="setup-dialog factory-reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-description"
     onCancel={event => { event.preventDefault(); if (!busy) onClose() }}>
     <div className="panel__header">
-      <div><span className="panel__eyebrow">CONFIRMATION {step} OF 2</span><h2 id="reset-title">{step === 1 ? 'Erase portal data?' : 'Confirm factory reset'}</h2></div>
-      <button type="button" className="icon-button" aria-label="Close factory reset dialog" disabled={busy} onClick={onClose}><X size={22} /></button>
+      <div><span className="panel__eyebrow"><T message="CONFIRMATION {0} OF 2" values={{ 0: step }} /></span><h2 id="reset-title">{step === 1 ? t("Erase portal data?") : t("Confirm factory reset")}</h2></div>
+      <button type="button" className="icon-button" aria-label={t("Close factory reset dialog")} disabled={busy} onClick={onClose}><X size={22} /></button>
     </div>
-    <p className="setup-dialog__description" id="reset-description">This permanently clears <code>nanotail.yml</code>, <code>nanotail.sqlite3</code>, and the <code>logs</code> folder, deletes <code>nanotail.key</code>, logs out of Tailscale, signs this browser out, and restarts the portal. The new signing key invalidates all existing portal sessions.</p>
+    <p className="setup-dialog__description" id="reset-description"><T message="This permanently clears {0}, {1}, and the {2} folder, deletes {3}, logs out of Tailscale, signs this browser out, and restarts the portal. The new signing key invalidates all existing portal sessions." values={{ 0: <code>nanotail.yml</code>, 1: <code>nanotail.sqlite3</code>, 2: <code>logs</code>, 3: <code>nanotail.key</code> }} /></p>
     <form className="credential-form reset-form" onSubmit={submit}>
-      <div className="lan-warning">The portal will be temporarily unavailable while it restarts. Tailscale will be logged out, so use your usual portal address over a connection that does not depend on Tailscale.</div>
-      <p className="password-help">After reset, sign in with <strong>admin / admin</strong> and change the password. Device LAN settings and remote Tailscale OAuth clients are not reset or revoked.</p>
+      <div className="lan-warning">{t("The portal will be temporarily unavailable while it restarts. Tailscale will be logged out, so use your usual portal address over a connection that does not depend on Tailscale.")}</div>
+      <p className="password-help"><T message="After reset, sign in with {0} and change the password. Device LAN settings and remote Tailscale OAuth clients are not reset or revoked." values={{ 0: <strong>admin / admin</strong> }} /></p>
       {step === 1 ? <>
         <label className="reset-acknowledgement"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />
-          <span>I understand that the data cannot be recovered and I can access the portal without Tailscale.</span>
+          <span>{t("I understand that the data cannot be recovered and I can access the portal without Tailscale.")}</span>
         </label>
-        <button type="button" className="secondary-button danger-button" disabled={!acknowledged} onClick={() => setStep(2)}>Continue to final confirmation</button>
+        <button type="button" className="secondary-button danger-button" disabled={!acknowledged} onClick={() => setStep(2)}>{t("Continue to final confirmation")}</button>
       </> : <>
-        <label htmlFor="reset-confirmation">Type RESET to confirm</label>
+        <label htmlFor="reset-confirmation">{t("Type RESET to confirm")}</label>
         <input ref={confirmationInput} id="reset-confirmation" value={confirmation} onChange={event => setConfirmation(event.target.value)}
           autoComplete="off" spellCheck={false} disabled={busy} required />
-        <label htmlFor="reset-password">Current portal password</label>
+        <label htmlFor="reset-password">{t("Current portal password")}</label>
         <input id="reset-password" type="password" value={password} onChange={event => setPassword(event.target.value)}
           autoComplete="current-password" disabled={busy} required />
-        {error && <div className="form-error" role="alert">{error}</div>}
+        {error && <div className="form-error" role="alert">{t(error)}</div>}
         <button type="submit" className="secondary-button danger-button" disabled={!canConfirmReset(acknowledged, confirmation, password, busy)}>
-          {busy ? 'Requesting factory reset…' : 'Erase data and restart'}
+          {busy ? t("Requesting factory reset…") : t("Erase data and restart")}
         </button>
-        {busy && <p role="status">Waiting for acceptance. Do not close this page or submit another reset.</p>}
+        {busy && <p role="status">{t("Waiting for acceptance. Do not close this page or submit another reset.")}</p>}
       </>}
     </form>
   </dialog>

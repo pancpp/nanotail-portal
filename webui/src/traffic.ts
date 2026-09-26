@@ -36,14 +36,14 @@ export function appendTrafficSample(state: TrafficWindow, sample: NetworkActivit
   }
 }
 
-export function formatTrafficBytes(bytes: number): string {
+export function formatTrafficBytes(bytes: number, locale?: string): string {
   if (!Number.isFinite(bytes) || bytes < 0) return 'Unavailable'
   const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB']
   let value = bytes, unit = 0
   while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++ }
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: unit === 0 ? 0 : 1 })} ${units[unit]}`
+  return `${value.toLocaleString(locale, { maximumFractionDigits: unit === 0 ? 0 : 1 })} ${units[unit]}`
 }
 
-export function formatTrafficRate(bytesPerSecond: number): string {
-  return `${formatTrafficBytes(bytesPerSecond)}/s`
+export function formatTrafficRate(bytesPerSecond: number, locale?: string): string {
+  return `${formatTrafficBytes(bytesPerSecond, locale)}/s`
 }

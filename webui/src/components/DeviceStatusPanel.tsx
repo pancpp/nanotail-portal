@@ -1,8 +1,10 @@
+import { useI18n, T } from '../i18n'
 import { Activity, Clock3, Cpu, HeartPulse, MemoryStick, Zap } from 'lucide-react'
 import { deviceIPTypeLabel, formatDeviceUptime } from '../api'
 import { useDevice } from '../device'
 
 export default function DeviceStatusPanel() {
+  const { t, locale } = useI18n()
   const { status, error, refreshing, refresh } = useDevice()
 
   return (
@@ -11,70 +13,68 @@ export default function DeviceStatusPanel() {
         <div className="device-panel__intro">
           <span className="device-panel__icon"><Zap size={22} /></span>
           <div>
-            <span className="panel__eyebrow">THIS DEVICE</span>
-            <h2 id="device-heading">{status?.hostname || 'Device status'}</h2>
-            <p>Edge gateway · nanotail portal</p>
+            <span className="panel__eyebrow">{t("THIS DEVICE")}</span>
+            <h2 id="device-heading">{status?.hostname || t("Device status")}</h2>
+            <p>{t("Edge gateway · nanotail portal")}</p>
           </div>
         </div>
         <span className="quiet-label" role="status">
-          {refreshing ? 'Updating…' : error ? 'Unavailable' : status ? 'Live status' : 'Loading…'}
+          {refreshing ? t("Updating…") : error ? t("Unavailable") : status ? t("Live status") : t("Loading…")}
         </span>
       </div>
 
       {error ? (
         <div className="device-panel__error" role="alert">
-          <strong>Device status unavailable</strong>
-          <p>{error}</p>
-          <button className="secondary-button" type="button" disabled={refreshing} onClick={() => { void refresh() }}>
-            Retry device status
-          </button>
+          <strong>{t("Device status unavailable")}</strong>
+          <p>{t(error)}</p>
+          <button className="secondary-button" type="button" disabled={refreshing} onClick={() => { void refresh() }}>{t("Retry device status")}</button>
         </div>
-      ) : !status ? <p role="status">Loading device status…</p> : (
+      ) : !status ? <p role="status">{t("Loading device status…")}</p> : (
         <>
           <dl className="device-network">
             <div>
-              <dt>LAN IPv4 · eth0</dt>
-              <dd>{status.lanIP ? <code>{status.lanIP}</code> : 'No IPv4 address assigned'}</dd>
+              <dt>{t("LAN IPv4 · eth0")}</dt>
+              <dd>{status.lanIP ? <code>{status.lanIP}</code> : t("No IPv4 address assigned")}</dd>
             </div>
             <div>
-              <dt>IPv4 gateway · eth0</dt>
-              <dd>{status.gateway ? <code>{status.gateway}</code> : 'No IPv4 gateway configured'}</dd>
+              <dt>{t("IPv4 gateway · eth0")}</dt>
+              <dd>{status.gateway ? <code>{status.gateway}</code> : t("No IPv4 gateway configured")}</dd>
             </div>
             <div>
-              <dt>IPv4 configuration</dt>
-              <dd>{deviceIPTypeLabel(status.lanIPType)}</dd>
+              <dt>{t("IPv4 configuration")}</dt>
+              <dd>{t(deviceIPTypeLabel(status.lanIPType))}</dd>
             </div>
             <div>
-              <dt>LAN IPv6 · eth0</dt>
-              <dd>{status.lanIPv6 ? <code>{status.lanIPv6}</code> : 'No IPv6 address assigned'}</dd>
+              <dt>{t("LAN IPv6 · eth0")}</dt>
+              <dd>{status.lanIPv6 ? <code>{status.lanIPv6}</code> : t("No IPv6 address assigned")}</dd>
             </div>
             <div>
-              <dt>IPv6 gateway · eth0</dt>
-              <dd>{status.gateway6 ? <code>{status.gateway6}</code> : 'No IPv6 gateway configured'}</dd>
+              <dt>{t("IPv6 gateway · eth0")}</dt>
+              <dd>{status.gateway6 ? <code>{status.gateway6}</code> : t("No IPv6 gateway configured")}</dd>
             </div>
             <div>
-              <dt>IPv6 configuration</dt>
-              <dd>{deviceIPTypeLabel(status.lanIPv6Type, true)}</dd>
+              <dt>{t("IPv6 configuration")}</dt>
+              <dd>{t(deviceIPTypeLabel(status.lanIPv6Type, true))}</dd>
             </div>
             <div className="device-network__dns">
-              <dt>DNS servers · eth0</dt>
-              <dd>{status.dns.length ? status.dns.map((ip) => <code key={ip}>{ip}</code>) : 'No DNS servers configured'}</dd>
+              <dt>{t("DNS servers · eth0")}</dt>
+              <dd>{status.dns.length ? status.dns.map((ip) => <code key={ip}>{ip}</code>) : t("No DNS servers configured")}</dd>
             </div>
             <div>
-              <dt>MAC address · eth0</dt>
-              <dd><code>{status.ethAddr || 'Not available'}</code></dd>
+              <dt>{t("MAC address · eth0")}</dt>
+              <dd><code>{status.ethAddr || t('Not available')}</code></dd>
             </div>
           </dl>
 
           <dl className="device-metrics">
-            <div><dt><Activity size={17} />Uptime</dt><dd title={`${status.uptime} seconds`}>{formatDeviceUptime(status.uptime)}</dd></div>
-            <div><dt><Cpu size={17} />CPU load</dt><dd>{status.cpuload}%</dd></div>
-            <div><dt><MemoryStick size={17} />Memory usage</dt><dd>{status.memory}%</dd></div>
+            <div><dt><T message="{0}Uptime" values={{ 0: <Activity size={17} /> }} /></dt><dd title={t("{0} seconds", { 0: status.uptime })}>{formatDeviceUptime(status.uptime, locale)}</dd></div>
+            <div><dt><T message="{0}CPU load" values={{ 0: <Cpu size={17} /> }} /></dt><dd>{status.cpuload}%</dd></div>
+            <div><dt><T message="{0}Memory usage" values={{ 0: <MemoryStick size={17} /> }} /></dt><dd>{status.memory}%</dd></div>
             <div className="device-metrics__restart">
-              <dt><Clock3 size={17} />Last restart · local time</dt>
-              <dd><time dateTime={status.lastRestart}>{new Date(status.lastRestart).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></dd>
+              <dt><T message="{0}Last restart · local time" values={{ 0: <Clock3 size={17} /> }} /></dt>
+              <dd><time dateTime={status.lastRestart}>{new Date(status.lastRestart).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</time></dd>
             </div>
-            <div><dt><HeartPulse size={17} />Health</dt><dd>{status.health === 'healthy' ? 'Healthy' : status.health || 'Not available'}</dd></div>
+            <div><dt><T message="{0}Health" values={{ 0: <HeartPulse size={17} /> }} /></dt><dd>{status.health === 'healthy' ? t("Healthy") : t(status.health) || t("Not available")}</dd></div>
           </dl>
         </>
       )}

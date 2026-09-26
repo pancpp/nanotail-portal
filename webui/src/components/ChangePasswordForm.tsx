@@ -1,8 +1,10 @@
+import { useI18n } from '../i18n'
 import { useState, type FormEvent } from 'react'
 import { KeyRound } from 'lucide-react'
 import { useAuth } from '../auth'
 
 export default function ChangePasswordForm() {
+  const { t } = useI18n()
   const { changePassword } = useAuth()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -39,41 +41,39 @@ export default function ChangePasswordForm() {
     <section className="panel password-settings" id="account-settings" aria-labelledby="password-heading">
       <div className="panel__header">
         <div>
-          <span className="panel__eyebrow">YOUR ACCOUNT</span>
-          <h2 id="password-heading">Change password</h2>
+          <span className="panel__eyebrow">{t("YOUR ACCOUNT")}</span>
+          <h2 id="password-heading">{t("Change password")}</h2>
         </div>
         <KeyRound size={20} aria-hidden="true" />
       </div>
       <form className="login-form password-change-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
-        <label htmlFor="current-password">Current password</label>
+        <label htmlFor="current-password">{t("Current password")}</label>
         <input
           id="current-password" name="oldpassword" type="password"
           autoComplete="current-password" required disabled={isSubmitting}
           value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)}
         />
-        <label className="password-label" htmlFor="new-password">New password</label>
+        <label className="password-label" htmlFor="new-password">{t("New password")}</label>
         <input
           id="new-password" name="newpassword" type="password"
           autoComplete="new-password" required disabled={isSubmitting}
           aria-describedby="password-help"
           value={newPassword} onChange={(event) => setNewPassword(event.target.value)}
         />
-        <p className="password-help" id="password-help">
-          Use 8–72 bytes. Non-ASCII characters may count as more than one byte.
-        </p>
-        <label className="password-label" htmlFor="confirm-password">Confirm new password</label>
+        <p className="password-help" id="password-help">{t("Use 8–72 bytes. Non-ASCII characters may count as more than one byte.")}</p>
+        <label className="password-label" htmlFor="confirm-password">{t("Confirm new password")}</label>
         <input
           id="confirm-password" name="confirm_password" type="password"
           autoComplete="new-password" required disabled={isSubmitting}
           value={confirmation} onChange={(event) => setConfirmation(event.target.value)}
         />
-        {error && <div className="form-error" role="alert">{error}</div>}
-        {success && <div className="form-success" role="status">{success}</div>}
+        {error && <div className="form-error" role="alert">{t(error)}</div>}
+        {success && <div className="form-success" role="status">{t(success)}</div>}
         <button className="login-submit" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Updating password…' : 'Update password'}
+          {isSubmitting ? t("Updating password…") : t("Update password")}
           <KeyRound size={17} aria-hidden="true" />
         </button>
-        <p className="password-help">Changing your password does not sign out existing sessions.</p>
+        <p className="password-help">{t("Changing your password does not sign out existing sessions.")}</p>
       </form>
     </section>
   )

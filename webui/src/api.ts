@@ -387,11 +387,17 @@ export async function deviceStatusRequest(token: string, signal?: AbortSignal): 
   return status
 }
 
-export function formatDeviceUptime(seconds: number): string {
+export function formatDeviceUptime(seconds: number, locale?: string): string {
   if (!Number.isSafeInteger(seconds) || seconds < 0) return 'Unavailable'
   const days = Math.floor(seconds / 86_400)
   const hours = Math.floor(seconds % 86_400 / 3_600)
   const minutes = Math.floor(seconds % 3_600 / 60)
+  if (locale === 'zh-CN') {
+    if (days > 0) return `${days} 天 ${hours} 小时 ${minutes} 分钟`
+    if (hours > 0) return `${hours} 小时 ${minutes} 分钟`
+    if (minutes > 0) return `${minutes} 分钟`
+    return `${seconds} 秒`
+  }
   if (days > 0) return `${days}d ${hours}h ${minutes}m`
   if (hours > 0) return `${hours}h ${minutes}m`
   if (minutes > 0) return `${minutes}m`

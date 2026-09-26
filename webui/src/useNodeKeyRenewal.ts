@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useI18n } from './i18n'
 import { beginTailscaleNodeKeyRenewalRequest, cancelTailscaleNodeKeyRenewalRequest, isKeyRenewalPending, isSessionError, renewTailscaleNodeKeyRequest, tailscaleKeyRenewalRequest, type TailscaleKeyRenewal } from './api'
 
 export interface NodeKeyRenewalSnapshot {
@@ -16,6 +17,7 @@ type RenewalAction = 'read' | 'prepare' | 'begin' | 'cancel'
 // Owned by the Tailscale provider, not the dialog: closing it or changing tabs
 // must not stop a pending renewal's read-only completion checks.
 export function useNodeKeyRenewal(token: string | null, logout: () => void, refresh: () => Promise<void>) {
+  const { t } = useI18n()
   const [snapshot, setSnapshot] = useState<NodeKeyRenewalSnapshot>({ value: null, pending: false, busy: false, starting: false, preparing: false, cancelling: false, error: '' })
   const request = useRef<AbortController | null>(null)
   const latest = useRef<TailscaleKeyRenewal | null>(null)
@@ -111,13 +113,13 @@ export function useNodeKeyRenewal(token: string | null, logout: () => void, refr
       setPopupBlocked(!popup)
       if (popup) {
         popup.opener = null
-        popup.document.title = 'Preparing Tailscale sign-in'
-        popup.document.body.textContent = 'Preparing your Tailscale sign-in page. Keep the portal open until the sign-in page appears.'
+        popup.document.title = t('Preparing Tailscale sign-in')
+        popup.document.body.textContent = t('Preparing your Tailscale sign-in page. Keep the portal open until the sign-in page appears.')
         signInWindow.current = { window: popup, attemptID: current.attemptID }
       }
     } catch { setPopupBlocked(true) }
     void execute('begin')
-  }, [execute, closeBlankWindow])
+  }, [execute, closeBlankWindow, t])
 
   const close = useCallback(async (): Promise<boolean> => {
     if (request.current) return false

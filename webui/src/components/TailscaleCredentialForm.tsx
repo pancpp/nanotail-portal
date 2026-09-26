@@ -1,3 +1,4 @@
+import { useI18n, T } from '../i18n'
 import { useId, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { BookOpen, ExternalLink, Eye, EyeOff, KeyRound, Trash2 } from 'lucide-react'
@@ -10,6 +11,7 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
   onGuide?: () => void
   onBusy?: (busy: boolean) => void
 }) {
+  const { t } = useI18n()
   const { client, save, clear } = useTailscale()
   const id = useId()
   const [clientId, setClientId] = useState(client?.clientId ?? '')
@@ -54,40 +56,38 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
   }
 
   return <form className="login-form credential-form" onSubmit={submit} aria-busy={busy}>
-    <p className="credential-intro">Use an OAuth client from this device’s tailnet with devices:routes write permission. Saving enables automatic approval of this device’s advertised exit node and subnet routes.</p>
+    <p className="credential-intro">{t("Use an OAuth client from this device’s tailnet with devices:routes write permission. Saving enables automatic approval of this device’s advertised exit node and subnet routes.")}</p>
     <div className="credential-links">
-      <a href={TAILSCALE_CREDENTIALS_URL} target="_blank" rel="noopener noreferrer">Create OAuth credentials <ExternalLink size={16} /></a>
-      <Link to="/tailscale-setup/oauth-credentials" onClick={onGuide}><BookOpen size={16} /> Step-by-step guide</Link>
+      <a href={TAILSCALE_CREDENTIALS_URL} target="_blank" rel="noopener noreferrer"><T message="Create OAuth credentials {0}" values={{ 0: <ExternalLink size={16} /> }} /></a>
+      <Link to="/tailscale-setup/oauth-credentials" onClick={onGuide}><T message="{0} Step-by-step guide" values={{ 0: <BookOpen size={16} /> }} /></Link>
     </div>
-    <label htmlFor={`${id}-client`}>Client ID</label>
+    <label htmlFor={`${id}-client`}>{t("Client ID")}</label>
     <input id={`${id}-client`} name="client_id" autoComplete="off" autoCapitalize="none" spellCheck={false}
       maxLength={512} value={clientId} onChange={(event) => setClientId(event.target.value)} required disabled={busy} />
-    <label className="password-label" htmlFor={`${id}-secret`}>{client?.hasClientSecret ? 'Replace client secret' : 'Client secret'}</label>
+    <label className="password-label" htmlFor={`${id}-secret`}>{client?.hasClientSecret ? t("Replace client secret") : t("Client secret")}</label>
     <div className="password-field">
       <input id={`${id}-secret`} name="client_secret" type={showSecret ? 'text' : 'password'} autoComplete="new-password"
         autoCapitalize="none" spellCheck={false} maxLength={4096} required={needsSecret} disabled={busy}
-        aria-describedby={`${id}-help`} placeholder={needsSecret ? 'Paste the client secret' : 'Leave blank to keep it'}
+        aria-describedby={`${id}-help`} placeholder={needsSecret ? t("Paste the client secret") : t("Leave blank to keep it")}
         value={secret} onChange={(event) => setSecret(event.target.value)} />
-      <button className="password-field__toggle" type="button" disabled={busy} aria-label={showSecret ? 'Hide client secret' : 'Show client secret'}
+      <button className="password-field__toggle" type="button" disabled={busy} aria-label={showSecret ? t("Hide client secret") : t("Show client secret")}
         aria-pressed={showSecret} onClick={() => setShowSecret(!showSecret)}>{showSecret ? <EyeOff size={19} /> : <Eye size={19} />}</button>
     </div>
-    <p className="password-help" id={`${id}-help`}>{client?.hasClientSecret ? 'Leave blank to keep the saved secret for this client ID. The saved secret is never sent back to this browser.' : 'The secret is shown only once by Tailscale. Copy it before closing that page.'}</p>
-    {error && <div className="form-error" role="alert">{error}</div>}
-    {success && <div className="form-success" role="status">{success}</div>}
+    <p className="password-help" id={`${id}-help`}>{client?.hasClientSecret ? t("Leave blank to keep the saved secret for this client ID. The saved secret is never sent back to this browser.") : t("The secret is shown only once by Tailscale. Copy it before closing that page.")}</p>
+    {error && <div className="form-error" role="alert">{t(error)}</div>}
+    {success && <div className="form-success" role="status">{t(success)}</div>}
     <div className="credential-actions">
-      <button className="login-submit" type="submit" disabled={busy || confirmRemove}>{action === 'save' ? 'Saving changes…' : 'Save credentials'}<KeyRound size={17} /></button>
+      <button className="login-submit" type="submit" disabled={busy || confirmRemove}>{action === 'save' ? t("Saving changes…") : t("Save credentials")}<KeyRound size={17} /></button>
       <button className="text-action danger-action" type="button" disabled={busy || !client || confirmRemove}
         aria-expanded={confirmRemove} aria-controls={`${id}-remove`}
-        onClick={() => { setError(''); setSuccess(''); setConfirmRemove(true) }}>
-        Remove credentials <Trash2 size={17} />
-      </button>
+        onClick={() => { setError(''); setSuccess(''); setConfirmRemove(true) }}><T message="Remove credentials {0}" values={{ 0: <Trash2 size={17} /> }} /></button>
     </div>
-    <p className="password-help">This does not join or switch tailnets. Use a trusted HTTPS connection when entering secrets. Saved secrets and API tokens are never sent back to the browser.</p>
-    {confirmRemove && <div className="remove-confirmation" id={`${id}-remove`} role="group" aria-label="Confirm credential removal">
-      <p>Remove the saved client ID and secret from this device? This does not disconnect Tailscale or revoke the OAuth client in Tailscale.</p>
+    <p className="password-help">{t("This does not join or switch tailnets. Use a trusted HTTPS connection when entering secrets. Saved secrets and API tokens are never sent back to the browser.")}</p>
+    {confirmRemove && <div className="remove-confirmation" id={`${id}-remove`} role="group" aria-label={t("Confirm credential removal")}>
+      <p>{t("Remove the saved client ID and secret from this device? This does not disconnect Tailscale or revoke the OAuth client in Tailscale.")}</p>
       <div className="credential-links">
-        <button className="secondary-button danger-action" type="button" disabled={busy || !client} onClick={() => { void remove() }}>{action === 'remove' ? 'Removing credentials…' : 'Confirm removal'}</button>
-        <button className="secondary-button" type="button" disabled={busy} onClick={() => setConfirmRemove(false)}>Cancel</button>
+        <button className="secondary-button danger-action" type="button" disabled={busy || !client} onClick={() => { void remove() }}>{action === 'remove' ? t("Removing credentials…") : t("Confirm removal")}</button>
+        <button className="secondary-button" type="button" disabled={busy} onClick={() => setConfirmRemove(false)}>{t("Cancel")}</button>
       </div>
     </div>}
   </form>

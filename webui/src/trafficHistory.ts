@@ -17,8 +17,8 @@ export function trafficHistoryView(history: NetworkActivityHistory) {
   return { hours, received, sent, observedSeconds, completeHours: hours.filter((hour) => hour.coverage === 'Complete').length }
 }
 
-export function historyHourLabel(at: number) {
-  return new Date(at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+export function historyHourLabel(at: number, locale?: string) {
+  return new Date(at).toLocaleString(locale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
 }
 
 // Both figures come from the same hourly database snapshot, not live interface
