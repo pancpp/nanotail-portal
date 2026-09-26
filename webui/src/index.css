@@ -706,13 +706,21 @@ input:focus-visible {
 .sidebar__version {
   display: flex;
   padding: 14px 11px;
+  gap: 12px;
   justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   color: #5f756a;
   font-size: 12px;
 }
 
+.sidebar__version > span {
+  flex-shrink: 0;
+}
+
 .sidebar__version strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
   color: #87998f;
   font-weight: 600;
 }

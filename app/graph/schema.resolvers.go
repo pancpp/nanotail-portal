@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/pancpp/nanotail-portal/app/graph/model"
+	"github.com/pancpp/nanotail-portal/conf"
 )
 
 // ChangePassword is the resolver for the changePassword field.
@@ -59,6 +60,12 @@ func (r *mutationResolver) BeginTailscaleNodeKeyRenewal(ctx context.Context, att
 // CancelTailscaleNodeKeyRenewal is the resolver for the cancelTailscaleNodeKeyRenewal field.
 func (r *mutationResolver) CancelTailscaleNodeKeyRenewal(ctx context.Context, attemptID string) (*model.TailscaleKeyRenewal, error) {
 	return r.cancelTailscaleNodeKeyRenewal(ctx, attemptID)
+}
+
+// PortalVersion is the resolver for the portalVersion field.
+func (r *queryResolver) PortalVersion(ctx context.Context) (string, error) {
+	version, _, _, _ := conf.GetVersion()
+	return version, nil
 }
 
 // User is the resolver for the user field.

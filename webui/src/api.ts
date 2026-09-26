@@ -378,6 +378,12 @@ function isDeviceStatus(value: unknown): value is DeviceStatus {
     typeof value.health === 'string'
 }
 
+export async function portalVersionRequest(token: string, signal?: AbortSignal): Promise<string> {
+  const data = await graphQLRequest(token, 'PortalVersion', 'query PortalVersion { portalVersion }', {}, signal, 'portal version')
+  if (typeof data.portalVersion !== 'string') throw new Error('The server did not return a valid portal version.')
+  return data.portalVersion
+}
+
 export async function deviceStatusRequest(token: string, signal?: AbortSignal): Promise<DeviceStatus> {
   const data = await graphQLRequest(token, 'DeviceStatus', `query DeviceStatus {
     deviceStatus { hostname lanIPType lanIP gateway dns lanIPv6Type lanIPv6 gateway6 ethAddr cpuload memory lastRestart uptime health }

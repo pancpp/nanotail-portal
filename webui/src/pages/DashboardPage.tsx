@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../auth'
 import Brand from '../components/Brand'
 import LanguageSelector from '../components/LanguageSelector'
+import PortalVersion from '../components/PortalVersion'
 import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
 import { useDevice } from '../device'
@@ -103,10 +104,7 @@ export default function DashboardPage() {
         </nav>
 
         <div className="sidebar__footer">
-          <div className="sidebar__version">
-            <span>{t("Portal version")}</span>
-            <strong>0.1.0</strong>
-          </div>
+          <PortalVersion />
           <button type="button" className="logout-button" onClick={logout}><T message="{0}Sign out" values={{ 0: <LogOut size={18} /> }} /></button>
         </div>
       </aside>

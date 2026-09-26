@@ -240,6 +240,8 @@ type TailscaleKeyRenewal {
 }
 
 type Query {
+  "Portal build version injected into conf.gVersion. Empty for builds without version metadata."
+  portalVersion: String!
   user: User!
   tailscaleClient: TailscaleClient
   tailscaleStatus: TailscaleStatus!
