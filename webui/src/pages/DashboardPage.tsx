@@ -23,7 +23,7 @@ const navItems = [
   { label: 'Network', icon: Network, path: '/network' },
   { label: 'Access control', icon: ShieldCheck, path: '/access-control' },
   { label: 'Settings', icon: Settings, path: '/settings' },
-  { label: 'Setup guide', icon: BookOpen, path: '/tailscale-setup' },
+  { label: 'Setup guides', icon: BookOpen, path: '/tailscale-setup' },
 ]
 
 export default function DashboardPage() {
@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const { status: deviceStatus, refreshing: deviceRefreshing, refresh: refreshDevice } = useDevice()
   const refreshing = tailscaleRefreshing || deviceRefreshing
   const { pathname } = useLocation()
-  const pageTitle = navItems.find((item) => item.path === pathname)?.label ?? 'Overview'
+  const pageTitle = navItems.find((item) => item.path === pathname || (item.path !== '/' && pathname.startsWith(item.path + '/')))?.label ?? 'Overview'
   const [menuOpen, setMenuOpen] = useState(false)
   const needsSetup = shouldPromptForTailscale(status, statusError) && !keyRenewalActive
   const connected = isTailscaleConnected(status, statusError)
@@ -84,7 +84,7 @@ export default function DashboardPage() {
             <NavLink
               key={label}
               to={path}
-              end
+              end={path !== '/tailscale-setup'}
               className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`}
               onClick={() => setMenuOpen(false)}
             >

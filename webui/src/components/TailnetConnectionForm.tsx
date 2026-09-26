@@ -81,7 +81,7 @@ export default function TailnetConnectionForm() {
       {success && <p className="form-success" role="status">{success}</p>}
       {connection && !loading && <>
         <p className="tailnet-state">Tailnet: <strong>{connection.enabled ? 'On' : 'Off'}</strong> · Tailscale state: {connection.backendState}</p>
-        {!connection.canEnable && <p className="password-help">Sign in to Tailscale and approve this device before turning the tailnet on. Saving OAuth credentials alone does not enroll the device. <Link to="/tailscale-setup">Read the setup guide</Link>.</p>}
+        {!connection.canEnable && <p className="password-help">Sign in to Tailscale and, if your tailnet requires it, approve this device before turning the tailnet on. Saving OAuth credentials alone does not enroll the device. <Link to="/tailscale-setup/device-approval">Read the sign-in and device approval guide</Link>.</p>}
         <div className="lan-warning" id="tailnet-warning">Changing this connection can interrupt the portal, SSH, and traffic through Tailscale. To turn it back on after disconnecting, use this device’s LAN address. Keep LAN or local console access available.</div>
         <label className="lan-acknowledgement" htmlFor="tailnet-ack">
           <input id="tailnet-ack" type="checkbox" required disabled={busy || needsReload} checked={acknowledged}

@@ -57,7 +57,7 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
     <p className="credential-intro">Use an OAuth client from this device’s tailnet with devices:routes write permission. Saving enables automatic approval of this device’s advertised exit node and subnet routes.</p>
     <div className="credential-links">
       <a href={TAILSCALE_CREDENTIALS_URL} target="_blank" rel="noopener noreferrer">Create OAuth credentials <ExternalLink size={16} /></a>
-      <Link to="/tailscale-setup" onClick={onGuide}><BookOpen size={16} /> Step-by-step guide</Link>
+      <Link to="/tailscale-setup/oauth-credentials" onClick={onGuide}><BookOpen size={16} /> Step-by-step guide</Link>
     </div>
     <label htmlFor={`${id}-client`}>Client ID</label>
     <input id={`${id}-client`} name="client_id" autoComplete="off" autoCapitalize="none" spellCheck={false}

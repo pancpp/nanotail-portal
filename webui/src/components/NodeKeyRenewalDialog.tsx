@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ExternalLink, LoaderCircle, RefreshCw, X } from 'lucide-react'
 import { useTailscale } from '../tailscale'
 import { nodeKeyExpiryDisabled } from '../nodeKey'
@@ -54,7 +55,8 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
       {signIn && !pending && !signedIn && !error && <ol className="signin-steps">
         <li>Confirm below and choose <strong>Prepare sign-in</strong>.</li>
         <li>Choose <strong>Sign in to Tailscale</strong>, then sign in and authorize this device in the new tab. Select the tailnet you want it to join.</li>
-        <li>Return here to check progress. Some tailnets require administrator approval.</li>
+        <li>If your tailnet requires device approval, ask an administrator to approve this device after sign-in. <Link to="/tailscale-setup/device-approval" target="_blank" rel="noopener noreferrer">Device approval guide (new tab)</Link>.</li>
+        <li>Return here; progress is checked automatically. Device approval is separate from exit-node and subnet-route approval.</li>
       </ol>}
       {!signedIn && <div className="lan-warning">{signIn ? 'Keep the portal open using the device’s LAN address. Signing in turns the tailnet connection on and preserves existing routing preferences. If this device was already enrolled, use the same account and tailnet.' : 'Renewal can disconnect Tailscale, including this browser session. Open the portal using the device’s LAN address first. Signing in also turns the tailnet connection on. Use the same Tailscale account and tailnet to keep this device in its current network.'}</div>}
       <div className="renewal-status">
@@ -72,7 +74,7 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
             Open sign-in page <ExternalLink size={16} />
           </a>
         </>}
-        {value?.state === 'AWAITING_APPROVAL' && <p>Sign-in is waiting for device approval. Ask your tailnet administrator to approve this device in the <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">Tailscale admin console</a>.</p>}
+        {value?.state === 'AWAITING_APPROVAL' && <p>Sign-in is waiting for device approval. Ask your tailnet administrator to approve this device in the <a href="https://console.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">Tailscale admin console</a>. <Link to="/tailscale-setup/device-approval" target="_blank" rel="noopener noreferrer">Device approval guide (new tab)</Link>.</p>}
         {popupBlocked && pending && <p>Your browser blocked the sign-in tab. Use Open sign-in page when the link is ready.</p>}
         {!renewalDisabled && value?.state === 'IDLE' && <p>{value.canRenew ? 'You can prepare a new sign-in request below. Opening this panel does not change the device.' : 'Tailscale is not ready for sign-in. Check the device status and try again.'}</p>}
       </div>

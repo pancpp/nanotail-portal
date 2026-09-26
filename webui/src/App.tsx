@@ -45,6 +45,7 @@ export default function App() {
           <Route path="network" element={<NetworkPage />} />
           <Route path="access-control" element={<AccessControlPage />} />
           <Route path="tailscale-setup" element={<TailscaleSetupPage />} />
+          <Route path="tailscale-setup/:guide" element={<TailscaleSetupPage />} />
         </Route>
       </Route>
 

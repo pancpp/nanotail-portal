@@ -629,8 +629,14 @@ administrators save, replace, or remove the device-wide client ID and secret.
 To remove them, choose **Remove credentials** beside **Save credentials**, then
 **Confirm removal**. This clears the saved credentials and cached tokens on this
 device without disconnecting Tailscale or revoking the OAuth client in Tailscale.
-The setup guide at `/#/tailscale-setup` includes a link to the Tailscale Trust
-credentials console and explains the OAuth client creation process.
+**Setup guides** at `/#/tailscale-setup` covers first-time sign-in and device
+approval, subnet-route approval, exit-node approval, and OAuth client creation.
+Sign-in and routing settings link directly to the relevant approval guide in a
+new tab, preserving in-progress sign-in and routing edits. Device approval is
+needed only when the tailnet requires it and is separate from route approval;
+saved OAuth route credentials do not authorize a new device. The route guides
+explain manual console approval and when OAuth or policy-based approval lets you
+skip those steps. The OAuth guide includes the Tailscale Trust credentials link.
 
 The `tailscaleClient` query returns safe metadata (`clientId`, `hasClientSecret`,
 and timestamps), or `null` before setup. `setTailscaleCredential` accepts

@@ -76,7 +76,7 @@ try {
   const fill = (id, value) => evaluate(`(() => { const el = document.getElementById(${JSON.stringify(id)}); Object.getOwnPropertyDescriptor(el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value').set.call(el, ${JSON.stringify(value)}); el.dispatchEvent(new Event('input', { bubbles: true })); })()`)
 
   await send('Page.enable')
-  await send('Page.addScriptToEvaluateOnNewDocument', { source: "(() => {\n localStorage.setItem('nanotail_access_token', 'header.' + btoa(JSON.stringify({pid:1,exp:Math.floor(Date.now()/1000)+3600})) + '.signature');\n window.routingFixture = {\n  routeApprovalState:'DISABLED',routeApprovalMessage:'No OAuth credentials saved. Use manual approval or auto-approvers.',\n  backendState:'Running',advertiseExitNode:true,subnetDefaultsPending:true,subnetRoutes:[],usingExitNode:false,snatEnabled:true,health:[],\n  lanInterface:'eth0',defaultSubnetRoutes:['192.168.42.0/24','fd00:1234::/64'],lanWarning:'',ipv4Forwarding:true,ipv6Forwarding:true\n };\n window.routingWrites = []; window.nodeKeyExpiry = null; window.connectionEnabled = true; window.connectionWrites = []; window.logoutCalls = 0;\n window.routingWriteFailure = false;\n window.credentialFixture = null; window.credentialWrites = []; window.credentialRemovals = 0;\n window.credentialRemoveFailure = false; window.holdCredentialRemoval = false;\n const realFetch = window.fetch.bind(window);\n window.fetch = async (url, options) => {\n  if (!String(url).startsWith('/api/')) return realFetch(url, options);\n  const body = JSON.parse(options.body || '{}');\n  switch(body.operationName) {\n   case 'TailscaleRouting':return Response.json({data:{tailscaleRouting:structuredClone(window.routingFixture)}});\n   case 'SetRouting':\n    window.routingWrites.push(body.variables.input);\n    Object.assign(window.routingFixture,body.variables.input,{usingExitNode:false,advertiseExitNode:true,subnetDefaultsPending:false});\n    if(window.routingWriteFailure) throw new TypeError('Simulated connection interrupted after apply');\n    return Response.json({data:{setRouting:true}});\n   case 'TailscaleStatus':return Response.json({data:{tailscaleStatus:{backendState:'Running',haveNodeKey:true,tailscaleIPs:['100.64.0.2'],currentTailnet:{name:'Test tailnet'},self:{online:true,keyExpiry:window.nodeKeyExpiry},peers:[]}}});\n   case 'TailscaleKeyRenewal':return Response.json({data:{tailscaleKeyRenewal:{state:'IDLE',authURL:'',canRenew:window.nodeKeyExpiry!==null,attemptID:''}}});\n   case 'TailscaleConnection':return Response.json({data:{tailscaleConnection:{enabled:window.connectionEnabled,backendState:window.connectionEnabled?'Running':'Stopped',canEnable:true}}});\n   case 'SetTailscaleEnabled':window.connectionWrites.push(body.variables.enabled);window.connectionEnabled=body.variables.enabled;return Response.json({data:{setTailscaleEnabled:true}});\n   case 'LogoutTailscale':window.logoutCalls++;throw new Error('Network must not log out');\n   case 'DeviceStatus':return Response.json({data:{deviceStatus:{hostname:'nanotail',lanIPType:'DHCP',lanIP:'192.168.42.8/24',gateway:'192.168.42.1',dns:['192.168.42.1'],lanIPv6Type:'auto',lanIPv6:'fd00:1234::8/64',gateway6:'',ethAddr:'02:00:00:00:00:01',cpuload:0,memory:20,lastRestart:'2026-09-24T00:00:00Z',uptime:3600,health:'Healthy'}}});\n   case 'TailscaleClient':return Response.json({data:{tailscaleClient:structuredClone(window.credentialFixture)}});\n   case 'SetTailscaleCredential':\n    window.credentialWrites.push(body.variables.credential);\n    window.credentialFixture={clientId:body.variables.credential.clientId,hasClientSecret:true,updateTime:new Date().toISOString()};\n    Object.assign(window.routingFixture,{routeApprovalState:'PENDING',routeApprovalMessage:'OAuth approval is queued for this device.'});\n    return Response.json({data:{setTailscaleCredential:true}});\n   case 'ClearTailscaleCredential':\n    window.credentialRemovals++;\n    if(window.credentialRemoveFailure) return Response.json({errors:[{message:'Unable to remove credentials.'}]});\n    if(window.holdCredentialRemoval) await new Promise(resolve => {window.releaseCredentialRemoval=resolve});\n    window.credentialFixture=null;\n    Object.assign(window.routingFixture,{routeApprovalState:'DISABLED',routeApprovalMessage:'No OAuth credentials saved. Use manual approval or auto-approvers.'});\n    return Response.json({data:{clearTailscaleCredential:true}});\n   default:return Response.json({errors:[{message:'Read-only browser fixture'}]});\n  }\n };\n})()" })
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: "(() => {\n localStorage.setItem('nanotail_access_token', 'header.' + btoa(JSON.stringify({pid:1,exp:Math.floor(Date.now()/1000)+3600})) + '.signature');\n window.routingFixture = {\n  routeApprovalState:'DISABLED',routeApprovalMessage:'No OAuth credentials saved. Use manual approval or auto-approvers.',\n  backendState:'Running',advertiseExitNode:true,subnetDefaultsPending:true,subnetRoutes:[],usingExitNode:false,snatEnabled:true,health:[],\n  lanInterface:'eth0',defaultSubnetRoutes:['192.168.42.0/24','fd00:1234::/64'],lanWarning:'',ipv4Forwarding:true,ipv6Forwarding:true\n };\n window.routingWrites = []; window.nodeKeyExpiry = null; window.connectionEnabled = true; window.connectionWrites = []; window.logoutCalls = 0;\n window.routingWriteFailure = false;\n window.signInFixture = false; window.renewalState = 'IDLE'; window.apiWrites = [];\n window.credentialFixture = null; window.credentialWrites = []; window.credentialRemovals = 0;\n window.credentialRemoveFailure = false; window.holdCredentialRemoval = false;\n const realFetch = window.fetch.bind(window);\n window.fetch = async (url, options) => {\n  if (!String(url).startsWith('/api/')) return realFetch(url, options);\n  const body = JSON.parse(options.body || '{}');\n  if (/^\\s*mutation\\b/.test(body.query)) window.apiWrites.push(body.operationName);\n  switch(body.operationName) {\n   case 'TailscaleRouting':return Response.json({data:{tailscaleRouting:structuredClone(window.routingFixture)}});\n   case 'SetRouting':\n    window.routingWrites.push(body.variables.input);\n    Object.assign(window.routingFixture,body.variables.input,{usingExitNode:false,advertiseExitNode:true,subnetDefaultsPending:false});\n    if(window.routingWriteFailure) throw new TypeError('Simulated connection interrupted after apply');\n    return Response.json({data:{setRouting:true}});\n   case 'TailscaleStatus':return Response.json({data:{tailscaleStatus:{backendState:window.signInFixture?'NeedsLogin':'Running',haveNodeKey:!window.signInFixture,tailscaleIPs:['100.64.0.2'],currentTailnet:{name:'Test tailnet'},self:{online:true,keyExpiry:window.nodeKeyExpiry},peers:[]}}});\n   case 'TailscaleKeyRenewal':return Response.json({data:{tailscaleKeyRenewal:{state:window.renewalState,authURL:'',canRenew:window.renewalState==='IDLE'&&(window.signInFixture||window.nodeKeyExpiry!==null),attemptID:window.renewalState==='IDLE'?'':'guide-test-attempt'}}});\n   case 'TailscaleConnection':return Response.json({data:{tailscaleConnection:{enabled:window.connectionEnabled,backendState:window.connectionEnabled?'Running':'Stopped',canEnable:!window.signInFixture}}});\n   case 'SetTailscaleEnabled':window.connectionWrites.push(body.variables.enabled);window.connectionEnabled=body.variables.enabled;return Response.json({data:{setTailscaleEnabled:true}});\n   case 'LogoutTailscale':window.logoutCalls++;throw new Error('Network must not log out');\n   case 'DeviceStatus':return Response.json({data:{deviceStatus:{hostname:'nanotail',lanIPType:'DHCP',lanIP:'192.168.42.8/24',gateway:'192.168.42.1',dns:['192.168.42.1'],lanIPv6Type:'auto',lanIPv6:'fd00:1234::8/64',gateway6:'',ethAddr:'02:00:00:00:00:01',cpuload:0,memory:20,lastRestart:'2026-09-24T00:00:00Z',uptime:3600,health:'Healthy'}}});\n   case 'TailscaleClient':return Response.json({data:{tailscaleClient:structuredClone(window.credentialFixture)}});\n   case 'SetTailscaleCredential':\n    window.credentialWrites.push(body.variables.credential);\n    window.credentialFixture={clientId:body.variables.credential.clientId,hasClientSecret:true,updateTime:new Date().toISOString()};\n    Object.assign(window.routingFixture,{routeApprovalState:'PENDING',routeApprovalMessage:'OAuth approval is queued for this device.'});\n    return Response.json({data:{setTailscaleCredential:true}});\n   case 'ClearTailscaleCredential':\n    window.credentialRemovals++;\n    if(window.credentialRemoveFailure) return Response.json({errors:[{message:'Unable to remove credentials.'}]});\n    if(window.holdCredentialRemoval) await new Promise(resolve => {window.releaseCredentialRemoval=resolve});\n    window.credentialFixture=null;\n    Object.assign(window.routingFixture,{routeApprovalState:'DISABLED',routeApprovalMessage:'No OAuth credentials saved. Use manual approval or auto-approvers.'});\n    return Response.json({data:{clearTailscaleCredential:true}});\n   default:return Response.json({errors:[{message:'Read-only browser fixture'}]});\n  }\n };\n})()" })
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url })
   await waitFor("Boolean(document.getElementById('routing-subnets'))")
@@ -325,7 +325,100 @@ try {
   assert.equal(await evaluate("document.querySelector('[name=client_id]').value"),'')
   assert.equal(await evaluate("document.querySelector('.credential-actions .danger-action').disabled"),true)
 
-  console.log('PASS: OAuth approval status polling without losing drafts, confirmed credential removal, cancellation, failure recovery, pending-state protection, local-only removal, consistent text-action styles and tailnet button layout, Network pause/resume without logout, expiry-disabled Renew, enabled LAN defaults, persistent explicit off, validation, acknowledgement, always-on exit role, subnet withdrawal and preservation, readback, uncertain-save recovery, no retries, stopped withdrawal, missing LAN, forwarding warnings, Overview, and responsive layout')
+  // Setup guides are deep-linkable and contextual links preserve active forms.
+  const writesBeforeGuides = await evaluate("window.apiWrites.length")
+  assert.ok(writesBeforeGuides > 0, 'mutation tracking missed earlier test actions')
+  assert.equal(await evaluate("document.querySelector('.sidebar__nav a[href=\"#/tailscale-setup\"]').textContent"), 'Setup guides')
+  for (const slug of ['subnet-routes', 'exit-node']) {
+    assert.deepEqual(await evaluate(`(() => {
+      const link = document.querySelector('.routing-settings a[href="#/tailscale-setup/${slug}"]');
+      return [link.target, link.rel];
+    })()`), ['_blank', 'noopener noreferrer'])
+  }
+  assert.ok(await evaluate("document.getElementById('routing-subnet-approval').textContent.includes('After enabling and saving')"))
+  assert.equal(await evaluate("document.getElementById('routing-subnet-enabled').getAttribute('aria-describedby')"), 'routing-subnet-approval')
+  await evaluate("document.getElementById('routing-subnet-enabled').click()")
+  await fill('routing-subnets', '192.168.77.0/24')
+  const originalTargets = (await send('Target.getTargets')).targetInfos.map(target => target.targetId)
+  await send('Runtime.evaluate', {expression: "document.querySelector('.routing-settings a[href=\"#/tailscale-setup/subnet-routes\"]').click()", userGesture:true})
+  let guideTab
+  for (let n = 0; n < 100; n++) {
+    guideTab = (await send('Target.getTargets')).targetInfos.find(target => !originalTargets.includes(target.targetId) && target.url.endsWith('/#/tailscale-setup/subnet-routes'))
+    if (guideTab) break
+    await pause(30)
+  }
+  assert.ok(guideTab, `approval guide did not open in a separate tab: ${JSON.stringify((await send('Target.getTargets')).targetInfos)}`)
+  assert.equal(await evaluate("location.hash"), '#/access-control')
+  assert.equal(await evaluate("document.getElementById('routing-subnets').value"), '192.168.77.0/24', 'opening a guide lost routing edits')
+  await send('Target.closeTarget', {targetId: guideTab.targetId})
+  await evaluate("document.querySelector('.credential-settings a[href=\"#/tailscale-setup/oauth-credentials\"]').click()")
+  await waitFor("document.querySelector('h1')?.textContent === 'Create your client credentials'")
+  assert.ok(await evaluate("document.querySelector('.setup-guide').textContent.includes('devices:routes')"))
+  await evaluate("document.querySelector('.guide-back').click()")
+  await waitFor("document.querySelectorAll('.guide-card').length === 4")
+  assert.equal(await evaluate("document.querySelector('h1').textContent"), 'Setup guides')
+  assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true, 'mobile guide hub overflows')
+  await send('Emulation.setDeviceMetricsOverride', {width:1440,height:1100,deviceScaleFactor:1,mobile:false})
+  if (process.env.GUIDES_SCREENSHOT) {
+    const result = await send('Page.captureScreenshot', {format:'png',captureBeyondViewport:true})
+    await writeFile(process.env.GUIDES_SCREENSHOT, Buffer.from(result.data,'base64'))
+  }
+  await send('Emulation.setDeviceMetricsOverride', {width:390,height:844,deviceScaleFactor:1,mobile:true})
+  await pause(350) // Let the responsive sidebar transition finish before screenshots.
+  for (const [slug, title, instructions] of [
+    ['device-approval', 'Sign in and approve this device', ['Prepare sign-in', 'Needs approval', 'Approve', 'only when your tailnet requires it', 'do not perform device approval']],
+    ['subnet-routes', 'Approve subnet routes', ['Advertise subnet routes', 'Save and apply routing', 'Edit route settings', 'Subnet routes', 'Save', '--accept-routes']],
+    ['exit-node', 'Approve this exit node', ['always advertises itself', 'Edit route settings', 'Use as exit node', 'autogroup:internet']],
+    ['oauth-credentials', 'Create your client credentials', ['Trust credentials', 'devices:routes', 'Save credentials']],
+  ]) {
+    await evaluate(`document.querySelector('.guide-card[href="#/tailscale-setup/${slug}"]').click()`)
+    await waitFor(`document.querySelector('h1')?.textContent === ${JSON.stringify(title)}`)
+    assert.equal(await evaluate("document.querySelector('.topbar__title strong').textContent"), 'Setup guides')
+    assert.equal(await evaluate("document.querySelector('.nav-item--active').textContent"), 'Setup guides')
+    for (const text of instructions) assert.ok(await evaluate(`document.querySelector('.setup-guide').textContent.includes(${JSON.stringify(text)})`), `missing ${slug} instruction: ${text}`)
+    assert.ok(await evaluate("document.querySelector('.guide-sources a').href.startsWith('https://tailscale.com/docs/')"))
+    assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true, `mobile ${slug} overflows`)
+    assert.equal(await evaluate("Boolean(document.querySelector('.setup-guide button'))"), false, 'guide performs actions')
+    if (slug === 'device-approval' && process.env.GUIDE_MOBILE_SCREENSHOT) {
+      const result = await send('Page.captureScreenshot', {format:'png',captureBeyondViewport:true})
+      await writeFile(process.env.GUIDE_MOBILE_SCREENSHOT, Buffer.from(result.data,'base64'))
+    }
+    await evaluate("document.querySelector('.guide-back').click()")
+    await waitFor("document.querySelectorAll('.guide-card').length === 4")
+  }
+  await evaluate("location.hash='#/tailscale-setup/unknown-guide'")
+  await waitFor("location.hash === '#/tailscale-setup' && document.querySelectorAll('.guide-card').length === 4")
+
+  // First sign-in and waiting-for-approval both expose the device approval guide.
+  await evaluate("window.signInFixture=true;location.hash='#/network'")
+  await waitFor("Boolean(document.querySelector('.tailnet-settings a[href=\"#/tailscale-setup/device-approval\"]'))")
+  await click('Refresh status')
+  await waitFor("document.querySelector('.connection-notice')?.textContent.includes('not signed in')")
+  await evaluate("location.hash='#/'")
+  await waitFor("Boolean(document.querySelector('dialog[open] .signin-steps'))")
+  assert.ok(await evaluate("document.querySelector('.signin-steps').textContent.includes('If your tailnet requires device approval')"))
+  assert.deepEqual(await evaluate("(() => {const a=document.querySelector('.signin-steps a'); return [a.getAttribute('href'),a.target,a.rel]})()"), ['#/tailscale-setup/device-approval','_blank','noopener noreferrer'])
+  assert.equal(await evaluate("document.querySelector('.renewal-submit').disabled"), true, 'sign-in starts without confirmation')
+  assert.equal(await evaluate("document.querySelector('.renewal-submit').textContent.trim()"), 'Prepare sign-in')
+  assert.equal(await evaluate("document.querySelector('dialog').scrollWidth <= document.querySelector('dialog').clientWidth"), true, 'mobile sign-in steps overflow')
+  await evaluate("document.querySelector('[aria-label=\"Close sign-in dialog\"]').click()")
+  await waitFor("!document.querySelector('dialog[open]')")
+  await evaluate("window.renewalState='AWAITING_APPROVAL'")
+  await click('Sign in to Tailscale')
+  await waitFor("Boolean(document.querySelector('.renewal-status a[href=\"#/tailscale-setup/device-approval\"]'))")
+  assert.ok(await evaluate("document.querySelector('.renewal-status').textContent.includes('waiting for device approval')"))
+  assert.equal(await evaluate("document.querySelector('.renewal-status a[href=\"#/tailscale-setup/device-approval\"]').target"), '_blank')
+  assert.equal(await evaluate("window.apiWrites.length"), writesBeforeGuides, 'reading guides or sign-in help sent a mutation')
+  await evaluate("document.querySelector('[aria-label=\"Close sign-in dialog\"]').click()")
+  await waitFor("!document.querySelector('dialog[open]')")
+  await send('Page.navigate', {url: url.replace('/#/access-control', '/#/tailscale-setup/subnet-routes')})
+  await waitFor("location.hash === '#/tailscale-setup/subnet-routes' && document.querySelector('h1')?.textContent === 'Approve subnet routes'")
+  await send('Page.reload', {ignoreCache:true})
+  await waitFor("window.apiWrites?.length === 0 && document.querySelector('h1')?.textContent === 'Approve subnet routes'")
+  assert.equal(await evaluate("document.querySelector('.nav-item--active').textContent"), 'Setup guides', 'deep link lost navigation context')
+  assert.equal(await evaluate("window.apiWrites.length"), 0, 'opening a direct guide link sent a mutation')
+
+  console.log('PASS: setup guide navigation/deep links, contextual approval help, draft-preserving new-tab links, first sign-in and awaiting approval, mobile guides, OAuth approval status polling without losing drafts, confirmed credential removal, cancellation, failure recovery, pending-state protection, local-only removal, consistent text-action styles and tailnet button layout, Network pause/resume without logout, expiry-disabled Renew, enabled LAN defaults, persistent explicit off, validation, acknowledgement, always-on exit role, subnet withdrawal and preservation, readback, uncertain-save recovery, no retries, stopped withdrawal, missing LAN, forwarding warnings, Overview, and responsive layout')
 } finally {
   socket?.close()
   chrome.kill('SIGTERM')

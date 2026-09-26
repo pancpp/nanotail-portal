@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Network, Route } from 'lucide-react'
 import { ApiError, isSessionError, setRoutingRequest, tailscaleRoutingRequest, type TailscaleRouting } from '../api'
 import { useAuth } from '../auth'
@@ -98,6 +99,7 @@ export default function ExitNodeSettingsForm() {
           <p className="credential-state">Always enabled · managed by this portal</p>
           <p className="password-help">This device is an exit node for other tailnet devices. The portal ensures this setting automatically; it cannot be disabled here.</p>
           <p className="password-help">Current advertisement: {routing.advertiseExitNode ? 'Advertised' : 'Pending'}. Tailscale must be signed in and running to carry traffic; admin approval may still be required.</p>
+          <p className="password-help">Approve this device for exit-node use in Tailscale unless OAuth or tailnet policy already approved it. <Link to="/tailscale-setup/exit-node" target="_blank" rel="noopener noreferrer">Exit-node approval guide (new tab)</Link>.</p>
           {!routing.advertiseExitNode && <p className="lan-warning">The portal will configure the advertisement when Tailscale is available. If it stays pending, check the service logs and daemon permissions.</p>}
         </fieldset>
 
@@ -107,9 +109,11 @@ export default function ExitNodeSettingsForm() {
           {routing.subnetDefaultsPending && <p className="lan-warning">Local LAN advertisement is pending. The portal will apply it automatically when Tailscale is connected and LAN addresses are available. You can save custom routes or disable it below.</p>}
           <label className="lan-acknowledgement" htmlFor="routing-subnet-enabled">
             <input id="routing-subnet-enabled" type="checkbox" checked={subnetEnabled}
+              aria-describedby="routing-subnet-approval"
               onChange={event => { setSubnetEnabled(event.target.checked); edited() }} />
             <span>Advertise subnet routes</span>
           </label>
+          <p className="password-help" id="routing-subnet-approval">After enabling and saving subnet advertisements, approve the intended routes in Tailscale unless OAuth or tailnet policy already approved them. Advertising alone does not grant access. <Link to="/tailscale-setup/subnet-routes" target="_blank" rel="noopener noreferrer">Subnet route approval guide (new tab)</Link>.</p>
           <label htmlFor="routing-subnets">Subnet CIDRs</label>
           <textarea id="routing-subnets" rows={4} value={routeText} disabled={!subnetEnabled} maxLength={8192}
             placeholder="192.168.1.0/24" aria-describedby="routing-subnet-help" aria-invalid={subnetEnabled && !!validation}

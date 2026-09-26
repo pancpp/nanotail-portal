@@ -1045,6 +1045,7 @@ input:focus-visible {
   padding-left: 1.5rem;
   line-height: 1.6;
 }
+.signin-steps a, .routing-section a { color: var(--green-dark); text-underline-offset: 4px; }
 
 .renewal-dialog .lan-warning { margin-top: 0; }
 .renewal-feedback:not(:empty) { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px 18px; margin: 20px 0; border: 1px solid #dce7e1; border-radius: 14px; background: #f5f9f7; text-align: center; }
@@ -1759,7 +1760,17 @@ a:focus-visible, dialog:focus-visible {
 .credential-actions .login-submit { flex: 1 1 220px; width: auto; margin-top: 0; }
 .credential-actions .text-action { align-self: center; font-size: 16px; }
 .remove-confirmation { margin-top: 20px; padding: 16px; border: 1px solid #eccaca; border-radius: 12px; font-size: 16px; line-height: 1.5; }
+.setup-guides { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 20px; max-width: 900px; }
+.guide-card { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 26px; color: var(--ink); text-decoration: none; }
+.guide-card:hover { border-color: var(--green-dark); }
+.guide-card > svg, .guide-card > span { color: var(--green-dark); }
+.guide-card h2 { margin: 0; font-size: 23px; line-height: 1.3; letter-spacing: -0.5px; }
+.guide-card p { margin: 0; font-size: 17px; line-height: 1.6; color: var(--muted); }
+.guide-card > span { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; font-size: 16px; }
+.guide-back { display: flex; width: fit-content; align-items: center; gap: 8px; margin-bottom: 24px; font-size: 16px; color: var(--green-dark); text-underline-offset: 4px; }
+.guide-note { max-width: 900px; margin: 24px 0 0; color: var(--muted); font-size: 17px; line-height: 1.6; }
 .setup-guide { padding: clamp(20px, 4vw, 40px); max-width: 900px; font-size: 18px; line-height: 1.65; }
+.setup-guide p a { display: inline; font-size: inherit; line-height: inherit; }
 .guide-summary { display: flex; align-items: flex-start; gap: 14px; padding: 18px; background: var(--soft-green); border-radius: 12px; }
 .guide-summary svg { flex-shrink: 0; margin-top: 6px; color: var(--green-dark); }
 .guide-summary p { margin: 0; }
