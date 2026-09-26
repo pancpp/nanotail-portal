@@ -149,7 +149,8 @@ steps and data-loss warning.
 ### Exit node and subnet router
 
 Overview shows separate **Exit node** and **Subnet routes** cards; **Configure**
-opens **Access control → Exit node & subnet routes**. This device provides
+opens **Access control**, where **Exit node** and **Subnet routes** have separate
+cards. This device provides
 internet/LAN access to other tailnet devices, rather than selecting another exit
 node for its own traffic. **Exit-node advertising is always enabled**; there is
 no switch to disable it. The panel shows the actual saved advertisement separately

@@ -903,8 +903,17 @@ input:focus-visible {
 .status-grid {
   display: grid;
   margin-bottom: 18px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 17px;
+}
+
+.status-grid__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.status-grid__row--secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .status-card {
@@ -1061,7 +1070,7 @@ input:focus-visible {
   padding-left: 1.5rem;
   line-height: 1.6;
 }
-.signin-steps a, .routing-section a { color: var(--green-dark); text-underline-offset: 4px; }
+.signin-steps a, .routing-section a, .exit-node-settings a { color: var(--green-dark); text-underline-offset: 4px; }
 
 .renewal-dialog .lan-warning { margin-top: 0; }
 .renewal-feedback:not(:empty) { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px 18px; margin: 20px 0; border: 1px solid #dce7e1; border-radius: 14px; background: #f5f9f7; text-align: center; }
@@ -1548,13 +1557,8 @@ input:focus-visible {
   display: none;
 }
 
-@media (max-width: 1500px) {
-  .status-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .status-card--primary { grid-column: span 2; }
-}
-
 @media (max-width: 1100px) {
-  .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .status-grid__row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .status-card--primary { grid-column: 1 / -1; }
   .login-story {
     padding-inline: 45px;
@@ -1664,10 +1668,6 @@ input:focus-visible {
     margin-left: 8px;
   }
 
-  .status-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
 }
 
 @media (max-width: 600px) {
@@ -1726,7 +1726,7 @@ input:focus-visible {
     margin-top: -8px;
   }
 
-  .status-grid {
+  .status-grid__row {
     grid-template-columns: 1fr;
   }
 
@@ -1782,7 +1782,7 @@ input:focus-visible {
 }
 
 /* Tailscale credential setup */
-.lan-settings, .tailnet-settings, .routing-settings, .peer-relay-settings { margin-bottom: 18px; }
+.lan-settings, .tailnet-settings, .exit-node-settings, .routing-settings, .peer-relay-settings { margin-bottom: 18px; }
 .peer-relay-settings { scroll-margin-top: 90px; }
 .peer-relay-card .status-card__body p { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
 .tailnet-state { color: var(--muted); font-size: 17px; }
@@ -1836,6 +1836,7 @@ a:focus-visible, dialog:focus-visible {
 .routing-card .status-card__body p { white-space: normal; overflow: visible; font-size: 16px; line-height: 1.5; }
 .routing-settings select { min-width: 0; font-size: 17px; }
 .routing-section { min-width: 0; margin: 24px 0; padding: 18px 0 0; border: 0; border-top: 1px solid var(--line); }
+.routing-section--standalone { margin: 0; padding: 0; border: 0; }
 .routing-section legend { display: flex; align-items: center; gap: 8px; padding-right: 12px; font-weight: 700; font-size: 20px; }
 .routing-section > label { display: block; margin-top: 18px; }
 .routing-section textarea { box-sizing: border-box; width: 100%; margin-top: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; font: 16px/1.6 monospace; resize: vertical; }

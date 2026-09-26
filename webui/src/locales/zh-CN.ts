@@ -84,6 +84,8 @@ export const zhCN: Record<string, string> = {
   "Not available": "暂无信息",
   "TAILSCALE ROUTING": "TAILSCALE 路由",
   "Exit node & subnet routes": "出口节点与子网路由",
+  "Exit node": "出口节点",
+  "Give tailnet devices access to your local LAN. Only portal administrators can apply changes.": "让 tailnet 设备访问您的本地局域网。仅门户管理员可以应用更改。",
   "Use this device as an internet gateway and a gateway to your local LAN for other tailnet devices. Only portal administrators can apply changes.": "将本设备用作其他 tailnet 设备的互联网网关和局域网网关。只有门户管理员可以应用更改。",
   "Loading routing settings…": "正在加载路由设置…",
   "Routing advertisements saved. OAuth approval runs automatically when credentials are configured; check Tailnet approval below.": "路由通告已保存。配置 OAuth 凭据后将自动进行批准；请查看下方的“Tailnet 批准状态”。",

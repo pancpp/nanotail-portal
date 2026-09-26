@@ -155,7 +155,8 @@ and routing settings are live.
 
 ## Exit-node and subnet routing
 
-**Overview → Configure** opens **Access control**. This device always advertises
+**Overview → Configure** opens **Access control**, with separate **Exit node** and
+**Subnet routes** cards. This device always advertises
 itself as an exit node; it cannot select another exit node. Subnet advertisements
 default to the local LAN and can be edited or disabled with the administrator-only
 `setRouting` mutation. Changes require acknowledgement of the connectivity warning.

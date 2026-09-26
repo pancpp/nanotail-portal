@@ -1,14 +1,14 @@
 import { useI18n, T } from '../i18n'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Network, Route } from 'lucide-react'
+import { Network } from 'lucide-react'
 import { ApiError, isSessionError, setRoutingRequest, tailscaleRoutingRequest, type TailscaleRouting } from '../api'
 import { useAuth } from '../auth'
 import { forwardingWarnings, routingDraft } from '../routing'
 import { parseSubnetRouteText } from '../subnetRoutes'
 import { useTailscale } from '../tailscale'
 
-export default function ExitNodeSettingsForm() {
+export default function SubnetRoutesSettingsForm() {
   const { t, language } = useI18n()
   const { accessToken, logout } = useAuth()
   const { refresh, routing: liveRouting, routingError } = useTailscale()
@@ -88,25 +88,15 @@ export default function ExitNodeSettingsForm() {
 
   return <section className="panel routing-settings" aria-labelledby="routing-settings-title">
     <div className="panel__header">
-      <div><span className="panel__eyebrow">{t("TAILSCALE ROUTING")}</span><h2 id="routing-settings-title">{t("Exit node & subnet routes")}</h2></div><Route size={20} />
+      <div><span className="panel__eyebrow">{t("TAILSCALE ROUTING")}</span><h2 id="routing-settings-title">{t("Subnet routes")}</h2></div><Network size={20} />
     </div>
     <form className="login-form credential-form lan-form" onSubmit={submit} aria-busy={busy || loading}>
-      <p className="credential-intro">{t("Use this device as an internet gateway and a gateway to your local LAN for other tailnet devices. Only portal administrators can apply changes.")}</p>
+      <p className="credential-intro">{t("Give tailnet devices access to your local LAN. Only portal administrators can apply changes.")}</p>
       {loading && <p role="status">{t("Loading routing settings…")}</p>}
       {error && <div className="form-error" role="alert">{t(error)}</div>}
       {saved && <p className="form-success" role="status">{t("Routing advertisements saved. OAuth approval runs automatically when credentials are configured; check Tailnet approval below.")}</p>}
       {routing && !loading && <>
-        <fieldset className="routing-section" disabled={busy || needsReload}>
-          <legend><T message="{0} Exit node" values={{ 0: <Route size={18} /> }} /></legend>
-          <p className="credential-state">{t("Always enabled · managed by this portal")}</p>
-          <p className="password-help">{t("This device is an exit node for other tailnet devices. The portal ensures this setting automatically; it cannot be disabled here.")}</p>
-          <p className="password-help"><T message="Current advertisement: {0}. Tailscale must be signed in and running to carry traffic; admin approval may still be required." values={{ 0: routing.advertiseExitNode ? t("Advertised") : t("Pending") }} /></p>
-          <p className="password-help"><T message="Approve this device for exit-node use in Tailscale unless OAuth or tailnet policy already approved it. {0}." values={{ 0: <Link to="/tailscale-setup/exit-node" target="_blank" rel="noopener noreferrer">{t("Exit-node approval guide (new tab)")}</Link> }} /></p>
-          {!routing.advertiseExitNode && <p className="lan-warning">{t("The portal will configure the advertisement when Tailscale is available. If it stays pending, check the service logs and daemon permissions.")}</p>}
-        </fieldset>
-
-        <fieldset className="routing-section" disabled={busy || needsReload}>
-          <legend><T message="{0} Subnet routes" values={{ 0: <Network size={18} /> }} /></legend>
+        <fieldset className="routing-section routing-section--standalone" disabled={busy || needsReload} aria-labelledby="routing-settings-title">
           <p className="password-help">{t("Enabled by default using the local LAN. Give tailnet devices access to networks behind this device, including devices without Tailscale.")}</p>
           {routing.subnetDefaultsPending && <p className="lan-warning">{t("Local LAN advertisement is pending. The portal will apply it automatically when Tailscale is connected and LAN addresses are available. You can save custom routes or disable it below.")}</p>}
           <label className="lan-acknowledgement" htmlFor="routing-subnet-enabled">
@@ -145,7 +135,6 @@ export default function ExitNodeSettingsForm() {
           <p className="password-help"><T message="Without OAuth credentials, approve routes in the {0} or configure auto-approvers. Tailnet access rules and client settings must still allow their use." values={{ 0: <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener noreferrer">{t("Tailscale admin console ↗")}</a> }} /></p>
         </div>
         {routing.backendState !== 'Running' && <p className="lan-warning">{t("Tailscale is not running. Connect it before advertising routes. You can still remove subnet advertisements. The exit-node setting remains enabled.")}</p>}
-        {routing.usingExitNode && <p className="lan-warning">{t("This device still has another exit node selected. The portal will clear that selection automatically to enforce this device’s exit-node role.")}</p>}
         <div className="lan-warning" id="routing-warning">{t("Advertising routes can expose your LAN to permitted tailnet devices. Changing subnet routes may disconnect this browser, SSH, or other clients. Keep local access available. Changes are not automatically reverted.")}</div>
         <label className="lan-acknowledgement" htmlFor="routing-ack">
           <input id="routing-ack" type="checkbox" required disabled={busy || needsReload} checked={acknowledged}

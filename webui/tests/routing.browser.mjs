@@ -341,7 +341,7 @@ try {
   assert.equal(await evaluate("document.querySelector('.sidebar__nav a[href=\"#/tailscale-setup\"]').textContent"), 'Setup guides')
   for (const slug of ['subnet-routes', 'exit-node']) {
     assert.deepEqual(await evaluate(`(() => {
-      const link = document.querySelector('.routing-settings a[href="#/tailscale-setup/${slug}"]');
+      const link = document.querySelector('${slug === 'exit-node' ? '.exit-node-settings' : '.routing-settings'} a[href="#/tailscale-setup/${slug}"]');
       return [link.target, link.rel];
     })()`), ['_blank', 'noopener noreferrer'])
   }
