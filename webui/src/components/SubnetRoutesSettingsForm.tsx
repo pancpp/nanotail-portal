@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n, T } from '../i18n'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
@@ -113,8 +114,8 @@ export default function SubnetRoutesSettingsForm() {
           <p className="password-help" id="routing-subnet-help">{t("One network per line, or separate with commas. IPv4 and IPv6 are supported. Default routes are managed automatically for the exit node.")}</p>
           <p className="password-help"><T message="Local LAN ({0}): {1}. Used automatically for initial setup; later LAN changes do not replace saved routes. Disabling subnet advertising is remembered across restarts." values={{ 0: routing.lanInterface, 1: routing.defaultSubnetRoutes.join(', ') || t("Not detected") }} /></p>
           {routing.lanWarning && <p className="form-error">{t(routing.lanWarning)}</p>}
-          <button className="text-action" type="button" disabled={!subnetEnabled || !routing.defaultSubnetRoutes.length}
-            onClick={() => { setRouteText(routing.defaultSubnetRoutes.join('\n')); edited() }}>{t("Use local LAN")}</button>
+          <Button className="text-action" type="button" disabledReason={busy ? t("Applying routing settings…") : needsReload ? t("Reload routing settings before trying again.") : !subnetEnabled ? t("Enable subnet advertisements to use the local LAN.") : !routing.defaultSubnetRoutes.length ? t("No local LAN subnet was detected.") : ""}
+            onClick={() => { setRouteText(routing.defaultSubnetRoutes.join('\n')); edited() }}>{t("Use local LAN")}</Button>
           {validation && <p className="form-error" role="alert">{t(validation)}</p>}
         </fieldset>
 
@@ -141,11 +142,11 @@ export default function SubnetRoutesSettingsForm() {
             onChange={event => setAcknowledged(event.target.checked)} aria-describedby="routing-warning" />
           <span>{t("I understand the access and connectivity changes.")}</span>
         </label>
-        <button className="login-submit" type="submit" disabled={busy || needsReload || !changed || !canApply || !acknowledged}>
+        <Button className="login-submit" type="submit" disabledReason={busy ? t("Applying routing settings…") : needsReload ? t("Reload routing settings before trying again.") : validation ? t(validation) : !canApply ? t("Connect Tailscale before advertising subnet routes.") : !changed ? t("No changes to save.") : !acknowledged ? t("Confirm the access and connectivity warning before applying.") : ""}>
           {busy ? t("Applying routing settings…") : t("Save and apply routing")}
-        </button>
+        </Button>
       </>}
-      <button className="text-action" type="button" disabled={busy || loading} onClick={() => { setSaved(false); void refresh(); void reload() }}>{t("Reload settings")}</button>
+      <Button className="text-action" type="button" disabledReason={busy ? t("Applying routing settings…") : loading ? t("Loading routing settings…") : ""} onClick={() => { setSaved(false); void refresh(); void reload() }}>{t("Reload settings")}</Button>
     </form>
   </section>
 }

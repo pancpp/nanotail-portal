@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n, T } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -49,7 +50,7 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
     onCancel={(event) => { event.preventDefault(); if (!busy) void requestClose() }}>
     <div className="panel__header">
       <div><span className="panel__eyebrow">{signIn ? t("TAILSCALE SIGN-IN") : t("KEY RENEW")}</span><h2 id="renewal-title">{signIn ? t("Connect to your tailnet") : t("Renew node key")}</h2></div>
-      <button type="button" className="icon-button" aria-label={signIn ? t("Close sign-in dialog") : t("Close renewal dialog")} disabled={busy} onClick={() => { void requestClose() }}><X size={22} /></button>
+      <Button type="button" className="icon-button" aria-label={signIn ? t("Close sign-in dialog") : t("Close renewal dialog")} disabledReason={busy ? t("Wait for the Tailscale sign-in request to finish.") : ""} onClick={() => { void requestClose() }}><X size={22} /></Button>
     </div>
     <p className="setup-dialog__description" id="renewal-description">{signedIn ? t("Your device is signed in. You can close this panel to view your tailnet status.") : signIn ? t("Sign this device in to Tailscale using your browser. Your portal account is separate from your Tailscale account. A client ID and client secret are not required for browser sign-in.") : t("Force a new Tailscale sign-in for this device. Existing routing preferences are preserved; saved OAuth credentials are not used.")}</p>
     <div className="credential-form lan-form">
@@ -66,9 +67,9 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
         {preparing && <p role="status">{t("Preparing the request. Tailscale has not been changed.")}</p>}
         {value?.state === 'READY' && <>
           <p>{t("The request is ready. Tailscale authentication starts only when you choose Sign in. Closing this panel cancels this request without changing the device.")}</p>
-          <button type="button" className="secondary-button renewal-signin" disabled={busy || renewalDisabled} onClick={startSignIn}><T message="Sign in to Tailscale {0}" values={{ 0: <ExternalLink size={16} /> }} /></button>
+          <Button type="button" className="secondary-button renewal-signin" disabledReason={busy ? t("Wait for the Tailscale sign-in request to finish.") : renewalDisabled ? t("Renewal is disabled because node-key expiry is disabled.") : ""} onClick={startSignIn}><T message="Sign in to Tailscale {0}" values={{ 0: <ExternalLink size={16} /> }} /></Button>
         </>}
-        {value?.state === 'STARTING' && value.canRenew && <button type="button" className="secondary-button renewal-signin" disabled={busy || renewalDisabled} onClick={startSignIn}><T message="Retry sign-in {0}" values={{ 0: <ExternalLink size={16} /> }} /></button>}
+        {value?.state === 'STARTING' && value.canRenew && <Button type="button" className="secondary-button renewal-signin" disabledReason={busy ? t("Wait for the Tailscale sign-in request to finish.") : renewalDisabled ? t("Renewal is disabled because node-key expiry is disabled.") : ""} onClick={startSignIn}><T message="Retry sign-in {0}" values={{ 0: <ExternalLink size={16} /> }} /></Button>}
         {busy && !value && !pending && <p className="renewal-checking" role="status"><T message="{0} Checking {1} status…" values={{ 0: <LoaderCircle size={20} className="spin" aria-hidden="true" />, 1: signIn ? t("sign-in") : t("renewal") }} /></p>}
         {value?.state === 'AWAITING_LOGIN' && <>
           <p>{t("Complete sign-in in a new tab, then return here. Keep this link private.")}</p>
@@ -83,9 +84,9 @@ export default function NodeKeyRenewalDialog({ onClose, signIn = false }: { onCl
         <label className="lan-acknowledgement"><input type="checkbox" checked={acknowledged} disabled={busy} onChange={event => setAcknowledged(event.target.checked)} />
           <span>{signIn ? t("I want to connect this device to my tailnet and can access the portal over the LAN.") : t("I can reconnect over the LAN and understand that I must sign in to Tailscale again.")}</span>
         </label>
-        <button type="button" className="secondary-button renewal-submit" disabled={busy || !acknowledged} onClick={confirmRenewal}>
+        <Button type="button" className="secondary-button renewal-submit" disabledReason={busy ? t("Wait for the Tailscale sign-in request to finish.") : !acknowledged ? t("Confirm that you can reconnect over the LAN before continuing.") : ""} onClick={confirmRenewal}>
           <RefreshCw size={16} /> {signIn ? t("Prepare sign-in") : ['SIGNED_IN', 'COMPLETE'].includes(value.state) ? t("Renew again") : t("Renew node key")}
-        </button>
+        </Button>
       </>}
     </div>
     {pending && <div className="setup-dialog__footer credential-links">

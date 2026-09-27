@@ -25,6 +25,20 @@ The production assets are written to `dist/`. Client routes use URL hashes
 Run the API contract tests with `npm test` (Node 22.6+ is required for TypeScript
 type stripping). No additional test dependencies are needed.
 
+## Disabled actions
+
+Disabled buttons show a short explanation on hover, keyboard focus, or tap.
+Reasons cover loading, missing confirmations, invalid inputs, unchanged settings,
+and unavailable device state, in English and Chinese. Escape or clicking outside
+dismisses the tooltip. Tooltips stay visible above modal dialogs and within the
+viewport on mobile.
+
+Use `components/Button.tsx` with a translated `disabledReason` for actions that
+can be disabled; an empty reason enables the button. The native button remains
+disabled, with a focusable wrapper that exposes its name and reason to screen
+readers. Include parent fieldset conditions in the reason. The routing browser
+suite checks pointer, keyboard, touch, modal, and disabled-action behavior.
+
 ## Authentication flow
 
 The login page submits `username` and `password` to `POST /api/login`.

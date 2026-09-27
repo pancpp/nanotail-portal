@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n, T } from '../i18n'
 import { useId, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
@@ -71,24 +72,24 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
         autoCapitalize="none" spellCheck={false} maxLength={4096} required={needsSecret} disabled={busy}
         aria-describedby={`${id}-help`} placeholder={needsSecret ? t("Paste the client secret") : t("Leave blank to keep it")}
         value={secret} onChange={(event) => setSecret(event.target.value)} />
-      <button className="password-field__toggle" type="button" disabled={busy} aria-label={showSecret ? t("Hide client secret") : t("Show client secret")}
-        aria-pressed={showSecret} onClick={() => setShowSecret(!showSecret)}>{showSecret ? <EyeOff size={19} /> : <Eye size={19} />}</button>
+      <Button className="password-field__toggle" type="button" disabledReason={busy ? t("Wait for the credential update to finish.") : ""} aria-label={showSecret ? t("Hide client secret") : t("Show client secret")}
+        aria-pressed={showSecret} onClick={() => setShowSecret(!showSecret)}>{showSecret ? <EyeOff size={19} /> : <Eye size={19} />}</Button>
     </div>
     <p className="password-help" id={`${id}-help`}>{client?.hasClientSecret ? t("Leave blank to keep the saved secret for this client ID. The saved secret is never sent back to this browser.") : t("The secret is shown only once by Tailscale. Copy it before closing that page.")}</p>
     {error && <div className="form-error" role="alert">{t(error)}</div>}
     {success && <div className="form-success" role="status">{t(success)}</div>}
     <div className="credential-actions">
-      <button className="login-submit" type="submit" disabled={busy || confirmRemove}>{action === 'save' ? t("Saving changes…") : t("Save credentials")}<KeyRound size={17} /></button>
-      <button className="text-action danger-action" type="button" disabled={busy || !client || confirmRemove}
+      <Button className="login-submit" type="submit" disabledReason={busy ? t("Wait for the credential update to finish.") : confirmRemove ? t("Confirm or cancel credential removal first.") : ""}>{action === 'save' ? t("Saving changes…") : t("Save credentials")}<KeyRound size={17} /></Button>
+      <Button className="text-action danger-action" type="button" disabledReason={busy ? t("Wait for the credential update to finish.") : !client ? t("No saved credentials to remove.") : confirmRemove ? t("Confirm or cancel credential removal below.") : ""}
         aria-expanded={confirmRemove} aria-controls={`${id}-remove`}
-        onClick={() => { setError(''); setSuccess(''); setConfirmRemove(true) }}><T message="Remove credentials {0}" values={{ 0: <Trash2 size={17} /> }} /></button>
+        onClick={() => { setError(''); setSuccess(''); setConfirmRemove(true) }}><T message="Remove credentials {0}" values={{ 0: <Trash2 size={17} /> }} /></Button>
     </div>
     <p className="password-help">{t("This does not join or switch tailnets. Use a trusted HTTPS connection when entering secrets. Saved secrets and API tokens are never sent back to the browser.")}</p>
     {confirmRemove && <div className="remove-confirmation" id={`${id}-remove`} role="group" aria-label={t("Confirm credential removal")}>
       <p>{t("Remove the saved client ID and secret from this device? This does not disconnect Tailscale or revoke the OAuth client in Tailscale.")}</p>
       <div className="credential-links">
-        <button className="secondary-button danger-action" type="button" disabled={busy || !client} onClick={() => { void remove() }}>{action === 'remove' ? t("Removing credentials…") : t("Confirm removal")}</button>
-        <button className="secondary-button" type="button" disabled={busy} onClick={() => setConfirmRemove(false)}>{t("Cancel")}</button>
+        <Button className="secondary-button danger-action" type="button" disabledReason={busy ? t("Wait for the credential update to finish.") : !client ? t("No saved credentials to remove.") : ""} onClick={() => { void remove() }}>{action === 'remove' ? t("Removing credentials…") : t("Confirm removal")}</Button>
+        <Button className="secondary-button" type="button" disabledReason={busy ? t("Wait for the credential update to finish.") : ""} onClick={() => setConfirmRemove(false)}>{t("Cancel")}</Button>
       </div>
     </div>}
   </form>

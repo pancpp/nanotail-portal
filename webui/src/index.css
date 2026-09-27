@@ -49,7 +49,7 @@ button:not(:disabled) {
 }
 
 button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
   opacity: 0.7;
 }
 
@@ -1894,3 +1894,28 @@ a:focus-visible, dialog:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Keep disabled controls native, with a focusable target for their explanation. */
+.button-tooltip { display: inline-flex; max-width: 100%; vertical-align: middle; border-radius: 9px; }
+.button-tooltip[aria-disabled="true"] { cursor: not-allowed; }
+.button-tooltip:focus-visible { outline: 3px solid rgba(39, 194, 131, .4); outline-offset: 3px; }
+.button-tooltip > button:disabled { pointer-events: none; }
+.button-tooltip:has(> .login-submit) { display: flex; width: 100%; margin-top: 24px; border-radius: 11px; }
+.button-tooltip > .login-submit { margin-top: 0; }
+.credential-actions > .button-tooltip:has(> .login-submit) { flex: 1 1 220px; width: auto; margin-top: 0; }
+.button-tooltip:has(> .text-action), .button-tooltip:has(> .node-key-renew) { margin-top: auto; align-self: flex-start; }
+.lan-form .button-tooltip:has(> .text-action) { margin-top: 16px; }
+.credential-actions > .button-tooltip:has(> .text-action) { align-self: center; }
+.button-tooltip > .text-action, .button-tooltip > .node-key-renew { margin-top: 0; }
+.button-tooltip:has(> .renewal-submit) { margin-top: 18px; }
+.button-tooltip > .renewal-submit { margin-top: 0; }
+.button-tooltip:has(> .password-field__toggle) { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); }
+.button-tooltip > .password-field__toggle { position: static; transform: none; }
+.button-tooltip__reason {
+  position: fixed; inset: auto; margin: 0; width: max-content; max-width: min(280px, calc(100vw - 24px));
+  padding: 8px 11px; border: 1px solid #3b5145; border-radius: 8px;
+  color: #fff; background: #20382b; box-shadow: 0 4px 16px #071a1326;
+  font-family: inherit; font-size: 13px; font-weight: 400; line-height: 1.45;
+  text-align: left; white-space: normal; overflow-wrap: anywhere; cursor: default;
+}
+.button-tooltip__reason::backdrop { background: transparent; pointer-events: none; }

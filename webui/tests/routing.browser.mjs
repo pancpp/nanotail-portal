@@ -10,6 +10,7 @@ import { checkRefreshCountdown } from './refresh-countdown.browser.mjs'
 import { portalVersionFixture, checkPortalVersion } from './portal-version.browser.mjs'
 import { checkPeerLatencies } from './peer-latency.browser.mjs'
 import { checkPeerRelay } from './peer-relay.browser.mjs'
+import { checkDisabledButtons } from './disabled-buttons.browser.mjs'
 
 const dist = fileURLToPath(new URL('../dist', import.meta.url))
 const server = createServer(async (req, res) => {
@@ -90,6 +91,7 @@ try {
   await checkRefreshCountdown({evaluate, waitFor, click, pause})
   await checkPeerLatencies({evaluate, send, waitFor, click, pause})
   await checkPeerRelay({evaluate, send, waitFor, click, fill, pause})
+  await checkDisabledButtons({evaluate, send, waitFor, click, fill, pause})
   const reloadSettingsStyle = await buttonStyle('Reload settings')
   const localLANStyle = await buttonStyle('Use local LAN')
   assert.equal(await evaluate("document.getElementById('routing-subnets').value"), '192.168.42.0/24\nfd00:1234::/64')

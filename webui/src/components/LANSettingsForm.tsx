@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n, T } from '../i18n'
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Network } from 'lucide-react'
@@ -66,7 +67,7 @@ export default function LANSettingsForm() {
     <div className="panel__header"><div><span className="panel__eyebrow">{t("NETWORK · ETH0")}</span><h2 id={`${id}-heading`}>{t("LAN IPv4 settings")}</h2></div><Network size={20} /></div>
     <form className="login-form credential-form lan-form" onSubmit={submit} aria-busy={busy}>
       <p className="credential-intro">{t("Choose DHCP or a static IPv4 address for eth0. IPv6 configuration is unchanged. Only portal administrators can apply changes.")}</p>
-      {statusError && <div className="form-error" role="status"><T message="Current device status is unavailable. {0}{1}" values={{ 0: t(statusError), 1: <button className="secondary-button" type="button" disabled={busy || refreshing} onClick={() => { void refresh() }}>{t("Retry status")}</button> }} /></div>}
+      {statusError && <div className="form-error" role="status"><T message="Current device status is unavailable. {0}{1}" values={{ 0: t(statusError), 1: <Button className="secondary-button" type="button" disabledReason={busy ? t("Applying LAN settings…") : refreshing ? t("Refreshing device status…") : ""} onClick={() => { void refresh() }}>{t("Retry status")}</Button> }} /></div>}
       {!draft ? <p role="status">{statusError ? t("Load device status before editing LAN settings.") : t("Loading LAN settings…")}</p> : <>
         <label htmlFor={`${id}-type`}>{t("IPv4 configuration")}</label>
         <select id={`${id}-type`} name="lan_type" required disabled={busy} value={draft.type} onChange={(event) => change('type', event.target.value)}>
@@ -93,10 +94,10 @@ export default function LANSettingsForm() {
         {error && <div className="form-error" role="alert">{t(error)}</div>}
         {success && <div className="form-success" role="status">{t(success)}</div>}
         {reconnect && <p className="lan-reconnect"><T message="{0}{1}Sign in again at the new address. HTTPS requires a certificate valid for that address." values={{ 0: <a href={reconnect} target="_blank" rel="noopener noreferrer">{t("Open portal at the new IPv4 address")}</a>, 1: <br /> }} /></p>}
-        <button className="login-submit" type="submit" disabled={busy || !draft.type || !acknowledged}>{busy ? t("Applying LAN settings…") : t("Save and apply LAN settings")}</button>
-        <button className="text-action" type="button" disabled={busy || !status || !!statusError} onClick={() => {
+        <Button className="login-submit" type="submit" disabledReason={busy ? t("Applying LAN settings…") : !draft.type ? t("Choose DHCP or static IPv4 first.") : !acknowledged ? t("Confirm the connection warning before applying.") : ""}>{busy ? t("Applying LAN settings…") : t("Save and apply LAN settings")}</Button>
+        <Button className="text-action" type="button" disabledReason={busy ? t("Applying LAN settings…") : !status || statusError ? t("Load device status before discarding edits.") : ""} onClick={() => {
           if (status) { setDraft(initialValues(status)); setAcknowledged(false); setError(''); setSuccess(''); setReconnect(null) }
-        }}>{t("Discard edits and use current values")}</button>
+        }}>{t("Discard edits and use current values")}</Button>
       </>}
     </form>
   </section>

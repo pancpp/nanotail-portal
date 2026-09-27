@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n, T } from '../i18n'
 import { useEffect, useState } from 'react'
 import { KeyRound, RefreshCw } from 'lucide-react'
@@ -32,8 +33,7 @@ export default function NodeKeyCard({ onRenew }: { onRenew: () => void }) {
     </div>
     {key.state === 'expired' && <p className="node-key-warning">{t("Reauthenticate this device to restore access.")}</p>}
     <NodeKeyRenewalStatus snapshot={keyRenewal} compact signIn={status?.backendState === 'NeedsLogin' && !status.haveNodeKey} />
-    <button type="button" className="status-card__configure node-key-renew" onClick={onRenew}
-      title={nodeKeyExpiryDisabled(status) ? t("Renewal is disabled because node-key expiry is disabled.") : undefined}
-      disabled={nodeKeyRenewDisabled(status, statusError, keyRenewalActive)}><T message="Renew {0}" values={{ 0: <RefreshCw size={16} /> }} /></button>
+    <Button type="button" className="status-card__configure node-key-renew" onClick={onRenew}
+      disabledReason={nodeKeyRenewDisabled(status, statusError, keyRenewalActive) ? (nodeKeyExpiryDisabled(status) ? t("Renewal is disabled because node-key expiry is disabled.") : t(key.description)) : ""}><T message="Renew {0}" values={{ 0: <RefreshCw size={16} /> }} /></Button>
   </article>
 }

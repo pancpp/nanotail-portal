@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n, T } from '../i18n'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
@@ -90,11 +91,11 @@ export default function TailnetConnectionForm() {
             onChange={(event) => setAcknowledged(event.target.checked)} aria-describedby="tailnet-warning" />
           <span>{t("I have local access and understand that this may disconnect me.")}</span>
         </label>
-        <button className="login-submit" type="submit" disabled={busy || needsReload || !acknowledged || (!connection.enabled && !connection.canEnable)}>
+        <Button className="login-submit" type="submit" disabledReason={busy ? t("Applying connection change…") : needsReload ? t("Reload connection settings before trying again.") : !connection.enabled && !connection.canEnable ? t("Sign in to Tailscale and approve this device before turning the tailnet on.") : !acknowledged ? t("Confirm the connection warning before applying.") : ""}>
           <span>{busy ? t("Applying connection change…") : connection.enabled ? t("Turn tailnet off") : t("Turn tailnet on")}</span><Power size={18} aria-hidden="true" />
-        </button>
+        </Button>
       </>}
-      <button className="text-action" type="button" disabled={busy || loading} onClick={() => { setSuccess(''); void reload() }}>{t("Reload connection")}</button>
+      <Button className="text-action" type="button" disabledReason={busy ? t("Applying connection change…") : loading ? t("Loading tailnet connection…") : ""} onClick={() => { setSuccess(''); void reload() }}>{t("Reload connection")}</Button>
     </form>
   </section>
 }

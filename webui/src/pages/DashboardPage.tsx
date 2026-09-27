@@ -1,3 +1,4 @@
+import Button from '../components/Button'
 import { useI18n, T } from '../i18n'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
@@ -127,16 +128,16 @@ export default function DashboardPage() {
               <span className="updated-at" role="timer" aria-live="off">
                 {refreshing ? t("Updating…") : t("Auto-refresh in {seconds}s", { seconds: secondsRemaining })}
               </span>
-              <button
+              <Button
                 className="secondary-button"
                 type="button"
                 aria-label={t("Refresh Tailscale and device status")}
                 onClick={() => { void refreshNow() }}
-                disabled={refreshing}
+                disabledReason={refreshing ? t("Refreshing device and Tailscale status…") : ""}
               >
                 <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
                 <span>{t("Refresh status")}</span>
-              </button>
+              </Button>
             </div>
           )}
           <LanguageSelector />
@@ -145,7 +146,7 @@ export default function DashboardPage() {
         <main className="dashboard-content">
           {statusError && <div className="connection-notice connection-notice--error" role="status"><strong>{t("Tailscale status unavailable")}</strong>
             <p>{t(statusError)}</p><p>{t("This does not mean your credentials are missing.")}</p>
-            <button className="secondary-button" disabled={refreshing} onClick={() => { void refresh() }}>{t("Retry status")}</button></div>}
+            <Button className="secondary-button" disabledReason={refreshing ? t("Refreshing device and Tailscale status…") : ""} onClick={() => { void refresh() }}>{t("Retry status")}</Button></div>}
           {needsSetup && <div className="connection-notice" role="status"><strong>{t("This device is not signed in to a tailnet.")}</strong>
             <p>{t("Use Sign in to Tailscale on the Overview to connect this device. Your portal login is separate from your Tailscale account.")}</p>
             {pathname !== '/' && <Link to="/">{t("Open the sign-in guide")}</Link>}</div>}

@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n } from '../i18n'
 import { useState, type FormEvent } from 'react'
 import { KeyRound } from 'lucide-react'
@@ -69,10 +70,10 @@ export default function ChangePasswordForm() {
         />
         {error && <div className="form-error" role="alert">{t(error)}</div>}
         {success && <div className="form-success" role="status">{t(success)}</div>}
-        <button className="login-submit" type="submit" disabled={isSubmitting}>
+        <Button className="login-submit" type="submit" disabledReason={isSubmitting ? t("Updating password…") : ""}>
           {isSubmitting ? t("Updating password…") : t("Update password")}
           <KeyRound size={17} aria-hidden="true" />
-        </button>
+        </Button>
         <p className="password-help">{t("Changing your password does not sign out existing sessions.")}</p>
       </form>
     </section>

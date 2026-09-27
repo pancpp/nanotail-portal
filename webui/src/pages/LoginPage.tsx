@@ -1,3 +1,4 @@
+import Button from '../components/Button'
 import { useI18n, T } from '../i18n'
 import { useState, type FormEvent } from 'react'
 import {
@@ -144,14 +145,14 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
               className="login-submit"
-              disabled={isSubmitting}
+              disabledReason={isSubmitting ? t("Signing in…") : ""}
             >
               <span>{isSubmitting ? t("Signing in…") : t("Sign in")}</span>
               <ArrowRight size={18} />
-            </button>
+            </Button>
           </form>
 
           <div className="login-card__security"><T message="{0}Credentials are sent only to this device." values={{ 0: <ShieldCheck size={16} /> }} /></div>

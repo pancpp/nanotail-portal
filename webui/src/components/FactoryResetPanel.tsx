@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n, T } from '../i18n'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { RotateCcw, X } from 'lucide-react'
@@ -87,7 +88,7 @@ function FactoryResetDialog({ onClose }: { onClose: () => void }) {
     onCancel={event => { event.preventDefault(); if (!busy) onClose() }}>
     <div className="panel__header">
       <div><span className="panel__eyebrow"><T message="CONFIRMATION {0} OF 2" values={{ 0: step }} /></span><h2 id="reset-title">{step === 1 ? t("Erase portal data?") : t("Confirm factory reset")}</h2></div>
-      <button type="button" className="icon-button" aria-label={t("Close factory reset dialog")} disabled={busy} onClick={onClose}><X size={22} /></button>
+      <Button type="button" className="icon-button" aria-label={t("Close factory reset dialog")} disabledReason={busy ? t("Wait for the factory reset request to finish.") : ""} onClick={onClose}><X size={22} /></Button>
     </div>
     <p className="setup-dialog__description" id="reset-description"><T message="This permanently clears {0}, {1}, and the {2} folder, deletes {3}, logs out of Tailscale, signs this browser out, and restarts the portal. The new signing key invalidates all existing portal sessions." values={{ 0: <code>nanotail.yml</code>, 1: <code>nanotail.sqlite3</code>, 2: <code>logs</code>, 3: <code>nanotail.key</code> }} /></p>
     <form className="credential-form reset-form" onSubmit={submit}>
@@ -97,7 +98,7 @@ function FactoryResetDialog({ onClose }: { onClose: () => void }) {
         <label className="reset-acknowledgement"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />
           <span>{t("I understand that the data cannot be recovered and I can access the portal without Tailscale.")}</span>
         </label>
-        <button type="button" className="secondary-button danger-button" disabled={!acknowledged} onClick={() => setStep(2)}>{t("Continue to final confirmation")}</button>
+        <Button type="button" className="secondary-button danger-button" disabledReason={!acknowledged ? t("Confirm that you understand the data loss and have local access.") : ""} onClick={() => setStep(2)}>{t("Continue to final confirmation")}</Button>
       </> : <>
         <label htmlFor="reset-confirmation">{t("Type RESET to confirm")}</label>
         <input ref={confirmationInput} id="reset-confirmation" value={confirmation} onChange={event => setConfirmation(event.target.value)}
@@ -106,9 +107,9 @@ function FactoryResetDialog({ onClose }: { onClose: () => void }) {
         <input id="reset-password" type="password" value={password} onChange={event => setPassword(event.target.value)}
           autoComplete="current-password" disabled={busy} required />
         {error && <div className="form-error" role="alert">{t(error)}</div>}
-        <button type="submit" className="secondary-button danger-button" disabled={!canConfirmReset(acknowledged, confirmation, password, busy)}>
+        <Button type="submit" className="secondary-button danger-button" disabledReason={busy ? t("Wait for the factory reset request to finish.") : !acknowledged ? t("Confirm that you understand the data loss and have local access.") : confirmation !== "RESET" ? t("Type RESET exactly to confirm.") : !password ? t("Enter your current portal password.") : ""}>
           {busy ? t("Requesting factory reset…") : t("Erase data and restart")}
-        </button>
+        </Button>
         {busy && <p role="status">{t("Waiting for acceptance. Do not close this page or submit another reset.")}</p>}
       </>}
     </form>

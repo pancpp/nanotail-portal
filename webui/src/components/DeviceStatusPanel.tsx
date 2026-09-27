@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useI18n, T } from '../i18n'
 import { Activity, Clock3, Cpu, HeartPulse, MemoryStick, Zap } from 'lucide-react'
 import { deviceIPTypeLabel, formatDeviceUptime } from '../api'
@@ -27,7 +28,7 @@ export default function DeviceStatusPanel() {
         <div className="device-panel__error" role="alert">
           <strong>{t("Device status unavailable")}</strong>
           <p>{t(error)}</p>
-          <button className="secondary-button" type="button" disabled={refreshing} onClick={() => { void refresh() }}>{t("Retry device status")}</button>
+          <Button className="secondary-button" type="button" disabledReason={refreshing ? t("Refreshing device status…") : ""} onClick={() => { void refresh() }}>{t("Retry device status")}</Button>
         </div>
       ) : !status ? <p role="status">{t("Loading device status…")}</p> : (
         <>

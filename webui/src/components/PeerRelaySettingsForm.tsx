@@ -1,3 +1,4 @@
+import Button from './Button'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Network } from 'lucide-react'
 import { ApiError, DEFAULT_PEER_RELAY_PORT, isSessionError, setPeerRelayRequest, tailscaleRoutingRequest, type TailscaleRouting } from '../api'
@@ -98,11 +99,11 @@ export default function PeerRelaySettingsForm() {
         {settings.backendState !== 'Running' && <p className="password-help">{t("Tailscale is not running. Enabling requires this device to be signed in; the relay takes effect when Tailscale is connected.")}</p>}
         <p className="password-help">{t("Saving an enabled relay grants all tailnet devices access to relay through this device, preserving existing policy rules. Save OAuth credentials with policy_file write permission first. Requires Tailscale 1.86 or later and a reachable UDP port; saving does not verify reachability.")}</p>
         <a className="routing-guide" href="https://tailscale.com/docs/features/peer-relay" target="_blank" rel="noopener noreferrer">{t("Peer relay setup guide ↗")}</a>
-        <button className="login-submit" type="submit" disabled={busy || needsReload || !canSave || !valid}>
+        <Button className="login-submit" type="submit" disabledReason={busy ? t("Saving peer relay…") : needsReload ? t("Reload peer relay settings before trying again.") : !valid ? t("Enter a UDP port from 1 to 65535") : !canSave ? t("No changes to save.") : ""}>
           {busy ? t("Saving peer relay…") : t("Save peer relay")}
-        </button>
+        </Button>
       </>}
-      <button className="text-action" type="button" disabled={busy || loading} onClick={() => { setSaved(false); void refresh(); void reload() }}>{t("Reload peer relay settings")}</button>
+      <Button className="text-action" type="button" disabledReason={busy ? t("Saving peer relay…") : loading ? t("Loading peer relay settings…") : ""} onClick={() => { setSaved(false); void refresh(); void reload() }}>{t("Reload peer relay settings")}</Button>
     </form>
   </section>
 }
