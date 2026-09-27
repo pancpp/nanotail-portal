@@ -185,18 +185,39 @@ reads settings and never enables the relay automatically. Background refreshes
 update the Overview card without replacing unsaved form edits.
 
 The portal reads Tailscale's saved relay listener preference alongside routing
-status. The separate `setPeerRelay` mutation runs only `tailscale set
---relay-server-port=<port>` and verifies the saved preference. Disabling passes
+status. When enabling, `setPeerRelay` uses saved OAuth credentials with
+`policy_file` write permission to add and verify this grant in the device's
+tailnet policy before running `tailscale set --relay-server-port=<port>`:
+
+```json
+{"src":["*"],"dst":["<this device's Tailscale IP>"],"app":{"tailscale.com/cap/relay":[]}}
+```
+
+The device's IPv4 address is preferred, with IPv6 used when IPv4 is unavailable.
+Existing policy rules, comments, and unknown fields are preserved. An existing
+matching grant is reused. Writes use the policy's ETag to avoid overwriting
+concurrent console edits and are verified with a fresh read. Saving an already
+enabled relay also checks and repairs its grant without changing the port.
+
+Disabling passes
 an empty port, not zero: zero means an automatically assigned port in Tailscale.
 Existing automatic-port configurations are displayed accurately; saving an
 enabled relay chooses a fixed port. A disabled relay starts with 40001 in the
-form. Other routing, static relay endpoints, and console policies are preserved.
+form. Disabling leaves policy grants in place and needs no OAuth access. Other
+routing and static relay endpoints are preserved.
 
 Tailscale 1.86 or later, a reachable UDP port, and a tailnet grant for
 `tailscale.com/cap/relay` are required. See the official
 [peer relay setup guide](https://tailscale.com/docs/features/peer-relay).
-Saving confirms local configuration; it does not verify firewall access or
-tailnet policy. Settings can be saved while Tailscale is stopped; Overview shows
+Saving an enabled relay confirms its grant and local configuration; it does not
+verify firewall access or reachability. Enabling requires saved OAuth credentials
+from the same tailnet with `policy_file` write permission (and its required
+`devices:posture_attributes` and `devices:core:read` dependencies). See
+[Tailscale OAuth scopes](https://tailscale.com/docs/reference/trust-credentials#scopes).
+Missing credentials, denied permissions, or unconfirmed policy updates fail the
+save before enabling the local listener. A policy grant may remain if a later
+local write fails. Settings can be saved while Tailscale is stopped if the device
+is still signed in and its tailnet and IP are available; Overview shows
 **Paused** until it is running. Failed or uncertain writes require **Reload peer
 relay settings** before another attempt; writes are never automatically retried.
 

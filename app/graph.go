@@ -33,7 +33,8 @@ func newTailscaleClient() *tailscale.Client {
 		WithSubnetDefaults(database.NewRoutingDefaultsStore(database.DB()), func(ctx context.Context) ([]string, error) {
 			host, err := device.NewReader().RoutingStatus(ctx)
 			return host.DefaultSubnetRoutes, err
-		}).WithRouteApproval(loadRoutingCredentials, nil)
+		}).WithRouteApproval(loadRoutingCredentials, nil).
+		WithPeerRelayPolicy(loadRoutingCredentials, nil)
 }
 
 func newGraphQLServer() *handler.Server {
@@ -76,6 +77,8 @@ func presentGraphQLError(ctx context.Context, err error) *gqlerror.Error {
 		errors.Is(err, graph.ErrRoutingAdmin) || errors.Is(err, tailscale.ErrRoutingUnavailable) ||
 		errors.Is(err, graph.ErrPeerRelayAdmin) || errors.Is(err, tailscale.ErrPeerRelayPort) ||
 		errors.Is(err, tailscale.ErrPeerRelayUnavailable) || errors.Is(err, tailscale.ErrPeerRelayApply) ||
+		errors.Is(err, tailscale.ErrPeerRelayCredentials) || errors.Is(err, tailscale.ErrPeerRelayIdentity) ||
+		errors.Is(err, tailscale.ErrPeerRelayPolicy) || errors.Is(err, tailscale.ErrPeerRelayPolicyConflict) ||
 		errors.Is(err, tailscale.ErrSubnetRoutesInvalid) || errors.Is(err, tailscale.ErrRoutingStopped) ||
 		errors.Is(err, tailscale.ErrRoutingApply) ||
 		errors.Is(err, tailscale.ErrRoutingPersistence) ||

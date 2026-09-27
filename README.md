@@ -240,7 +240,15 @@ Allow the traffic in tailnet access rules, and select
 the exit node or accept subnet routes on client devices. See the official
 [exit-node guide](https://tailscale.com/docs/features/exit-nodes) and
 [subnet-router guide](https://tailscale.com/docs/features/subnet-routers).
-The portal does not change tailnet policy, device authorization, or other clients.
+Route approval does not change tailnet policy, device authorization, or other clients.
+Enabling **Peer relay** separately adds a `tailscale.com/cap/relay` grant from
+`["*"]` to this device's Tailscale IP in the admin console policy. This requires
+saved OAuth credentials with `policy_file` write permission and its required
+`devices:posture_attributes` and `devices:core:read` dependencies. Existing policy
+rules and comments are preserved, matching grants are reused, and concurrent
+policy edits are protected with ETag checks. The grant is confirmed before the
+local listener is enabled. Disabling the relay leaves grants intact. See
+[peer relay behavior](webui/README.md#peer-relay) for details.
 
 Approval runs in the background after the startup/10-second advertisement check,
 including after saving credentials, applying routes, and recovering sign-in.

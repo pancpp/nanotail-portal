@@ -14,8 +14,8 @@ var (
 	ErrPeerRelayApply       = errors.New("Unable to confirm the peer relay change. It may already have applied. Reload peer relay settings before retrying; check Tailscale version and daemon permissions")
 )
 
-// SetPeerRelay changes only the saved listener preference. It does not enable
-// Tailscale, change routes, edit tailnet grants, or modify the host firewall.
+// SetPeerRelay ensures the device's relay grant before enabling its listener.
+// Disabling only changes the listener; existing tailnet grants are preserved.
 func (c *Client) SetPeerRelay(ctx context.Context, enabled bool, port int) error {
 	if port < 1 || port > 65535 {
 		return ErrPeerRelayPort
@@ -35,6 +35,11 @@ func (c *Client) SetPeerRelay(ctx context.Context, enabled bool, port int) error
 	prefs, err := c.Config(ctx)
 	if err != nil {
 		return ErrPeerRelayUnavailable
+	}
+	if enabled {
+		if err := c.ensurePeerRelayPolicy(ctx); err != nil {
+			return err
+		}
 	}
 	matches := func(prefs Config) bool {
 		return (!enabled && prefs.RelayServerPort == nil) ||

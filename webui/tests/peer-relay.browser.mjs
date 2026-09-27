@@ -13,6 +13,7 @@ export async function checkPeerRelay({ evaluate, send, waitFor, click, fill, pau
       window.peerRelayWrites.push(body.variables.input); window.apiWrites.push(body.operationName);
       if (window.peerRelayHold) await new Promise(resolve => {window.releasePeerRelay = resolve});
       if (window.peerRelayFailure === 'rejected') return Response.json({errors:[{message:'Only portal administrators can change peer relay settings'}]});
+      if (window.peerRelayFailure === 'policy') return Response.json({errors:[{message:"Unable to grant peer relay access. Save OAuth credentials from this device's tailnet with policy_file write permission, then reload peer relay settings and retry"}]});
       const input = body.variables.input;
       Object.assign(window.routingFixture, {peerRelayEnabled:input.enabled, peerRelayPort:input.enabled ? input.port : null});
       if (window.peerRelayFailure === 'network') throw new TypeError('Connection interrupted after save');
@@ -54,6 +55,18 @@ export async function checkPeerRelay({ evaluate, send, waitFor, click, fill, pau
     await saveDone()
     assert.equal(await port(),'45678')
     assert.deepEqual(await evaluate('window.routingFixture.subnetRoutes'),await evaluate('window.beforePeerRelayRouting.subnetRoutes'))
+    // Existing enabled relays must be able to add/repair the console grant.
+    const beforeRepair = await evaluate('window.peerRelayWrites.length')
+    await evaluate("window.peerRelayFailure='policy'")
+    await click('Save peer relay')
+    await waitFor("document.querySelector('.peer-relay-settings [role=alert]')?.textContent.includes('policy_file')")
+    assert.equal(await evaluate('window.peerRelayWrites.length'), beforeRepair + 1)
+    assert.equal(await evaluate("document.querySelector('.peer-relay-settings .form-success') === null"), true)
+    await evaluate("window.peerRelayFailure=''")
+    await click('Reload peer relay settings'); await loaded()
+    await click('Save peer relay'); await saveDone()
+    assert.equal(await evaluate('window.peerRelayWrites.length'), beforeRepair + 2)
+    assert.deepEqual(await evaluate('window.peerRelayWrites.at(-1)'), {enabled:true,port:45678})
     await screenshot('access-control','.peer-relay-settings')
 
     await evaluate("location.hash='#/'")

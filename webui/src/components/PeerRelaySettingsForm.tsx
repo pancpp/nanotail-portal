@@ -51,11 +51,13 @@ export default function PeerRelaySettingsForm() {
   const port = enabled ? Number(portText) : DEFAULT_PEER_RELAY_PORT
   const valid = !enabled || (/^\d+$/.test(portText) && Number.isInteger(port) && port >= 1 && port <= 65535)
   const changed = !!settings && (enabled !== settings.peerRelayEnabled || (enabled && port !== settings.peerRelayPort))
+  // Saving an already enabled relay can repair a missing console grant.
+  const canSave = changed || enabled
   function edited() { setSaved(false) }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (submitting.current || loading || needsReload || !settings || !valid || !changed) return
+    if (submitting.current || loading || needsReload || !settings || !valid || !canSave) return
     if (!accessToken) { logout(); return }
     submitting.current = true; setBusy(true); setError(''); setSaved(false)
     try {
@@ -93,10 +95,10 @@ export default function PeerRelaySettingsForm() {
         <p className="password-help" id="peer-relay-port-help">{t("Default: {port}. Choose a UDP port from 1 to 65535.", { port: DEFAULT_PEER_RELAY_PORT })}</p>
         {enabled && !valid && <p className="form-error" role="alert">{t("Enter a UDP port from 1 to 65535")}</p>}
         {settings.peerRelayEnabled && settings.peerRelayPort === 0 && <p className="password-help">{t("Tailscale currently chooses a port automatically. Saving an enabled relay will use the port entered above.")}</p>}
-        {settings.backendState !== 'Running' && <p className="password-help">{t("Tailscale is not running. You can save the relay setting now; it takes effect when Tailscale is connected.")}</p>}
-        <p className="password-help">{t("Requires Tailscale 1.86 or later, a reachable UDP port, and a tailnet grant for tailscale.com/cap/relay. Existing console policies are kept. Saving confirms the local setting, not relay reachability.")}</p>
+        {settings.backendState !== 'Running' && <p className="password-help">{t("Tailscale is not running. Enabling requires this device to be signed in; the relay takes effect when Tailscale is connected.")}</p>}
+        <p className="password-help">{t("Saving an enabled relay grants all tailnet devices access to relay through this device, preserving existing policy rules. Save OAuth credentials with policy_file write permission first. Requires Tailscale 1.86 or later and a reachable UDP port; saving does not verify reachability.")}</p>
         <a className="routing-guide" href="https://tailscale.com/docs/features/peer-relay" target="_blank" rel="noopener noreferrer">{t("Peer relay setup guide ↗")}</a>
-        <button className="login-submit" type="submit" disabled={busy || needsReload || !changed || !valid}>
+        <button className="login-submit" type="submit" disabled={busy || needsReload || !canSave || !valid}>
           {busy ? t("Saving peer relay…") : t("Save peer relay")}
         </button>
       </>}

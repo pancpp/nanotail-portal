@@ -57,6 +57,7 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
 
   return <form className="login-form credential-form" onSubmit={submit} aria-busy={busy}>
     <p className="credential-intro">{t("Use an OAuth client from this device’s tailnet with devices:routes write permission. Saving enables automatic approval of this device’s advertised exit node and subnet routes.")}</p>
+    <p className="password-help">{t("To enable peer relay, also grant the OAuth client policy_file write permission. The relay save action adds access for all tailnet devices through this device.")}</p>
     <div className="credential-links">
       <a href={TAILSCALE_CREDENTIALS_URL} target="_blank" rel="noopener noreferrer"><T message="Create OAuth credentials {0}" values={{ 0: <ExternalLink size={16} /> }} /></a>
       <Link to="/tailscale-setup/oauth-credentials" onClick={onGuide}><T message="{0} Step-by-step guide" values={{ 0: <BookOpen size={16} /> }} /></Link>

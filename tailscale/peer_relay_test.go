@@ -41,6 +41,9 @@ func TestSetPeerRelay(t *testing.T) {
 					t.Error("missing deadline")
 				}
 				args = args[1:]
+				if reflect.DeepEqual(args, []string{"status", "--json"}) {
+					return []byte(relayTestStatus), nil
+				}
 				if reflect.DeepEqual(args, []string{"debug", "prefs"}) {
 					reads++
 					if reads == 1 {
@@ -53,7 +56,7 @@ func TestSetPeerRelay(t *testing.T) {
 					t.Fatalf("must change only relay preference: %v", args)
 				}
 				return nil, tc.setErr
-			}))
+			})).WithPeerRelayPolicy(relayTestCredentials, (&relayPolicyFixture{policy: relayTestPolicy}).httpClient(t))
 			err := client.SetPeerRelay(t.Context(), tc.enabled, tc.port)
 			if !errors.Is(err, tc.wantErr) || (writes == 1) != tc.write || writes > 1 {
 				t.Fatalf("err=%v writes=%d", err, writes)

@@ -197,5 +197,8 @@ func (c *Client) UpdateOAuthCredentials(ctx context.Context, update func(context
 		c.approval.api.forget()
 		c.approval.publish([32]byte{}, RouteApproval{}, 0)
 	}
+	if c.relayPolicy != nil {
+		c.relayPolicy.api.forget()
+	}
 	return nil
 }

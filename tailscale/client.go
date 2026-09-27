@@ -45,6 +45,7 @@ type Client struct {
 	subnetDefaults SubnetDefaultsStore
 	detectSubnets  func(context.Context) ([]string, error)
 	approval       *routeApproval
+	relayPolicy    *peerRelayPolicy
 }
 
 func NewClient(binary, socket string, timeout time.Duration, runner Runner) *Client {

@@ -33,6 +33,7 @@ type oauthRoutes struct {
 	http       *http.Client
 	credential OAuthCredentials
 	token      string
+	scope      string
 	expires    time.Time
 }
 
@@ -50,6 +51,7 @@ func newOAuthRoutes(client *http.Client) *oauthRoutes {
 func (o *oauthRoutes) forget() {
 	o.credential = OAuthCredentials{}
 	o.token = ""
+	o.scope = ""
 	o.expires = time.Time{}
 }
 
@@ -92,7 +94,11 @@ func (o *oauthRoutes) request(ctx context.Context, method, path, contentType str
 }
 
 func (o *oauthRoutes) accessToken(ctx context.Context, credential OAuthCredentials) (string, error) {
-	if credential != o.credential {
+	return o.accessTokenForScope(ctx, credential, "devices:routes")
+}
+
+func (o *oauthRoutes) accessTokenForScope(ctx context.Context, credential OAuthCredentials, scope string) (string, error) {
+	if credential != o.credential || scope != o.scope {
 		o.forget()
 	}
 	if o.token != "" && time.Now().Add(time.Minute).Before(o.expires) {
@@ -100,7 +106,7 @@ func (o *oauthRoutes) accessToken(ctx context.Context, credential OAuthCredentia
 	}
 	form := url.Values{
 		"grant_type": {"client_credentials"}, "client_id": {credential.ClientID},
-		"client_secret": {credential.ClientSecret}, "scope": {"devices:routes"},
+		"client_secret": {credential.ClientSecret}, "scope": {scope},
 	}
 	data, err := o.request(ctx, http.MethodPost, "/oauth/token", "application/x-www-form-urlencoded", []byte(form.Encode()), "")
 	if err != nil {
@@ -116,6 +122,7 @@ func (o *oauthRoutes) accessToken(ctx context.Context, credential OAuthCredentia
 		return "", errApprovalCredentials
 	}
 	o.credential, o.token, o.expires = credential, result.Token, time.Now().Add(time.Duration(result.Expires)*time.Second)
+	o.scope = scope
 	return result.Token, nil
 }
 

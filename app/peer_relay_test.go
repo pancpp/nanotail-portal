@@ -57,6 +57,10 @@ func TestPeerRelayMutation(t *testing.T) {
 		{name: "no backend", pid: admin.PID, missing: true, want: tailscale.ErrPeerRelayUnavailable.Error()},
 		{name: "invalid port", pid: admin.PID, err: tailscale.ErrPeerRelayPort, want: tailscale.ErrPeerRelayPort.Error(), calls: 1},
 		{name: "unknown outcome", pid: admin.PID, err: tailscale.ErrPeerRelayApply, want: tailscale.ErrPeerRelayApply.Error(), calls: 1},
+		{name: "policy credentials", pid: admin.PID, err: tailscale.ErrPeerRelayCredentials, want: tailscale.ErrPeerRelayCredentials.Error(), calls: 1},
+		{name: "policy identity", pid: admin.PID, err: tailscale.ErrPeerRelayIdentity, want: tailscale.ErrPeerRelayIdentity.Error(), calls: 1},
+		{name: "policy failure", pid: admin.PID, err: tailscale.ErrPeerRelayPolicy, want: tailscale.ErrPeerRelayPolicy.Error(), calls: 1},
+		{name: "policy conflict", pid: admin.PID, err: tailscale.ErrPeerRelayPolicyConflict, want: tailscale.ErrPeerRelayPolicyConflict.Error(), calls: 1},
 		{name: "masked", pid: admin.PID, err: errors.New("private daemon output"), want: "Internal Server Error", calls: 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

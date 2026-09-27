@@ -9,6 +9,7 @@ require (
 	github.com/labstack/echo/v5 v5.3.1
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
+	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f
 	github.com/uptrace/bun v1.2.18
 	github.com/uptrace/bun/dialect/sqlitedialect v1.2.18
 	github.com/uptrace/bun/driver/sqliteshim v1.2.18

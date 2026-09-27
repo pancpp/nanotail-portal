@@ -288,7 +288,7 @@ input DeviceIP {
 }
 
 type Mutation {
-  "Admin only: configure this device as a peer relay without changing routing or tailnet policy."
+  "Admin only: configure this device as a peer relay; enabling also ensures its tailnet relay grant using saved OAuth credentials."
   setPeerRelay(input: PeerRelayInput!): Boolean!
   changePassword(passwords: ChangePassword!): Boolean!
   setTailscaleCredential(credential: TailscaleCredential!): Boolean!
