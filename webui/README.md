@@ -166,6 +166,9 @@ a portal administrator. The `tailscaleClient` query returns `null` before setup,
 or the client ID, `hasClientSecret`, and timestamp; it never returns the secret.
 Leave the secret blank to retain it for the same client ID. Changing IDs requires
 a matching new secret. Removing credentials only removes the local copy.
+The credential form in Settings and the setup prompt explains that credentials
+are stored only on this device, sent only to Tailscale for authentication, and
+never shared with anyone else.
 
 Saving enables background OAuth approval for this device's advertised exit node
 and subnet routes. It confirms storage, not completed approval; check **Tailnet
@@ -305,14 +308,16 @@ the tailnet connection on. Sign in using the same Tailscale account and tailnet.
 The dialog calls `renewTailscaleNodeKey` once after acknowledgement to prepare
 a request, without changing Tailscale. **Sign in to Tailscale** calls
 `beginTailscaleNodeKeyRenewal(attemptID)` and opens a new tab, which navigates to
-the validated sign-in link when ready. A manual link is available if popups are
+the validated sign-in link when ready. The waiting tab shows progress and asks
+the user to keep both it and the portal tab open until the automatic redirect.
+A manual link is available if popups are
 blocked. The renewal dialog uses the top-right X to close, with no **Check status**
 or **Close** buttons. Before Sign in, X and Escape call
 `cancelTailscaleNodeKeyRenewal(attemptID)` and wait for confirmed cancellation;
 failed or uncertain cancellation keeps the dialog open for status recovery.
 Prepared/cancelled requests never show a renewal success check mark. The shared
-Tailscale provider then polls the read-only `tailscaleKeyRenewal` query every two
-seconds while pending, even after closing the dialog or changing WebUI tabs. It
+Tailscale provider then polls the read-only `tailscaleKeyRenewal` query every
+second while pending, even after closing the dialog or changing WebUI tabs. It
 shows a private, validated Tailscale sign-in link, a device-approval step when
 needed, and reports completion only when the backend sees a changed usable node
 key and a running connection. Both the dialog and **KEY EXPIRY** panel show a

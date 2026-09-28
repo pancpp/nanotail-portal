@@ -17,7 +17,7 @@ type RenewalAction = 'read' | 'prepare' | 'begin' | 'cancel'
 // Owned by the Tailscale provider, not the dialog: closing it or changing tabs
 // must not stop a pending renewal's read-only completion checks.
 export function useNodeKeyRenewal(token: string | null, logout: () => void, refresh: () => Promise<void>) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const [snapshot, setSnapshot] = useState<NodeKeyRenewalSnapshot>({ value: null, pending: false, busy: false, starting: false, preparing: false, cancelling: false, error: '' })
   const request = useRef<AbortController | null>(null)
   const latest = useRef<TailscaleKeyRenewal | null>(null)
@@ -113,13 +113,35 @@ export function useNodeKeyRenewal(token: string | null, logout: () => void, refr
       setPopupBlocked(!popup)
       if (popup) {
         popup.opener = null
-        popup.document.title = t('Preparing Tailscale sign-in')
-        popup.document.body.textContent = t('Preparing your Tailscale sign-in page. Keep the portal open until the sign-in page appears.')
+        const page = popup.document
+        page.title = t('Preparing Tailscale sign-in')
+        page.documentElement.lang = language
+        const viewport = page.createElement('meta')
+        viewport.name = 'viewport'
+        viewport.content = 'width=device-width, initial-scale=1'
+        page.head.append(viewport)
+        page.body.style.cssText = 'margin:0;padding:32px 20px;background:#f4f7f5;color:#173d2a;font:18px/1.6 system-ui,sans-serif;'
+        const content = page.createElement('main')
+        content.style.cssText = 'max-width:560px;margin:10vh auto;padding:28px;background:white;border:1px solid #dce5df;border-radius:16px;'
+        content.setAttribute('role', 'status')
+        const heading = page.createElement('h1')
+        heading.style.cssText = 'margin:0 0 16px;font-size:28px;line-height:1.3;'
+        heading.textContent = page.title
+        const message = page.createElement('p')
+        message.textContent = t('Please wait while Tailscale prepares your sign-in link. This may take a few seconds.')
+        const reminder = page.createElement('p')
+        reminder.style.fontWeight = '600'
+        reminder.textContent = t('Do not close this tab or the portal tab. You will be redirected automatically when the sign-in page is ready.')
+        const progress = page.createElement('progress')
+        progress.setAttribute('aria-label', page.title)
+        progress.style.cssText = 'width:100%;accent-color:#07825b;'
+        content.append(heading, message, reminder, progress)
+        page.body.replaceChildren(content)
         signInWindow.current = { window: popup, attemptID: current.attemptID }
       }
     } catch { setPopupBlocked(true) }
     void execute('begin')
-  }, [execute, closeBlankWindow, t])
+  }, [execute, closeBlankWindow, t, language])
 
   const close = useCallback(async (): Promise<boolean> => {
     if (request.current) return false
@@ -135,7 +157,7 @@ export function useNodeKeyRenewal(token: string | null, logout: () => void, refr
 
   useEffect(() => {
     if (!snapshot.pending || !snapshot.value || snapshot.error || snapshot.busy) return
-    const timer = window.setTimeout(() => { void checkStatus() }, 2000)
+    const timer = window.setTimeout(() => { void checkStatus() }, 1000)
     const onReturn = () => { if (!document.hidden) void checkStatus() }
     window.addEventListener('focus', onReturn)
     document.addEventListener('visibilitychange', onReturn)
