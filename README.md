@@ -117,7 +117,7 @@ The WebUI shows live connection, peer, node-key, device, routing, and VPN traffi
 data through GraphQL. It also manages OAuth credentials, LAN IPv4 settings, and
 this device’s exit-node and subnet-route advertisements. **Network** contains LAN IPv4 settings and
 the tailnet connection control; **Access control** contains exit-node
-and subnet-route advertisements plus OAuth credentials. **Settings** contains Change password and
+and subnet-route advertisements. **Settings** contains OAuth client credentials, Change password, and
 the administrator-only, double-confirmed Factory reset.
 
 ### Tailnet connection
@@ -654,7 +654,7 @@ suite also checks both languages, persistence, mobile layouts, and form safety.
 ### Tailscale credential setup
 
 The WebUI offers browser sign-in when Tailscale reports `NeedsLogin`.
-OAuth credentials remain optional, separate settings: Access control lets portal
+OAuth credentials remain optional, separate settings: Settings lets portal
 administrators save, replace, or remove the device-wide client ID and secret.
 To remove them, choose **Remove credentials** beside **Save credentials**, then
 **Confirm removal**. This clears the saved credentials and cached tokens on this

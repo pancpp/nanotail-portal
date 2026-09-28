@@ -97,10 +97,14 @@ export async function checkDisabledButtons({evaluate, send, waitFor, click, fill
     await send('Emulation.setTouchEmulationEnabled',{enabled:false})
     await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false})
 
+    await evaluate("location.hash='#/settings'")
+    await waitFor("Boolean(document.querySelector('.credential-actions'))")
     await focus('.credential-actions .danger-action')
     await visible('No saved credentials to remove.')
 
     // A loading button explains itself, without turning a read into a write.
+    await evaluate("location.hash='#/access-control'")
+    await waitFor("Boolean(document.getElementById('peer-relay-enabled'))")
     await evaluate(`(() => {
       window.tooltipOriginalFetch=window.fetch;
       window.fetch=async (url,options) => {

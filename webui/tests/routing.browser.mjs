@@ -239,7 +239,7 @@ try {
 
 
   // Credential removal is discoverable, confirmed, local-only, and safe to cancel.
-  await evaluate("location.hash='#/access-control'")
+  await evaluate("location.hash='#/settings'")
   await waitFor("Boolean(document.querySelector('.credential-actions'))")
   assert.equal(await evaluate("document.querySelector('.credential-actions .danger-action').disabled"),true,'remove enabled without saved credentials')
   await click('Remove credentials')
@@ -253,6 +253,7 @@ try {
   await waitFor("document.querySelector('.credential-settings .credential-state')?.textContent === 'Secret saved' && !document.querySelector('.credential-actions .danger-action').disabled")
 
   // Approval polling must update cloud status without replacing unsaved subnets.
+  await evaluate("location.hash='#/access-control'")
   await waitFor("document.querySelector('.routing-approval')?.textContent.includes('Pending')")
   const draftBeforeApproval = await evaluate("document.getElementById('routing-subnets').value")
   for (const [state, label, message] of [
@@ -266,6 +267,8 @@ try {
   }
   assert.equal(await evaluate("window.routingWrites.length"),6,'approval polling submitted routing edits')
 
+  await evaluate("location.hash='#/settings'")
+  await waitFor("Boolean(document.querySelector('.credential-actions'))")
   assert.deepEqual(await evaluate("window.credentialWrites"),[{clientId:'browser-test-client',clientSecret:'browser-test-secret'}])
   assert.equal(await evaluate("document.querySelector('[name=client_secret]').value"),'')
   assert.equal(await evaluate("document.body.innerText.includes('browser-test-secret')"),false)
@@ -297,7 +300,7 @@ try {
   await click('Cancel')
 
   // Pending removal blocks duplicate actions and uses removal-specific feedback.
-  await fill(credentialSecret,'unsaved-replacement-secret')
+  await fill(await evaluate("document.querySelector('[name=client_secret]').id"),'unsaved-replacement-secret')
   await evaluate("window.credentialRemoveFailure=false;window.holdCredentialRemoval=true")
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true})
   await click('Remove credentials')
@@ -324,6 +327,7 @@ try {
   assert.equal(await evaluate("document.querySelector('.credential-actions .danger-action').disabled"),true)
   assert.equal(await evaluate("Boolean(document.querySelector('.remove-confirmation'))"),false)
   assert.equal(await evaluate("window.credentialRemovals"),2)
+  await evaluate("location.hash='#/access-control'")
   await waitFor("document.querySelector('.routing-approval')?.textContent.includes('Manual or policy-based')")
   assert.equal(await evaluate("window.credentialWrites.length"),1,'removal submitted the credential form')
   assert.equal(await evaluate("window.logoutCalls"),0,'removal disconnected Tailscale')
@@ -332,12 +336,14 @@ try {
   assert.equal(await evaluate("Boolean(localStorage.getItem('nanotail_access_token'))"),true,'removal signed out the WebUI')
   await evaluate("location.hash='#/network'")
   await waitFor("Boolean(document.getElementById('tailnet-ack'))")
-  await evaluate("location.hash='#/access-control'")
+  await evaluate("location.hash='#/settings'")
   await waitFor("document.querySelector('.credential-settings .credential-state')?.textContent === 'Not configured'")
   assert.equal(await evaluate("document.querySelector('[name=client_id]').value"),'')
   assert.equal(await evaluate("document.querySelector('.credential-actions .danger-action').disabled"),true)
 
   // Setup guides are deep-linkable and contextual links preserve active forms.
+  await evaluate("location.hash='#/access-control'")
+  await waitFor("Boolean(document.getElementById('routing-subnets'))")
   const writesBeforeGuides = await evaluate("window.apiWrites.length")
   assert.ok(writesBeforeGuides > 0, 'mutation tracking missed earlier test actions')
   assert.equal(await evaluate("document.querySelector('.sidebar__nav a[href=\"#/tailscale-setup\"]').textContent"), 'Setup guides')
@@ -363,6 +369,8 @@ try {
   assert.equal(await evaluate("location.hash"), '#/access-control')
   assert.equal(await evaluate("document.getElementById('routing-subnets').value"), '192.168.77.0/24', 'opening a guide lost routing edits')
   await send('Target.closeTarget', {targetId: guideTab.targetId})
+  await evaluate("location.hash='#/settings'")
+  await waitFor("Boolean(document.querySelector('.credential-actions'))")
   await evaluate("document.querySelector('.credential-settings a[href=\"#/tailscale-setup/oauth-credentials\"]').click()")
   await waitFor("document.querySelector('h1')?.textContent === 'Create your client credentials'")
   assert.ok(await evaluate("document.querySelector('.setup-guide').textContent.includes('devices:routes')"))

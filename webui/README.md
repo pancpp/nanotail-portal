@@ -140,7 +140,7 @@ cancel pending requests. Offline peers show a dash; failed probes show
 limits concurrent pings to four, and uses a two-second probe timeout. Ordinary
 status requests and background services never measure latency.
 
-Access control supports saving, replacing, and removing credentials using
+Settings supports saving, replacing, and removing credentials using
 `setTailscaleCredential` and `clearTailscaleCredential`. These operations require
 a portal administrator. The `tailscaleClient` query returns `null` before setup,
 or the client ID, `hasClientSecret`, and timestamp; it never returns the secret.
@@ -238,8 +238,8 @@ relay settings** before another attempt; writes are never automatically retried.
 ## Tailnet connection
 
 **Overview → Tailscale status → Configure** opens **Network**, which also
-contains LAN IPv4 settings. OAuth credentials are in **Access control**, below
-exit-node configuration. **Settings** contains Change password and Factory reset. All sidebar tabs
+contains LAN IPv4 settings. OAuth client credentials are in **Settings**, before
+Change password and Factory reset. All sidebar tabs
 support direct links and active navigation states.
 
 **Network → Tailnet connection** reads `tailscaleConnection` on entry and with
