@@ -10,12 +10,23 @@ export async function checkDisabledButtons({evaluate, send, waitFor, click, fill
     const button=document.querySelector(${JSON.stringify(selector)});
     button.scrollIntoView({block:'center'}); button.parentElement.focus();
   })()`)
-  const moveTo = async selector => {
-    const point = await evaluate(`(() => {
+  const pointerTarget = async selector => {
+    await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`)
+    // Responsive navigation can still cover the target while sliding away.
+    // Wait for hit testing to reach it before sending real pointer input.
+    await waitFor(`(() => {
       const element=document.querySelector(${JSON.stringify(selector)});
-      element.scrollIntoView({block:'center'});
+      const r=element.getBoundingClientRect();
+      const target=element.matches('button:disabled') ? element.parentElement : element;
+      return target.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));
+    })()`)
+    return evaluate(`(() => {
+      const element=document.querySelector(${JSON.stringify(selector)});
       const r=element.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2};
     })()`)
+  }
+  const moveTo = async selector => {
+    const point = await pointerTarget(selector)
     await send('Input.dispatchMouseEvent', {type:'mouseMoved', ...point})
   }
   const press = async key => {
@@ -73,10 +84,7 @@ export async function checkDisabledButtons({evaluate, send, waitFor, click, fill
     // Touch users can tap the disabled button; explanations stay within the viewport.
     await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true})
     await send('Emulation.setTouchEmulationEnabled',{enabled:true})
-    const point=await evaluate(`(() => {
-      const button=document.querySelector(${JSON.stringify(peerSave)});button.scrollIntoView({block:'center'});
-      const r=button.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};
-    })()`)
+    const point=await pointerTarget(peerSave)
     await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]})
     await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})
     await visible('No changes to save.')
@@ -126,6 +134,14 @@ export async function checkDisabledButtons({evaluate, send, waitFor, click, fill
     await waitFor("Boolean(document.querySelector('.factory-reset-settings button'))")
     await click('Factory reset')
     await waitFor("Boolean(document.querySelector('.factory-reset-dialog[open]'))")
+    // Opening a modal makes the old hover target inert. Chrome can send
+    // pointerover from that target without first delivering pointerout to it.
+    await evaluate(`document.querySelector('.factory-reset-dialog .reset-form button').parentElement.dispatchEvent(
+      new PointerEvent('pointerover',{bubbles:true,pointerType:'mouse',relatedTarget:document.querySelector('main')})
+    )`)
+    await visible('Confirm that you understand the data loss and have local access.')
+    await press('Escape')
+    await waitFor(`!document.querySelector(${JSON.stringify(bubble)})`)
     await moveTo('.factory-reset-dialog .reset-form button')
     await visible('Confirm that you understand the data loss and have local access.')
     assert.ok(await evaluate(`(() => {const el=document.querySelector(${JSON.stringify(bubble)}),r=el.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)===el})()`), 'tooltip hidden behind dialog')

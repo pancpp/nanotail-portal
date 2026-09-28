@@ -78,9 +78,9 @@ export default function OverviewPage() {
           </article>
 
           <NodeKeyCard onRenew={() => openDialog(nodeKeyDialogMode(status))} />
-          <RoutingCard />
         </div>
         <div className="status-grid__row status-grid__row--secondary">
+          <RoutingCard />
           <RoutingCard kind="subnet" />
           <PeerRelayCard />
         </div>

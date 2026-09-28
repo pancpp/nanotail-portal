@@ -77,12 +77,14 @@ export default function Button({ disabledReason = '', children, ...props }: Butt
     }
   }, [open, disabled, disabledReason])
 
+  // React can miss pointerenter when opening a modal makes the previous target
+  // inert and Chrome only sends pointerover. Handle that event directly.
   return <span ref={anchor} className="button-tooltip" tabIndex={disabled ? 0 : undefined}
     role={disabled ? 'button' : undefined} aria-disabled={disabled || undefined}
     aria-label={disabled ? props['aria-label'] : undefined}
     aria-labelledby={disabled && !props['aria-label'] ? (props['aria-labelledby'] ?? buttonId) : undefined}
     aria-describedby={disabled ? [props['aria-describedby'], tooltipId].filter(Boolean).join(' ') : undefined}
-    onPointerEnter={event => { if (event.pointerType !== 'touch') show() }}
+    onPointerOver={event => { if (event.pointerType !== 'touch') show() }}
     onPointerLeave={event => {
       if (event.pointerType !== 'touch' && document.activeElement !== anchor.current) {
         clearTimeout(closeTimer.current)
