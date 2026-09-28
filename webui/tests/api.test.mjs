@@ -337,7 +337,7 @@ test('credential mutations require explicit success and preserve GraphQL errors'
 test('status query uses the new schema, bearer authentication, and abort signal', async (t) => {
   const status = makeStatus({
     backendState: 'Running', tailscaleIPs: ['100.64.0.1'], currentTailnet: { name: 'example.test' },
-    haveNodeKey: true, self: { online: true, keyExpiry: '2027-01-01T00:00:00Z' }, peers: [makePeer(), makePeer({ id: 'peer-b', online: false })],
+    haveNodeKey: true, self: { id: 'device-a', online: true, keyExpiry: '2027-01-01T00:00:00Z' }, peers: [makePeer(), makePeer({ id: 'peer-b', online: false })],
   })
   const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ data: { tailscaleStatus: status } }))
   const token = jwt()
@@ -353,7 +353,7 @@ test('status query uses the new schema, bearer authentication, and abort signal'
   assert.equal(body.operationName, 'TailscaleStatus')
   assert.deepEqual(body.variables, {})
   assert.equal(body.query.replace(/\s+/g, ' ').trim(),
-    'query TailscaleStatus { tailscaleStatus { backendState haveNodeKey tailscaleIPs currentTailnet { name } self { online keyExpiry } peers { id hostName dnsName os tailscaleIPs online active curAddr peerRelay relay } } }')
+    'query TailscaleStatus { tailscaleStatus { backendState haveNodeKey tailscaleIPs currentTailnet { name } self { id online keyExpiry } peers { id hostName dnsName os tailscaleIPs online active curAddr peerRelay relay } } }')
   assert.doesNotMatch(body.query, /\b(connected|needsLogin|tailnet|ips|authURL)\b/)
 })
 
@@ -380,7 +380,7 @@ test('status rejects legacy responses and malformed nested fields', async (t) =>
     makeStatus({ currentTailnet: undefined }), makeStatus({ currentTailnet: [] }),
     makeStatus({ currentTailnet: 'example.test' }), makeStatus({ currentTailnet: { name: null } }),
     makeStatus({ self: undefined }), makeStatus({ self: [] }), makeStatus({ self: {} }),
-    makeStatus({ self: { online: 'false' } }), makeStatus({ peers: null }), makeStatus({ peers: {} }),
+    makeStatus({ self: { id: 42, online: true, keyExpiry: null } }), makeStatus({ self: { online: 'false' } }), makeStatus({ peers: null }), makeStatus({ peers: {} }),
     ...[undefined, '', 123, 'not-a-date'].map(keyExpiry => makeStatus({ self: { online: true, keyExpiry } })),
     makeStatus({ peers: [null] }), makeStatus({ peers: [{}] }),
     ...['id', 'hostName', 'dnsName', 'os', 'tailscaleIPs', 'online', 'active', 'curAddr', 'peerRelay', 'relay'].map((field) =>

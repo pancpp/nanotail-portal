@@ -18,6 +18,7 @@ import { useAuth } from '../auth'
 import Brand from '../components/Brand'
 import LanguageSelector from '../components/LanguageSelector'
 import PortalVersion from '../components/PortalVersion'
+import TailscaleCredentialSetupPrompt from '../components/TailscaleCredentialSetupPrompt'
 import { isTailscaleConnected, shouldPromptForTailscale, tailscaleStatusLabel } from '../api'
 import { useTailscale } from '../tailscale'
 import { useDevice } from '../device'
@@ -34,7 +35,7 @@ const navItems = [
 export default function DashboardPage() {
   const { t } = useI18n()
   const { logout } = useAuth()
-  const { status, statusError, refreshing: tailscaleRefreshing, refresh, keyRenewalActive } = useTailscale()
+  const { status, statusError, refreshing: tailscaleRefreshing, refresh, keyRenewalActive, keyRenewalDialogOpen, credentialSetup } = useTailscale()
   const { status: deviceStatus, refreshing: deviceRefreshing, refresh: refreshDevice } = useDevice()
   const refreshAll = useCallback(async () => {
     await Promise.all([refresh(), refreshDevice()])
@@ -153,6 +154,7 @@ export default function DashboardPage() {
           <Outlet />
         </main>
       </div>
+      {credentialSetup.pending && !keyRenewalDialogOpen && <TailscaleCredentialSetupPrompt key={credentialSetup.binding} />}
     </div>
   )
 }

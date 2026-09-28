@@ -114,8 +114,28 @@ Use the top-right X to close the sign-in panel; it has no **Check status** or
 before retrying. Status is read on opening, and progress updates automatically
 while sign-in is pending.
 First-time login reports `SIGNED_IN` only after a usable node key and `Running`
-state are reported, displaying **Signed in to Tailscale successfully**, refreshing
-the overview and stopping polling. It does not claim an existing key was renewed.
+state are reported, refreshing the overview and stopping polling. It does not
+claim an existing key was renewed.
+
+After observing a new enrollment or a different tailnet/device ID, the dashboard
+opens **Add your client credentials**, handing off any open sign-in dialog.
+This also works when the user closed sign-in or switched tabs, and while device
+approval is pending. The dialog links to OAuth creation and accepts the client
+ID and secret using the same form as **Settings**. The guide opens in a new tab
+to preserve drafts. Failed reads offer a retry; failed saves keep the form open.
+
+**Skip for now**, X, and Escape first show five reminders: approve the device
+when required by the tailnet, approve exit-node use, approve advertised subnet
+routes, manually configure peer relay, and add credentials later in Settings.
+Routes already approved by tailnet policy need no manual approval. Saving OAuth
+credentials does not approve the device or enable peer relay automatically.
+The reminder links to the console and setup guides; skipping performs no writes.
+
+Enrollment identity and whether the prompt is pending are kept in session
+storage across reloads. Credentials and drafts are never stored there. Blocked
+storage falls back to memory. Opening an already enrolled device, ordinary
+status refreshes, connection toggles, and same-device key renewal do not trigger
+this prompt. Saving or dismissing the reminder completes it for that enrollment.
 
 Connection state comes from `backendState` and `self.online`; `currentTailnet`
 and `self` can be `null` before login. The overview uses `tailscaleIPs` and the

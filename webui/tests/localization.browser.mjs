@@ -102,6 +102,15 @@ export async function checkLocalization({evaluate, send, waitFor, click, fill, p
   await evaluate("location.hash='#/network'")
   await waitFor("document.querySelector('.tailnet-settings h2')?.textContent === 'Tailnet 连接'")
   await waitFor("document.querySelector('.tailnet-settings').textContent.includes('关闭 tailnet 连接')")
+  await click('刷新状态')
+  await waitFor("document.querySelector('.credential-setup-dialog[open] h2')?.textContent === '添加客户端凭据'")
+  await click('暂时跳过')
+  await waitFor("document.querySelectorAll('.credential-setup-checklist li').length === 5")
+  assert.ok(await evaluate("document.querySelector('.credential-setup-checklist').textContent.includes('设备中继')"))
+  assert.ok(await evaluate("document.querySelector('.credential-setup-checklist').textContent.includes('子网路由器')"))
+  await noOverflow('Chinese credential reminder on mobile')
+  await click('暂不添加凭据并继续')
+  await waitFor("!document.querySelector('dialog[open]')")
   await noOverflow('Chinese Network on mobile')
 
   // Every guide is translated; command/scope strings and safe links survive.

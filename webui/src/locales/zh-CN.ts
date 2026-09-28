@@ -1,6 +1,21 @@
 // English source messages are the fallback and catalog keys.
 // Placeholders contain text or React nodes; they must be preserved in every translation.
 export const zhCN: Record<string, string> = {
+  "Continue with manual setup": "继续手动设置",
+  "Add your client credentials": "添加客户端凭据",
+  "Close manual setup reminder": "关闭手动设置提醒",
+  "Skip client credentials": "跳过客户端凭据",
+  "Without client credentials, complete these steps yourself or ask your tailnet administrator:": "如果不添加客户端凭据，请自行完成以下步骤或联系 tailnet 管理员：",
+  "Your device is now bound to a Tailscale account. Generate an OAuth client in this tailnet, then paste its client ID and secret below.": "本设备已绑定到 Tailscale 账户。请在此 tailnet 中创建 OAuth 客户端，然后在下方粘贴客户端 ID 和密钥。",
+  "Manually approve this device in the Tailscale admin console if your tailnet requires device approval.": "如果 tailnet 要求设备审批，请在 Tailscale 管理控制台中手动批准本设备。",
+  "Manually approve this device as an exit node unless your tailnet policy has already approved it.": "请手动批准本设备作为出口节点，除非 tailnet 策略已自动批准。",
+  "Manually approve the advertised subnet routes to use this device as a subnet router, unless your tailnet policy has already approved them.": "要将本设备用作子网路由器，请手动批准其通告的子网路由，除非 tailnet 策略已自动批准。",
+  "Manually set up this device as a peer relay, including its relay port, network access, and tailnet policy grant.": "请手动将本设备设置为设备中继，包括中继端口、网络访问和 tailnet 策略授权。",
+  "You can add the client credentials later in {0}.": "您可以稍后在{0}中添加客户端凭据。",
+  "Add credentials now": "立即添加凭据",
+  "Continue without credentials": "暂不添加凭据并继续",
+  "Device approval, when required by your tailnet, is still manual. Saving credentials does not enable peer relay; configure it in Access control.": "如果 tailnet 要求设备审批，仍需手动批准设备。保存凭据不会启用设备中继；请在“访问控制”中进行配置。",
+  "Skip for now": "暂时跳过",
   "No changes to save.": "没有需要保存的更改。",
   "Reload peer relay settings before trying again.": "请重新加载设备中继设置后再试。",
   "Reload connection settings before trying again.": "请重新加载连接设置后再试。",

@@ -23,7 +23,7 @@ import PeerRelayCard from '../components/PeerRelayCard'
 
 export default function OverviewPage() {
   const { t, locale } = useI18n()
-  const { status, statusError, setKeyRenewalDialogOpen } = useTailscale()
+  const { status, statusError, setKeyRenewalDialogOpen, keyRenewal, credentialSetup } = useTailscale()
   const latencies = usePeerLatencies(status, statusError)
   const [dialogMode, setDialogMode] = useState<'signin' | 'renewal' | null>(null)
   const [promptDismissed, setPromptDismissed] = useState(false)
@@ -36,6 +36,10 @@ export default function OverviewPage() {
       setDialogMode('signin')
     }
   }, [needsSignIn, promptDismissed, dialogMode])
+  useEffect(() => {
+    // Hand off the completed sign-in dialog before opening the next setup step.
+    if (credentialSetup.pending && !keyRenewal.busy) setDialogMode(null)
+  }, [credentialSetup.pending, keyRenewal.busy])
   function openDialog(mode: 'signin' | 'renewal') {
     setPromptDismissed(true)
     setKeyRenewalDialogOpen(true)

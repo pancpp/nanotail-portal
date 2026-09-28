@@ -1826,6 +1826,12 @@ a:focus-visible, dialog:focus-visible {
 .setup-dialog h2 { line-height: 1.3; }
 .setup-dialog__description { padding: 0 24px; margin: 22px 0 0; font-size: 17px; line-height: 1.6; color: var(--muted); }
 .setup-dialog__footer { padding: 0 24px 24px; }
+.credential-setup-checklist { margin: 24px; padding-left: 24px; font-size: 17px; line-height: 1.6; }
+.credential-setup-checklist li { padding: 0 0 18px 4px; }
+.credential-setup-checklist li::marker { color: var(--green-dark); font-weight: 700; }
+.credential-setup-checklist p { margin: 0 0 6px; }
+.credential-setup-checklist a { color: var(--green-dark); text-underline-offset: 4px; }
+.credential-setup-dialog h2:focus { outline: none; }
 .routing-card .status-card__body { overflow-wrap: anywhere; }
 .routing-card .status-card__body strong { white-space: normal; }
 .routing-card .status-card__body p { white-space: normal; overflow: visible; font-size: 16px; line-height: 1.5; }

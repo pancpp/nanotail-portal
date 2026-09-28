@@ -67,7 +67,7 @@ export function useNodeKeyRenewal(token: string | null, logout: () => void, refr
       unresolved.current = isKeyRenewalPending(next)
       committed.current = !['IDLE', 'READY', 'CANCELLED'].includes(next.state)
       setSnapshot(previous => ({ ...previous, value: next, pending: isKeyRenewalPending(next) }))
-      if (lastState.current !== next.state && ['COMPLETE', 'SIGNED_IN', 'IDLE'].includes(next.state)) void refresh()
+      if (lastState.current !== next.state && ['COMPLETE', 'SIGNED_IN', 'AWAITING_APPROVAL', 'IDLE'].includes(next.state)) void refresh()
       lastState.current = next.state
       const popup = signInWindow.current
       if (popup && next.attemptID === popup.attemptID && next.state === 'AWAITING_LOGIN') {

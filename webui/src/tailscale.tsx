@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from './auth'
 import { useNodeKeyRenewal } from './useNodeKeyRenewal'
+import { useCredentialSetup } from './useCredentialSetup'
 import {
   clearTailscaleCredentialRequest, isSessionError, setTailscaleCredentialRequest,
   tailscaleClientRequest, tailscaleStatusRequest,
@@ -20,6 +21,8 @@ interface TailscaleContextValue {
   save: (credential: TailscaleCredential) => Promise<void>
   clear: () => Promise<void>
   keyRenewalActive: boolean
+  keyRenewalDialogOpen: boolean
+  credentialSetup: ReturnType<typeof useCredentialSetup>
   keyRenewal: ReturnType<typeof useNodeKeyRenewal>
   setKeyRenewalDialogOpen: (open: boolean) => void
 }
@@ -71,6 +74,7 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
   }, [accessToken, logout])
 
   const keyRenewal = useNodeKeyRenewal(accessToken, logout, refresh)
+  const credentialSetup = useCredentialSetup(status, statusError)
   const keyRenewalActive = keyRenewalDialogOpen || keyRenewal.pending
 
   useEffect(() => {
@@ -100,7 +104,7 @@ export function TailscaleProvider({ children }: { children: ReactNode }) {
     } catch (error) { if (isSessionError(error)) logout(); throw error }
   }
 
-  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, routing, routingError, refreshing, refresh, save, clear, keyRenewalActive, keyRenewal, setKeyRenewalDialogOpen }}>
+  return <TailscaleContext.Provider value={{ status, client, statusError, clientError, routing, routingError, refreshing, refresh, save, clear, keyRenewalActive, keyRenewalDialogOpen, keyRenewal, setKeyRenewalDialogOpen, credentialSetup }}>
     {children}
   </TailscaleContext.Provider>
 }

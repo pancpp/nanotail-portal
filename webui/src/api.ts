@@ -141,7 +141,7 @@ export interface TailscaleStatus {
   haveNodeKey: boolean
   tailscaleIPs: string[]
   currentTailnet: { name: string } | null
-  self: { online: boolean; keyExpiry: string | null } | null
+  self: { id?: string; online: boolean; keyExpiry: string | null } | null
   peers: TailscalePeer[]
 }
 
@@ -368,7 +368,7 @@ function isTailscalePeer(value: unknown): value is TailscalePeer {
 function isTailscaleStatus(value: unknown): value is TailscaleStatus {
   return isRecord(value) && typeof value.backendState === 'string' && typeof value.haveNodeKey === 'boolean' && isStringArray(value.tailscaleIPs) &&
     (value.currentTailnet === null || (isRecord(value.currentTailnet) && typeof value.currentTailnet.name === 'string')) &&
-    (value.self === null || (isRecord(value.self) && typeof value.self.online === 'boolean' &&
+    (value.self === null || (isRecord(value.self) && (value.self.id === undefined || typeof value.self.id === 'string') && typeof value.self.online === 'boolean' &&
       (value.self.keyExpiry === null || (typeof value.self.keyExpiry === 'string' && Number.isFinite(Date.parse(value.self.keyExpiry)))))) &&
     Array.isArray(value.peers) && value.peers.every(isTailscalePeer)
 }
@@ -441,7 +441,7 @@ export async function tailscaleStatusRequest(token: string, signal?: AbortSignal
       haveNodeKey
       tailscaleIPs
       currentTailnet { name }
-      self { online keyExpiry }
+      self { id online keyExpiry }
       peers { id hostName dnsName os tailscaleIPs online active curAddr peerRelay relay }
     }
   }`, {}, signal)

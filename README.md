@@ -654,6 +654,13 @@ suite also checks both languages, persistence, mobile layouts, and form safety.
 ### Tailscale credential setup
 
 The WebUI offers browser sign-in when Tailscale reports `NeedsLogin`.
+After the portal observes a new device enrollment or a change of tailnet, it
+opens **Add your client credentials** with the OAuth creation link and credential
+form. **Skip for now**, X, or Escape first shows a reminder to approve the device
+(when required), approve its exit-node and advertised subnet routes (unless
+already approved by policy), and manually configure peer relay. Credentials can
+also be added later in **Settings**. Saving or acknowledging the reminder
+completes the prompt for that enrollment; ordinary refreshes do not reopen it.
 OAuth credentials remain optional, separate settings: Settings lets portal
 administrators save, replace, or remove the device-wide client ID and secret.
 To remove them, choose **Remove credentials** beside **Save credentials**, then

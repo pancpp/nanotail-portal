@@ -7,10 +7,11 @@ import { useTailscale } from '../tailscale'
 
 export const TAILSCALE_CREDENTIALS_URL = 'https://console.tailscale.com/admin/settings/trust-credentials'
 
-export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
+export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy, guideInNewTab = false }: {
   onSaved?: () => void
   onGuide?: () => void
   onBusy?: (busy: boolean) => void
+  guideInNewTab?: boolean
 }) {
   const { t } = useI18n()
   const { client, save, clear } = useTailscale()
@@ -61,7 +62,7 @@ export default function TailscaleCredentialForm({ onSaved, onGuide, onBusy }: {
     <p className="password-help">{t("To enable peer relay, also grant the OAuth client policy_file write permission. The relay save action adds access for all tailnet devices through this device.")}</p>
     <div className="credential-links">
       <a href={TAILSCALE_CREDENTIALS_URL} target="_blank" rel="noopener noreferrer"><T message="Create OAuth credentials {0}" values={{ 0: <ExternalLink size={16} /> }} /></a>
-      <Link to="/tailscale-setup/oauth-credentials" onClick={onGuide}><T message="{0} Step-by-step guide" values={{ 0: <BookOpen size={16} /> }} /></Link>
+      <Link to="/tailscale-setup/oauth-credentials" onClick={onGuide} target={guideInNewTab ? '_blank' : undefined} rel={guideInNewTab ? 'noopener noreferrer' : undefined}><T message="{0} Step-by-step guide" values={{ 0: <BookOpen size={16} /> }} /></Link>
     </div>
     <label htmlFor={`${id}-client`}>{t("Client ID")}</label>
     <input id={`${id}-client`} name="client_id" autoComplete="off" autoCapitalize="none" spellCheck={false}
