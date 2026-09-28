@@ -59,7 +59,7 @@ esac
 			if err := os.WriteFile(fake, []byte(script), 0700); err != nil {
 				t.Fatal(err)
 			}
-			configuration := fmt.Sprintf("http_listen_addr: %q\ntailscale_binary: %q\nenable_console_log: true\n", address, fake)
+			configuration := fmt.Sprintf("http_listen_addr: %q\ntailscale_binary: %q\nenable_console_log: false\n", address, fake)
 			if err := os.WriteFile(filepath.Join(dir, "nanotail.yml"), []byte(configuration), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -129,6 +129,21 @@ esac
 				}
 				t.Fatalf("portal did not accept expected credentials on %s", base)
 				return ""
+			}
+			checkResetDiagnostics := func(stages ...string) {
+				t.Helper()
+				data, err := os.ReadFile(filepath.Join(dir, "logs", "nanotail.log"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				remaining := string(data)
+				for _, stage := range stages {
+					index := strings.Index(remaining, "[factory-reset] "+stage)
+					if index < 0 {
+						t.Fatalf("missing ordered reset diagnostic %q in the normal log file: %s", stage, data)
+					}
+					remaining = remaining[index+len("[factory-reset] ")+len(stage):]
+				}
 			}
 			token := waitLogin(address, "admin")
 			oldKey, err := os.ReadFile(filepath.Join(dir, "nanotail.key"))
@@ -201,6 +216,7 @@ esac
 				if _, err := os.Stat(filepath.Join(dir, "logs", "old.log")); err != nil {
 					t.Fatal("failed logout cleared logs")
 				}
+				checkResetDiagnostics("starting reset", "portal services stopped", "aborted before clearing any files", "portal ready")
 				return
 			}
 			newToken := waitLogin("127.0.0.1:7080", "admin")
@@ -236,6 +252,7 @@ esac
 			if status != 401 {
 				t.Fatal("old administrator password survived reset")
 			}
+			checkResetDiagnostics("data cleanup complete", "portal ready")
 		})
 	}
 }

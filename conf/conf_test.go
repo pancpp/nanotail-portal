@@ -24,7 +24,7 @@ func isolateConfig(t *testing.T) string {
 		v.SetDefault(key, value)
 	}
 	v.SetEnvPrefix(original.GetEnvPrefix())
-	path := filepath.Join(t.TempDir(), "nanotail-portal.yml")
+	path := filepath.Join(t.TempDir(), "nanotail.yml")
 	v.SetConfigFile(path)
 	gViper = v
 	t.Cleanup(func() { gViper = original })
@@ -33,20 +33,17 @@ func isolateConfig(t *testing.T) string {
 
 func TestDefaults(t *testing.T) {
 	// Check the actual package configuration before any file is loaded.
-	if got := gViper.ConfigFileUsed(); got != "nanotail-portal.yml" {
-		t.Errorf("configuration file = %q, want nanotail-portal.yml", got)
+	if got := gViper.ConfigFileUsed(); got != "nanotail.yml" {
+		t.Errorf("configuration file = %q, want nanotail.yml", got)
 	}
 	if got := gViper.GetEnvPrefix(); got != "NANOTAIL" {
 		t.Errorf("environment prefix = %q, want NANOTAIL", got)
 	}
 	for key, want := range map[string]string{
-		"http_listen_addr":  "127.0.0.1:8080",
+		"http_listen_addr":  "127.0.0.1:7080",
 		"log_dir":           "logs",
-		"data_dir":          "data",
-		"database":          "nanotail-portal.sqlite3",
-		"webui_dir":         "webui/dist",
-		"session_ttl":       "12h",
-		"tailscale_binary":  "tailscale",
+		"database":          "nanotail.sqlite3",
+		"tailscale_binary":  "/usr/bin/tailscale",
 		"tailscale_socket":  "",
 		"tailscale_timeout": "15s",
 	} {
@@ -54,8 +51,8 @@ func TestDefaults(t *testing.T) {
 			t.Errorf("GetString(%q) = %q, want %q", key, got, want)
 		}
 	}
-	if !GetBool("enable_console_log") {
-		t.Error("console logging should be enabled by default")
+	if GetBool("enable_console_log") {
+		t.Error("console logging should be disabled by default")
 	}
 }
 
@@ -79,7 +76,7 @@ func TestInitOverridesDefaults(t *testing.T) {
 		}
 	}
 	if GetBool("enable_console_log") {
-		t.Error("explicit false should override the true default")
+		t.Error("explicit false should keep console logging disabled")
 	}
 	got, err := os.ReadFile(path)
 	if err != nil {
@@ -98,7 +95,7 @@ func TestInitEmptyConfiguration(t *testing.T) {
 	if err := Init(); err != nil {
 		t.Fatal(err)
 	}
-	if got := GetString("http_listen_addr"); got != "127.0.0.1:8080" {
+	if got := GetString("http_listen_addr"); got != "127.0.0.1:7080" {
 		t.Fatalf("empty configuration replaced the default address: %q", got)
 	}
 }
@@ -115,9 +112,12 @@ func TestInitInvalidYAML(t *testing.T) {
 }
 
 func TestInitMissingConfiguration(t *testing.T) {
-	isolateConfig(t)
-	if err := Init(); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("Init() = %v, want a missing-file error", err)
+	path := isolateConfig(t)
+	if err := Init(); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(path); err != nil || len(data) != 0 {
+		t.Fatalf("missing configuration was not created empty: %q, %v", data, err)
 	}
 }
 

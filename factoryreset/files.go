@@ -167,23 +167,27 @@ func (f *Files) Clear() error {
 	return f.syncDirectory()
 }
 
-func (f *Files) Resume() error {
+// Resume reports whether this startup is completing an already requested reset.
+func (f *Files) Resume() (bool, error) {
 	file, err := f.root.OpenFile(marker, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
 	if errors.Is(err, os.ErrNotExist) {
-		return nil
+		return false, nil
 	}
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer file.Close()
 	contents, err := io.ReadAll(io.LimitReader(file, 128))
 	if err != nil {
-		return err
+		return false, err
 	}
 	if string(contents) != markerContents {
-		return errors.New("invalid factory reset recovery marker; manual recovery required")
+		return false, errors.New("invalid factory reset recovery marker; manual recovery required")
 	}
-	return f.Clear()
+	if err := f.Clear(); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // LockInstance prevents another portal in the same working directory from

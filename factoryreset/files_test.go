@@ -77,15 +77,15 @@ func TestClearOnlyResetTargetsAndRecover(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "nanotail.yml"), nil, 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.Resume(); err != nil {
-		t.Fatal(err)
+	if resumed, err := f.Resume(); err != nil || !resumed {
+		t.Fatalf("pending reset was not resumed: resumed=%t err=%v", resumed, err)
 	}
 	assertCleared(t, dir)
 	if data, err := os.ReadFile(filepath.Join(outside, "keep")); err != nil || string(data) != "outside" {
 		t.Fatal("followed symlink outside logs")
 	}
-	if err := f.Resume(); err != nil {
-		t.Fatal(err)
+	if resumed, err := f.Resume(); err != nil || resumed {
+		t.Fatalf("completed reset was resumed again: resumed=%t err=%v", resumed, err)
 	}
 }
 
@@ -145,13 +145,13 @@ func TestResetToleratesAlreadyDeletedKey(t *testing.T) {
 
 func TestRecoveryRequiresValidMarker(t *testing.T) {
 	f, dir := setupFiles(t)
-	if err := f.Resume(); err != nil {
+	if _, err := f.Resume(); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, marker), []byte("invalid"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.Resume(); err == nil {
+	if _, err := f.Resume(); err == nil {
 		t.Fatal("accepted invalid recovery marker")
 	}
 	data, _ := os.ReadFile(filepath.Join(dir, "nanotail.sqlite3"))

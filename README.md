@@ -31,6 +31,30 @@ the current portal password to confirm. Closing either confirmation makes no
 changes. The authenticated `POST /api/v1/factory-reset` endpoint requires both
 confirmation fields and verifies the administrator's password on the server.
 
+The portal does not monitor the **RCRY (Recovery)** button or use it to trigger
+a reset. On NanoPi Zero2, FriendlyELEC's
+[bootloader handles this button before Linux starts](https://github.com/friendlyarm/uboot-rockchip/blob/c5c053fa55/arch/arm/mach-rockchip/boot_rkimg.c#L299)
+and can select recovery or USB download mode when held during power-on or reboot.
+This firmware behavior is independent of the WebUI factory reset. On an OverlayFS
+installation, recovery can boot the base system without the saved user-data
+layer, making installed software and settings appear missing.
+
+WebUI factory reset has no dedicated LED indication. The normal VPN traffic
+LED worker follows the portal's usual shutdown and startup behavior; reset does
+not override brightness or force an LED pattern.
+
+Reset diagnostics use the normal configured logger. To follow
+the default log file on the device:
+
+```sh
+sudo tail -F /srv/nanotail/logs/nanotail.log
+```
+
+The `[factory-reset]` messages report reset stages. With
+`enable_console_log: true`, the normal logger also writes to the service journal,
+which can be followed with `sudo journalctl -u nanotail.service -b -f`.
+Factory reset clears the portal's file logs and restores default configuration.
+
 A reset clears `nanotail.yml`, `nanotail.sqlite3` (including SQLite journal/WAL
 sidecars), and all contents of `logs`; deletes `nanotail.key`; runs `tailscale logout`; clears the
 initiating browser's saved JWT; and restarts the portal. The reset deliberately
@@ -739,11 +763,13 @@ portal backend or change Tailscale/OS settings.
 For standalone development checks:
 
 ```sh
-go test -race ./...
+go test -race -ldflags='-X github.com/pancpp/nanotail-portal/conf.gUseEmbeddedWebUI=true' ./...
 go vet ./...
 ```
 
 Tests use isolated credential files and fake Tailscale runners, and exercise
 authentication, revocation, persistence, validation, API protection, static asset
 serving, startup failures and graceful shutdown. They never change the host's
-Tailscale configuration. A live device test is still needed for device integration.
+Tailscale configuration. LED tests use fake sysfs files. Subprocess tests disable
+the hardware LED through an environment setting that survives reset. A live
+device test is still needed for device integration.
