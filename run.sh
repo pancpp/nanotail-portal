@@ -31,4 +31,4 @@ go build -trimpath \
 
 echo "Built nanotail-portal (Linux ARM64, embedded WebUI)"
 
-./nanotail-portal
+./nanotail-portal -c nanotail-portal.yml
