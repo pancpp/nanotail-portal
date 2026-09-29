@@ -47,7 +47,7 @@ Reset diagnostics use the normal configured logger. To follow
 the default log file on the device:
 
 ```sh
-sudo tail -F /srv/nanotail/logs/nanotail.log
+sudo tail -F /srv/nanotail/logs/nanotail-portal.log
 ```
 
 The `[factory-reset]` messages report reset stages. With
@@ -55,8 +55,8 @@ The `[factory-reset]` messages report reset stages. With
 which can be followed with `sudo journalctl -u nanotail.service -b -f`.
 Factory reset clears the portal's file logs and restores default configuration.
 
-A reset clears `nanotail.yml`, `nanotail.sqlite3` (including SQLite journal/WAL
-sidecars), and all contents of `logs`; deletes `nanotail.key`; runs `tailscale logout`; clears the
+A reset clears `nanotail-portal.yml`, `nanotail-portal.sqlite3` (including SQLite journal/WAL
+sidecars), and all contents of `logs`; deletes `nanotail-portal.key`; runs `tailscale logout`; clears the
 initiating browser's saved JWT; and restarts the portal. The reset deliberately
 supports only these default paths in the working directory. Custom storage paths,
 symlinked targets, and hard-linked files are refused instead of risking unrelated
@@ -85,17 +85,19 @@ Tailscale access is lost, so have a connection that does not depend on Tailscale
 
 OS/LAN configuration, remote OAuth clients and authorizations, backups, and
 Tailscale routing preferences are not additionally reset or revoked. Deleting
-`nanotail.key` causes startup to generate a new signing key, so all pre-reset
+`nanotail-portal.key` causes startup to generate a new signing key, so all pre-reset
 JWTs—including tokens saved in other browsers—are rejected after restart.
 
-Configuration is read from `nanotail.yml` in the process working directory.
+Configuration is read from `nanotail-portal.yml` in the process working directory.
 It is created if missing; an empty file uses the built-in defaults.
 `NANOTAIL_TAILSCALE_BINARY` overrides `tailscale_binary`, including after reset;
 integration tests use it to keep all VPN commands on a disposable fake binary.
-The default database is `nanotail.sqlite3`. When upgrading an existing
+The default database is `nanotail-portal.sqlite3`. When upgrading an existing
 installation, stop the portal and copy your existing configuration and database
 to these names, or set `database` in the new configuration to your existing
 database path. The rename does not move existing runtime files automatically.
+Rename your existing signing key to `nanotail-portal.key` while the portal is
+stopped to preserve existing sessions.
 
 Paths are relative to the process working directory. Logs are written to
 `logs/nanotail-portal.log`, with rotation at 10 MB and three backups.
@@ -323,7 +325,7 @@ Login returns `{"token":"<JWT>"}`. JWTs expire after seven days. The current
 stateless JWT implementation does not revoke existing tokens after a password
 change; they remain valid until expiry.
 
-The JWT signing key is stored in `nanotail.key` in the process working directory.
+The JWT signing key is stored in `nanotail-portal.key` in the process working directory.
 Startup reads an existing nonempty key (ignoring surrounding whitespace).
 If the file is missing, empty, or whitespace-only, it generates a cryptographically
 random 256-bit key, stores its hexadecimal representation atomically with
@@ -563,7 +565,7 @@ See the [Linux LED interface documentation](https://docs.kernel.org/leds/leds-cl
 Avoid another service controlling LED1 concurrently. Forced termination or power
 loss cannot run the restoration step.
 
-Enabled by default; set `vpn_traffic_led: false` in `nanotail.yml` or
+Enabled by default; set `vpn_traffic_led: false` in `nanotail-portal.yml` or
 `NANOTAIL_VPN_TRAFFIC_LED=false` in the service environment to opt out.
 For new hardware, implement `activityled.Platform` and `activityled.LED` and add
 an exact board match to detection. Platform adapters select the indicator and

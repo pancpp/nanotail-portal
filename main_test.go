@@ -60,7 +60,7 @@ esac
 				t.Fatal(err)
 			}
 			configuration := fmt.Sprintf("http_listen_addr: %q\ntailscale_binary: %q\nenable_console_log: false\n", address, fake)
-			if err := os.WriteFile(filepath.Join(dir, "nanotail.yml"), []byte(configuration), 0600); err != nil {
+			if err := os.WriteFile(filepath.Join(dir, "nanotail-portal.yml"), []byte(configuration), 0600); err != nil {
 				t.Fatal(err)
 			}
 			output, err := os.Create(filepath.Join(dir, "test-output"))
@@ -132,7 +132,7 @@ esac
 			}
 			checkResetDiagnostics := func(stages ...string) {
 				t.Helper()
-				data, err := os.ReadFile(filepath.Join(dir, "logs", "nanotail.log"))
+				data, err := os.ReadFile(filepath.Join(dir, "logs", "nanotail-portal.log"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -146,7 +146,7 @@ esac
 				}
 			}
 			token := waitLogin(address, "admin")
-			oldKey, err := os.ReadFile(filepath.Join(dir, "nanotail.key"))
+			oldKey, err := os.ReadFile(filepath.Join(dir, "nanotail-portal.key"))
 			if err != nil || len(oldKey) == 0 {
 				t.Fatal("startup did not persist a signing key")
 			}
@@ -166,7 +166,7 @@ esac
 			}
 			cmd, done = startProcess()
 			waitLogin(address, "admin")
-			storedKey, err := os.ReadFile(filepath.Join(dir, "nanotail.key"))
+			storedKey, err := os.ReadFile(filepath.Join(dir, "nanotail-portal.key"))
 			if err != nil || !bytes.Equal(storedKey, oldKey) {
 				t.Fatal("normal restart replaced the signing key")
 			}
@@ -201,7 +201,7 @@ esac
 			}
 			if failLogout {
 				waitLogin(address, "changed-password")
-				storedKey, err := os.ReadFile(filepath.Join(dir, "nanotail.key"))
+				storedKey, err := os.ReadFile(filepath.Join(dir, "nanotail-portal.key"))
 				if err != nil || !bytes.Equal(storedKey, oldKey) {
 					t.Fatal("failed reset changed the signing key")
 				}
@@ -209,7 +209,7 @@ esac
 				if status != 200 {
 					t.Fatal("failed reset revoked existing JWTs")
 				}
-				data, _ := os.ReadFile(filepath.Join(dir, "nanotail.yml"))
+				data, _ := os.ReadFile(filepath.Join(dir, "nanotail-portal.yml"))
 				if string(data) != configuration {
 					t.Fatal("failed logout cleared config")
 				}
@@ -220,7 +220,7 @@ esac
 				return
 			}
 			newToken := waitLogin("127.0.0.1:7080", "admin")
-			newKey, err := os.ReadFile(filepath.Join(dir, "nanotail.key"))
+			newKey, err := os.ReadFile(filepath.Join(dir, "nanotail-portal.key"))
 			if err != nil || len(newKey) == 0 || bytes.Equal(oldKey, newKey) {
 				t.Fatal("successful reset did not replace the signing key")
 			}
@@ -233,7 +233,7 @@ esac
 			if err := cmd.Process.Signal(syscall.Signal(0)); err != nil {
 				t.Fatal("restart did not preserve process PID")
 			}
-			data, _ = os.ReadFile(filepath.Join(dir, "nanotail.yml"))
+			data, _ = os.ReadFile(filepath.Join(dir, "nanotail-portal.yml"))
 			if len(data) != 0 {
 				t.Fatal("config was not cleared")
 			}

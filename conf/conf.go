@@ -31,7 +31,7 @@ func init() {
 	)
 
 	pflag.BoolVarP(&showVersion, "version", "V", false, "Show version information")
-	pflag.StringVarP(&configFile, "config", "c", "nanotail.yml", "Configuration file")
+	pflag.StringVarP(&configFile, "config", "c", "nanotail-portal.yml", "Configuration file")
 	pflag.Parse()
 	if showVersion {
 		fmt.Println("###############################################")
@@ -50,7 +50,7 @@ func init() {
 	v.SetDefault("http_listen_addr", "127.0.0.1:7080")
 	v.SetDefault("log_dir", "logs")
 	v.SetDefault("enable_console_log", false)
-	v.SetDefault("database", "nanotail.sqlite3")
+	v.SetDefault("database", "nanotail-portal.sqlite3")
 	v.SetDefault("tailscale_binary", "/usr/bin/tailscale")
 	v.SetDefault("tailscale_socket", "")
 	v.SetDefault("tailscale_timeout", "15s")

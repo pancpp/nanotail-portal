@@ -12,7 +12,7 @@ import (
 	"syscall"
 )
 
-const SigningKeyFile = "nanotail.key"
+const SigningKeyFile = "nanotail-portal.key"
 const maxSigningKeySize = 4096
 
 // Initialized once at startup, before any HTTP handlers are created.
@@ -60,7 +60,7 @@ func loadSigningKey(path string) ([]byte, error) {
 	// main holds the working-directory instance lock. Publish the full key
 	// atomically so a crash cannot leave a truncated but nonempty signing key.
 	dir := filepath.Dir(path)
-	temporary, err := os.CreateTemp(dir, ".nanotail-key-*")
+	temporary, err := os.CreateTemp(dir, ".nanotail-portal-key-*")
 	if err != nil {
 		return nil, err
 	}
@@ -96,17 +96,17 @@ func readSigningKey(file *os.File) ([]byte, error) {
 		return nil, err
 	}
 	if !info.Mode().IsRegular() {
-		return nil, errors.New("nanotail.key must be a regular file")
+		return nil, errors.New("nanotail-portal.key must be a regular file")
 	}
 	if stat, ok := info.Sys().(*syscall.Stat_t); !ok || stat.Nlink != 1 {
-		return nil, errors.New("nanotail.key must not have multiple hard links")
+		return nil, errors.New("nanotail-portal.key must not have multiple hard links")
 	}
 	contents, err := io.ReadAll(io.LimitReader(file, maxSigningKeySize+1))
 	if err != nil {
 		return nil, err
 	}
 	if len(contents) > maxSigningKeySize {
-		return nil, errors.New("nanotail.key exceeds the maximum size of 4096 bytes")
+		return nil, errors.New("nanotail-portal.key exceeds the maximum size of 4096 bytes")
 	}
 	// Treat whitespace-only files as empty; tolerate a newline in text files.
 	return bytes.TrimSpace(contents), nil

@@ -18,7 +18,7 @@ func Init() error {
 		return err
 	}
 
-	fileLogPath := filepath.Join(logDir, "nanotail.log")
+	fileLogPath := filepath.Join(logDir, "nanotail-portal.log")
 	fileLogWriter := &lumberjack.Logger{
 		Filename:   fileLogPath,
 		MaxSize:    10, // megabytes

@@ -12,7 +12,7 @@ import (
 const marker = ".nanotail-reset-pending"
 const markerContents = "nanotail factory reset v1\n"
 
-var ErrPaths = errors.New("Factory reset requires nanotail.yml, nanotail.sqlite3, and logs in the portal working directory; custom storage paths must be reset manually")
+var ErrPaths = errors.New("Factory reset requires nanotail-portal.yml, nanotail-portal.sqlite3, and logs in the portal working directory; custom storage paths must be reset manually")
 
 // Files deliberately operates on a fixed allowlist, never paths supplied by an
 // HTTP request or an unchecked log_dir. Root also confines operations if paths
@@ -37,7 +37,7 @@ func Open(directory string) (*Files, error) {
 func (f *Files) Close() error { return f.root.Close() }
 
 func (f *Files) ValidatePaths(config, database, logs string) error {
-	for _, target := range [][2]string{{config, "nanotail.yml"}, {database, "nanotail.sqlite3"}, {logs, "logs"}} {
+	for _, target := range [][2]string{{config, "nanotail-portal.yml"}, {database, "nanotail-portal.sqlite3"}, {logs, "logs"}} {
 		absolute, err := filepath.Abs(target[0])
 		if err != nil || absolute != filepath.Join(f.directory, target[1]) {
 			return ErrPaths
@@ -47,7 +47,7 @@ func (f *Files) ValidatePaths(config, database, logs string) error {
 }
 
 func (f *Files) validate() error {
-	for _, name := range []string{"nanotail.yml", "nanotail.sqlite3", "nanotail.key", "nanotail.sqlite3-wal", "nanotail.sqlite3-shm", "nanotail.sqlite3-journal", marker, "logs"} {
+	for _, name := range []string{"nanotail-portal.yml", "nanotail-portal.sqlite3", "nanotail-portal.key", "nanotail-portal.sqlite3-wal", "nanotail-portal.sqlite3-shm", "nanotail-portal.sqlite3-journal", marker, "logs"} {
 		info, err := f.root.Lstat(name)
 		if errors.Is(err, os.ErrNotExist) {
 			continue
@@ -135,19 +135,19 @@ func (f *Files) Clear() error {
 	if err := f.Prepare(); err != nil {
 		return err
 	}
-	if err := f.write("nanotail.yml", "", false); err != nil {
+	if err := f.write("nanotail-portal.yml", "", false); err != nil {
 		return err
 	}
-	if err := f.write("nanotail.sqlite3", "", false); err != nil {
+	if err := f.write("nanotail-portal.sqlite3", "", false); err != nil {
 		return err
 	}
 	// The next startup generates a new signing key, invalidating every JWT
 	// issued before this reset, including tokens saved in other browsers.
-	if err := f.root.Remove("nanotail.key"); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := f.root.Remove("nanotail-portal.key"); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	// SQLite sidecars can otherwise restore pre-reset data when SQLite reopens.
-	for _, name := range []string{"nanotail.sqlite3-wal", "nanotail.sqlite3-shm", "nanotail.sqlite3-journal"} {
+	for _, name := range []string{"nanotail-portal.sqlite3-wal", "nanotail-portal.sqlite3-shm", "nanotail-portal.sqlite3-journal"} {
 		if err := f.root.Remove(name); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		}

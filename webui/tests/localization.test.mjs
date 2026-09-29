@@ -83,5 +83,5 @@ test('Chinese dates, counts and durations use the selected language without alte
 test('dangerous actions keep the RESET literal, filenames, and scope identifiers intact', () => {
   assert.match(translate('Type RESET to confirm', 'zh-CN'), /RESET/)
   assert.match(translate('Select route write permission ({0}). This permits approving exit nodes and subnet routes. {1} alone is not sufficient; avoid granting “All” access.', 'zh-CN', {0:'devices:routes',1:'auth_keys'}), /devices:routes/)
-  assert.match(translate('This permanently clears {0}, {1}, and the {2} folder, deletes {3}, logs out of Tailscale, signs this browser out, and restarts the portal. The new signing key invalidates all existing portal sessions.', 'zh-CN', {0:'nanotail.yml',1:'nanotail.sqlite3',2:'logs',3:'nanotail.key'}), /nanotail\.key/)
+  assert.match(translate('This permanently clears {0}, {1}, and the {2} folder, deletes {3}, logs out of Tailscale, signs this browser out, and restarts the portal. The new signing key invalidates all existing portal sessions.', 'zh-CN', {0:'nanotail-portal.yml',1:'nanotail-portal.sqlite3',2:'logs',3:'nanotail-portal.key'}), /nanotail-portal\.key/)
 })

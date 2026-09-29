@@ -136,7 +136,7 @@ export async function checkLocalization({evaluate, send, waitFor, click, fill, p
   await click('恢复出厂设置')
   await waitFor("Boolean(document.querySelector('.factory-reset-dialog[open]'))")
   const resetText = await evaluate("document.querySelector('#reset-description').textContent")
-  for (const value of ['nanotail.yml','nanotail.sqlite3','logs','nanotail.key']) assert.ok(resetText.includes(value))
+  for (const value of ['nanotail-portal.yml','nanotail-portal.sqlite3','logs','nanotail-portal.key']) assert.ok(resetText.includes(value))
   assert.equal(await evaluate("document.querySelector('.factory-reset-dialog .danger-button').disabled"), true)
   await evaluate("document.querySelector('.reset-acknowledgement input').click()")
   await click('继续进行最终确认')

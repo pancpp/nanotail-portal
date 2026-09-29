@@ -47,7 +47,7 @@ browser local storage. Its JWT expiry is checked when restoring a session and
 while the page is open. This client-side check only controls navigation; the
 backend verifies the signature on protected requests. JWTs currently last seven
 days. There is no `/me` or `/logout` API, so ordinary sign-out only clears the local token.
-The backend loads its signing key from `nanotail.key`, generating a new random
+The backend loads its signing key from `nanotail-portal.key`, generating a new random
 key if missing or empty. Normal restarts preserve sessions; factory reset
 deletes this key so all old JWTs are rejected after restart.
 
@@ -79,8 +79,8 @@ to login with recovery guidance. A definite rejection leaves the session usable
 and clears the password/confirmation fields. The outcome message lives in the
 authentication provider so the sign-out redirect does not erase it.
 
-The backend logs out of Tailscale, clears the default `nanotail.yml`,
-`nanotail.sqlite3` and `logs` targets, deletes `nanotail.key`, and restarts itself. If logout fails, it
+The backend logs out of Tailscale, clears the default `nanotail-portal.yml`,
+`nanotail-portal.sqlite3` and `logs` targets, deletes `nanotail-portal.key`, and restarts itself. If logout fails, it
 preserves local data. Custom paths and unsafe filesystem targets are refused.
 After a successful reset the account is `admin / admin`. Reopen the usual
 nginx-served portal address and change the default password. The dialog warns

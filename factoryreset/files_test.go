@@ -17,7 +17,7 @@ func setupFiles(t *testing.T) (*Files, string) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = f.Close() })
-	for _, name := range []string{"nanotail.yml", "nanotail.sqlite3", "nanotail.key", "nanotail.sqlite3-wal", "nanotail.sqlite3-shm", "nanotail.sqlite3-journal", "keep.txt"} {
+	for _, name := range []string{"nanotail-portal.yml", "nanotail-portal.sqlite3", "nanotail-portal.key", "nanotail-portal.sqlite3-wal", "nanotail-portal.sqlite3-shm", "nanotail-portal.sqlite3-journal", "keep.txt"} {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("old data"), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -33,13 +33,13 @@ func setupFiles(t *testing.T) (*Files, string) {
 
 func assertCleared(t *testing.T, dir string) {
 	t.Helper()
-	for _, name := range []string{"nanotail.yml", "nanotail.sqlite3"} {
+	for _, name := range []string{"nanotail-portal.yml", "nanotail-portal.sqlite3"} {
 		data, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil || len(data) != 0 {
 			t.Fatalf("%s not empty: %q, %v", name, data, err)
 		}
 	}
-	for _, name := range []string{marker, "nanotail.key", "nanotail.sqlite3-wal", "nanotail.sqlite3-shm", "nanotail.sqlite3-journal"} {
+	for _, name := range []string{marker, "nanotail-portal.key", "nanotail-portal.sqlite3-wal", "nanotail-portal.sqlite3-shm", "nanotail-portal.sqlite3-journal"} {
 		if _, err := os.Lstat(filepath.Join(dir, name)); !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("%s still exists: %v", name, err)
 		}
@@ -63,18 +63,18 @@ func TestClearOnlyResetTargetsAndRecover(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(dir, "logs", "link")); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.ValidatePaths(filepath.Join(dir, "nanotail.yml"), filepath.Join(dir, "nanotail.sqlite3"), filepath.Join(dir, "logs")); err != nil {
+	if err := f.ValidatePaths(filepath.Join(dir, "nanotail-portal.yml"), filepath.Join(dir, "nanotail-portal.sqlite3"), filepath.Join(dir, "logs")); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.Prepare(); err != nil {
 		t.Fatal(err)
 	}
-	data, _ := os.ReadFile(filepath.Join(dir, "nanotail.sqlite3"))
+	data, _ := os.ReadFile(filepath.Join(dir, "nanotail-portal.sqlite3"))
 	if string(data) != "old data" {
 		t.Fatal("preparation cleared data before restart")
 	}
 	// Simulate a crash after just the configuration has been cleared.
-	if err := os.WriteFile(filepath.Join(dir, "nanotail.yml"), nil, 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "nanotail-portal.yml"), nil, 0600); err != nil {
 		t.Fatal(err)
 	}
 	if resumed, err := f.Resume(); err != nil || !resumed {
@@ -90,7 +90,7 @@ func TestClearOnlyResetTargetsAndRecover(t *testing.T) {
 }
 
 func TestResetRejectsUnsafeTargetsBeforeClearing(t *testing.T) {
-	for _, name := range []string{"nanotail.yml", "nanotail.sqlite3", "nanotail.key", "nanotail.sqlite3-wal", "logs"} {
+	for _, name := range []string{"nanotail-portal.yml", "nanotail-portal.sqlite3", "nanotail-portal.key", "nanotail-portal.sqlite3-wal", "logs"} {
 		t.Run(name, func(t *testing.T) {
 			f, dir := setupFiles(t)
 			if err := os.Rename(filepath.Join(dir, name), filepath.Join(dir, "original")); err != nil {
@@ -109,13 +109,13 @@ func TestResetRejectsUnsafeTargetsBeforeClearing(t *testing.T) {
 	}
 	t.Run("hard link", func(t *testing.T) {
 		f, dir := setupFiles(t)
-		if err := os.Link(filepath.Join(dir, "nanotail.sqlite3"), filepath.Join(dir, "copy")); err != nil {
+		if err := os.Link(filepath.Join(dir, "nanotail-portal.sqlite3"), filepath.Join(dir, "copy")); err != nil {
 			t.Fatal(err)
 		}
 		if err := f.Clear(); err == nil {
 			t.Fatal("accepted multiply linked database")
 		}
-		data, _ := os.ReadFile(filepath.Join(dir, "nanotail.yml"))
+		data, _ := os.ReadFile(filepath.Join(dir, "nanotail-portal.yml"))
 		if string(data) != "old data" {
 			t.Fatal("cleared config before safety checks")
 		}
@@ -124,7 +124,7 @@ func TestResetRejectsUnsafeTargetsBeforeClearing(t *testing.T) {
 
 func TestResetRejectsCustomOrBroadPaths(t *testing.T) {
 	f, dir := setupFiles(t)
-	config, db, logs := filepath.Join(dir, "nanotail.yml"), filepath.Join(dir, "nanotail.sqlite3"), filepath.Join(dir, "logs")
+	config, db, logs := filepath.Join(dir, "nanotail-portal.yml"), filepath.Join(dir, "nanotail-portal.sqlite3"), filepath.Join(dir, "logs")
 	for _, paths := range [][3]string{{config, db, dir}, {config, db, "/"}, {config, db, os.Getenv("HOME")}, {config, filepath.Join(dir, "other.sqlite3"), logs}, {filepath.Join(dir, "other.yml"), db, logs}, {config, config, logs}} {
 		if err := f.ValidatePaths(paths[0], paths[1], paths[2]); !errors.Is(err, ErrPaths) {
 			t.Fatalf("unsafe paths %v: %v", paths, err)
@@ -134,7 +134,7 @@ func TestResetRejectsCustomOrBroadPaths(t *testing.T) {
 
 func TestResetToleratesAlreadyDeletedKey(t *testing.T) {
 	f, dir := setupFiles(t)
-	if err := os.Remove(filepath.Join(dir, "nanotail.key")); err != nil {
+	if err := os.Remove(filepath.Join(dir, "nanotail-portal.key")); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.Clear(); err != nil {
@@ -154,7 +154,7 @@ func TestRecoveryRequiresValidMarker(t *testing.T) {
 	if _, err := f.Resume(); err == nil {
 		t.Fatal("accepted invalid recovery marker")
 	}
-	data, _ := os.ReadFile(filepath.Join(dir, "nanotail.sqlite3"))
+	data, _ := os.ReadFile(filepath.Join(dir, "nanotail-portal.sqlite3"))
 	if string(data) != "old data" {
 		t.Fatal("invalid marker erased data")
 	}

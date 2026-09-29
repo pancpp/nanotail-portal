@@ -63,7 +63,7 @@ func TestKeyGeneratedForMissingOrEmptyFile(t *testing.T) {
 			if !bytes.Equal(GetJwtSignKey(), key) || verifyToken(token) != nil {
 				t.Fatal("reinitialization rotated the key or invalidated a session")
 			}
-			leftovers, err := filepath.Glob(".nanotail-key-*")
+			leftovers, err := filepath.Glob(".nanotail-portal-key-*")
 			if err != nil || len(leftovers) != 0 {
 				t.Fatal("temporary key files were not cleaned up")
 			}

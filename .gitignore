@@ -7,9 +7,9 @@ logs/
 
 nanotail-portal
 nanotail-portal.arm64
-nanotail.yml
-nanotail.sqlite3
-nanotail.key
-.nanotail-key-*
+nanotail-portal.yml
+nanotail-portal.sqlite3
+nanotail-portal.key
+.nanotail-portal-key-*
 .nanotail-portal.lock
 .nanotail-reset-pending
