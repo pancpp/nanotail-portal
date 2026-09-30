@@ -10,6 +10,22 @@ import (
 
 var ErrDeviceStatus = errors.New("Unable to read device status. Check that Linux system metrics, eth0, and NetworkManager (nmcli) are available")
 var ErrDeviceAdmin = errors.New("Only portal administrators can change LAN settings")
+var ErrHostnameAdmin = errors.New("Only portal administrators can change the device hostname")
+
+func (r *mutationResolver) setDeviceHostname(ctx context.Context, input string) (bool, error) {
+	if err := requireAdmin(ctx, ErrHostnameAdmin); err != nil {
+		return false, err
+	}
+	hostname, err := device.ValidateHostname(input)
+	if err != nil {
+		return false, err
+	}
+	if r.DeviceHostname == nil {
+		return false, device.ErrHostnameApply
+	}
+	err = r.DeviceHostname.SetHostname(ctx, hostname)
+	return err == nil, err
+}
 
 func (r *mutationResolver) setDeviceIP(ctx context.Context, input *model.DeviceIP) (bool, error) {
 	if err := requireAdmin(ctx, ErrDeviceAdmin); err != nil {

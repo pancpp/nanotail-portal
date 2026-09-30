@@ -1777,7 +1777,7 @@ input:focus-visible {
 }
 
 /* Tailscale credential setup */
-.lan-settings, .tailnet-settings, .exit-node-settings, .routing-settings, .peer-relay-settings { margin-bottom: 18px; }
+.hostname-settings, .lan-settings, .tailnet-settings, .exit-node-settings, .routing-settings, .peer-relay-settings { margin-bottom: 18px; }
 .peer-relay-settings { scroll-margin-top: 90px; }
 .peer-relay-card .status-card__body p { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
 .tailnet-state { color: var(--muted); font-size: 17px; }

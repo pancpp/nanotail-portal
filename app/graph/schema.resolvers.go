@@ -37,6 +37,11 @@ func (r *mutationResolver) SetDeviceIP(ctx context.Context, deviceIP *model.Devi
 	return r.setDeviceIP(ctx, deviceIP)
 }
 
+// SetDeviceHostname is the resolver for the setDeviceHostname field.
+func (r *mutationResolver) SetDeviceHostname(ctx context.Context, hostname string) (bool, error) {
+	return r.setDeviceHostname(ctx, hostname)
+}
+
 // SetRouting is the resolver for the setRouting field.
 func (r *mutationResolver) SetRouting(ctx context.Context, input model.RoutingInput) (bool, error) {
 	return r.setRouting(ctx, input)

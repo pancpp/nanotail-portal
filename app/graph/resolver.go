@@ -30,6 +30,10 @@ type DeviceIPConfigurator interface {
 	SetIP(context.Context, device.IPConfig) error
 }
 
+type DeviceHostnameConfigurator interface {
+	SetHostname(context.Context, string) error
+}
+
 type NetworkActivityReader interface {
 	Sample(context.Context) (device.TrafficSample, error)
 }
@@ -74,6 +78,7 @@ type Resolver struct {
 	PeerPinger       TailscalePinger
 	Device           DeviceStatusReader
 	DeviceConfig     DeviceIPConfigurator
+	DeviceHostname   DeviceHostnameConfigurator
 	Traffic          NetworkActivityReader
 	Routing          TailscaleRouter
 	PeerRelay        PeerRelayConfigurator

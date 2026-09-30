@@ -318,6 +318,30 @@ export async function setDeviceIPRequest(token: string, input: DeviceIP): Promis
   } finally { clearTimeout(timer) }
 }
 
+export function validateDeviceHostname(input: string): string {
+  const hostname = input.trim()
+  if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/.test(hostname)) {
+    throw new Error('Enter a hostname of 1–63 letters, digits, or hyphens, starting and ending with a letter or digit.')
+  }
+  const normalized = hostname.toLowerCase()
+  if (normalized === 'localhost' || normalized === 'localhost6') {
+    throw new Error('Choose a hostname other than localhost or localhost6.')
+  }
+  return normalized
+}
+
+export async function setDeviceHostnameRequest(token: string, input: string): Promise<void> {
+  const hostname = validateDeviceHostname(input)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 20_000)
+  try {
+    const data = await graphQLRequest(token, 'SetDeviceHostname', `mutation SetDeviceHostname($hostname: String!) {
+      setDeviceHostname(hostname: $hostname)
+    }`, { hostname }, controller.signal, 'hostname')
+    if (data.setDeviceHostname !== true) throw new Error('The server did not confirm the hostname change. Check device status before retrying.')
+  } finally { clearTimeout(timer) }
+}
+
 export function deviceReconnectURL(currentURL: string, ip: string): string | null {
   const address = ip.split('/')[0]
   if (ipv4Number(address) === null) return null

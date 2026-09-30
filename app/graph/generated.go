@@ -63,6 +63,7 @@ type ComplexityRoot struct {
 		ClearTailscaleCredential      func(childComplexity int) int
 		LogoutTailscale               func(childComplexity int) int
 		RenewTailscaleNodeKey         func(childComplexity int) int
+		SetDeviceHostname             func(childComplexity int, hostname string) int
 		SetDeviceIP                   func(childComplexity int, deviceIP *model.DeviceIP) int
 		SetPeerRelay                  func(childComplexity int, input model.PeerRelayInput) int
 		SetRouting                    func(childComplexity int, input model.RoutingInput) int
@@ -255,6 +256,7 @@ type MutationResolver interface {
 	SetTailscaleCredential(ctx context.Context, credential model.TailscaleCredential) (bool, error)
 	ClearTailscaleCredential(ctx context.Context) (bool, error)
 	SetDeviceIP(ctx context.Context, deviceIP *model.DeviceIP) (bool, error)
+	SetDeviceHostname(ctx context.Context, hostname string) (bool, error)
 	SetRouting(ctx context.Context, input model.RoutingInput) (bool, error)
 	SetTailscaleEnabled(ctx context.Context, enabled bool) (bool, error)
 	LogoutTailscale(ctx context.Context) (bool, error)
@@ -432,6 +434,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RenewTailscaleNodeKey(childComplexity), true
+	case "Mutation.setDeviceHostname":
+		if e.ComplexityRoot.Mutation.SetDeviceHostname == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setDeviceHostname_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetDeviceHostname(childComplexity, args["hostname"].(string)), true
 	case "Mutation.setDeviceIP":
 		if e.ComplexityRoot.Mutation.SetDeviceIP == nil {
 			break
@@ -1868,6 +1881,20 @@ func (ec *executionContext) field_Mutation_changePassword_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_setDeviceHostname_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "hostname",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["hostname"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_setDeviceIP_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2527,6 +2554,50 @@ func (ec *executionContext) fieldContext_Mutation_setDeviceIP(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_setDeviceIP_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setDeviceHostname(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setDeviceHostname(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetDeviceHostname(ctx, fc.Args["hostname"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setDeviceHostname(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setDeviceHostname_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7299,6 +7370,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "setDeviceIP":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setDeviceIP(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setDeviceHostname":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setDeviceHostname(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

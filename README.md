@@ -611,6 +611,31 @@ not on every sample; a restart can lose those pending records too. The WebUI
 checks for new saved totals/history once a minute while the overview is visible. History
 read failures (including missing migrations) do not disable live traffic rates.
 
+### Device hostname
+
+In **Network → Device hostname**, administrators can save a new system hostname.
+The form loads the current hostname, preserves unsaved edits during refreshes,
+and refreshes device status after a confirmed save. English and Simplified Chinese
+are supported.
+
+The authenticated `setDeviceHostname(hostname: String!)` mutation accepts a single
+DNS label of 1–63 ASCII letters, digits, or hyphens, starting and ending with a
+letter or digit. Names are trimmed and lowercased; `localhost` and `localhost6`
+are reserved. For example:
+
+```graphql
+mutation { setDeviceHostname(hostname: "nanotail-office") }
+```
+
+The portal uses [NetworkManager's persistent hostname command](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/nmcli.html)
+(`nmcli general hostname …`) and verifies the saved value before reporting success.
+The process needs permission to change the hostname without an interactive prompt.
+Hostname and LAN writes share a lock; hostname commands have a 15-second deadline
+and finish even if the browser disconnects. The UI never retries writes automatically.
+This updates the system hostname without setting a Tailscale hostname override or
+restarting network connections. If accessing the portal by name, use the new name
+or the device's IP address; name resolution can take time to update.
+
 ### LAN IPv4 configuration
 
 In **Network → LAN IPv4 settings**, administrators can choose DHCP or a static

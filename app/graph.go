@@ -42,8 +42,9 @@ func newGraphQLServer() *handler.Server {
 }
 
 func newGraphQLServerWithClient(client *tailscale.Client) *handler.Server {
+	deviceConfig := device.NewConfigurator()
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
-		Tailscale: client, PeerPinger: client, Routing: client, Connection: client, KeyRenewer: client, Device: device.NewReader(), DeviceConfig: device.NewConfigurator(), Traffic: device.NewTrafficReader(),
+		Tailscale: client, PeerPinger: client, Routing: client, Connection: client, KeyRenewer: client, Device: device.NewReader(), DeviceConfig: deviceConfig, DeviceHostname: deviceConfig, Traffic: device.NewTrafficReader(),
 		TrafficHistory:   traffic.NewStore(database.DB()),
 		RoutingHost:      device.NewReader(),
 		CredentialWriter: client,
@@ -72,6 +73,8 @@ func presentGraphQLError(ctx context.Context, err error) *gqlerror.Error {
 		errors.Is(err, graph.ErrTailscaleStatus) || errors.Is(err, graph.ErrDeviceStatus) || errors.Is(err, graph.ErrNetworkActivity) ||
 		errors.Is(err, graph.ErrNetworkActivityHistory) ||
 		errors.Is(err, graph.ErrDeviceAdmin) || errors.Is(err, device.ErrInvalidIP) ||
+		errors.Is(err, graph.ErrHostnameAdmin) || errors.Is(err, device.ErrInvalidHostname) || errors.Is(err, device.ErrReservedHostname) ||
+		errors.Is(err, device.ErrHostnameBusy) || errors.Is(err, device.ErrHostnameApply) ||
 		errors.Is(err, device.ErrConfigBusy) || errors.Is(err, device.ErrConfigUnavailable) ||
 		errors.Is(err, device.ErrConfigApply) || errors.Is(err, device.ErrConfigRecovery) ||
 		errors.Is(err, graph.ErrRoutingAdmin) || errors.Is(err, tailscale.ErrRoutingUnavailable) ||

@@ -295,6 +295,8 @@ type Mutation {
   clearTailscaleCredential: Boolean!
   "Admin only: persist and apply eth0 IPv4 settings through NetworkManager. IPv6 is unchanged; the connection may be interrupted."
   setDeviceIP(deviceIP: DeviceIP): Boolean!
+  "Admin only: persist the system hostname through NetworkManager. Accepts a single DNS label of 1–63 characters."
+  setDeviceHostname(hostname: String!): Boolean!
   "Admin only: configure subnet routes while keeping the mandatory exit-node advertisement enabled. Does not change OS forwarding or start Tailscale."
   setRouting(input: RoutingInput!): Boolean!
   "Admin only: resume or pause this device without logging out or changing routing preferences. May disconnect this browser."
