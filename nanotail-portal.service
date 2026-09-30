@@ -1,0 +1,12 @@
+[Unit]
+Description=Nanotail-portal: tailscale exit node management portal.
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/nanotail-portal
+ExecStart=/srv/nanotail-portal/nanotail-portal -c /srv/nanotail-portal/nanotail-portal.yml
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
