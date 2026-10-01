@@ -4,13 +4,13 @@ Go/Echo backend and React WebUI for managing Tailscale on nanotail.
 
 ## Run locally
 
-Requires Go 1.26 and Node/npm for the WebUI build.
+Requires Linux, Go 1.26, and Node/npm for the WebUI build.
 
 ```sh
 go run .
 ```
 
-The backend listens on port `8080`. The initial database migration creates the
+The backend listens on `127.0.0.1:7080`. The initial database migration creates the
 administrator account with **username `admin` and password `admin`**. Passwords
 are stored as salted bcrypt hashes in SQLite, never as plaintext. Changing the
 password persists across restarts.
@@ -127,8 +127,8 @@ Configuration defaults to `nanotail-portal.yml` inside the data directory.
 resolved inside the data directory. A missing file is created with mode `0600`;
 an empty file uses the built-in defaults. See
 [`nanotail-portal.example.yml`](nanotail-portal.example.yml) for the supported defaults.
-`NANOTAIL_TAILSCALE_BINARY` overrides `tailscale_binary`, including after reset;
-integration tests use it to keep all VPN commands on a disposable fake binary.
+Configure application settings in YAML; environment variables do not override
+them. `NANOTAIL_DATA_DIR` is supported separately for choosing the data directory.
 
 The default database is `data/nanotail-portal.sqlite3`; logs are written to
 `data/logs/nanotail-portal.log`, with rotation at 10 MB and three backups.
@@ -162,6 +162,41 @@ Open `http://localhost:7080` to use the built UI. This command embeds the curren
 `webui/dist` build and stores local runtime files in `./data`. Rebuild/restart the
 backend to embed a newer frontend build. For development with Vite, the separate
 frontend server proxies API requests to port 7080.
+
+### Device IP reporting
+
+The Linux `access` worker checks the hostname and LAN IP addresses every 10
+seconds. It reports at startup, when a nonempty value changes or returns after
+an absence, and on the first poll more than 10 minutes after the last successful
+report. Each report logs in again with `device_id` and `device_sig`, then sends
+`hostname`, `ipv4`, and `ipv6` using the returned Bearer token. Both requests use
+JSON: `POST /login` followed by `POST /update-ip`, relative to the API prefix.
+
+IPv4 discovery selects the first usable unicast address, including private
+addresses. IPv6 discovery uses Linux address state and lifetime metadata,
+preferring a stable address over a temporary one; global and unique-local
+addresses are eligible. Ties use the lowest numeric address. Loopback,
+link-local, tentative, deprecated, and expired addresses are excluded.
+The two families are discovered independently.
+
+Missing addresses and discovery failures are sent as empty fields when a report
+is due. The server preserves those fields' previous values and expiration times;
+it does not clear them immediately. The worker never republishes an old address
+to refresh its lifetime. Failed reports leave the last successful report time
+and comparison state unchanged, so a pending change is retried at the next poll.
+
+Reporting defaults to enabled, using `eth0` and the API prefix
+`https://tailscale.fairkid.ca/api/device/v1`. Configure `access_enable`,
+`access_eth_name`, and `access_api_prefix` in YAML. Set `access_enable: false`
+to disable reporting.
+
+The device ID comes from the board's device-tree serial number. Device-signature
+retrieval is a TODO: `GetDeviceSignature()` returns an unavailable error, so the
+worker currently logs an initialization failure and exits without making HTTP
+requests. This does not prevent the portal from starting. Other initialization
+errors also disable only this worker. Once credentials are available,
+`access.Init(ctx)` runs until cancellation; shutdown and factory reset cancel its
+requests and wait for the worker to return.
 
 ## Tailscale integration
 
@@ -612,8 +647,7 @@ See the [Linux LED interface documentation](https://docs.kernel.org/leds/leds-cl
 Avoid another service controlling LED1 concurrently. Forced termination or power
 loss cannot run the restoration step.
 
-Enabled by default; set `vpn_traffic_led: false` in `nanotail-portal.yml` or
-`NANOTAIL_VPN_TRAFFIC_LED=false` in the service environment to opt out.
+Enabled by default; set `vpn_traffic_led: false` in `nanotail-portal.yml` to opt out.
 For new hardware, implement `activityled.Platform` and `activityled.LED` and add
 an exact board match to detection. Platform adapters select the indicator and
 handle its interface; traffic sampling and blink timing stay hardware-independent.
@@ -821,7 +855,8 @@ in a static Linux/ARM64 binary at `build/releases/<version>/nanotail-portal`. Ve
 automatically from Git and the build time. Go, Git, and Node/npm are required.
 The build output contains the executable, including its WebUI and database
 migrations. It does not create runtime data or change installed release links.
-`GOOS` and `GOARCH` can override the default Linux/ARM64 target.
+`GOARCH` can override the default ARM64 architecture; the application requires
+the Linux target (`GOOS=linux`).
 
 For a local development build and run, use `./run.sh`. It builds for the host
 architecture and starts with `--data-dir <checkout>/data`. Additional application
@@ -851,6 +886,10 @@ go vet ./...
 Tests use isolated credential files and fake Tailscale runners, and exercise
 authentication, revocation, persistence, validation, API protection, static asset
 serving, startup failures and graceful shutdown. They never change the host's
-Tailscale configuration. LED tests use fake sysfs files. Subprocess tests disable
-the hardware LED through an environment setting that survives reset. A live
-device test is still needed for device integration.
+Tailscale configuration. LED tests use fake sysfs files. Factory-reset subprocess
+tests build with isolated test defaults that keep Tailscale commands on a fake
+binary and disable the hardware LED and external IP reporting, including after
+configuration reset. These defaults do not affect the shipped executable.
+Access tests use an in-memory transport or a local HTTP server; IP discovery
+tests also read the host's Linux interfaces and address metadata. A live device
+test is still needed for device integration.

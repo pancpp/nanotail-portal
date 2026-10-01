@@ -56,9 +56,9 @@ func init() {
 	v.SetDefault("tailscale_socket", "")
 	v.SetDefault("tailscale_timeout", "15s")
 	v.SetDefault("vpn_traffic_led", true)
-	v.SetEnvPrefix("NANOTAIL")
-	v.MustBindEnv("vpn_traffic_led")
-	v.MustBindEnv("tailscale_binary")
+	v.SetDefault("access_enable", true)
+	v.SetDefault("access_api_prefix", "https://tailscale.fairkid.ca/api/device/v1")
+	v.SetDefault("access_eth_name", "eth0")
 
 	// set config path
 	v.SetConfigFile(configFile)

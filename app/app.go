@@ -12,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/pancpp/nanotail-portal/access"
 	"github.com/pancpp/nanotail-portal/activityled"
 	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
@@ -31,6 +32,7 @@ type Runtime struct {
 	serverErrors  chan error
 	ledDone       chan struct{}
 	routingDone   chan struct{}
+	accessDone    chan struct{}
 }
 
 func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error) {
@@ -74,6 +76,7 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 		serverErrors:  make(chan error, 1),
 		ledDone:       make(chan struct{}),
 		routingDone:   make(chan struct{}),
+		accessDone:    make(chan struct{}),
 	}
 
 	// One collector per portal process, independent of logged-in browsers.
@@ -96,6 +99,12 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 	go func() {
 		defer close(runtime.routingDone)
 		client.MaintainRouting(collectorCtx)
+	}()
+	go func() {
+		defer close(runtime.accessDone)
+		if err := access.Init(collectorCtx); err != nil {
+			log.Printf("(Device IP reporting) disabled: %v", err)
+		}
 	}()
 
 	// Start echo server
@@ -132,6 +141,13 @@ func (r *Runtime) Shutdown(ctx context.Context) error {
 	if r.routingDone != nil {
 		select {
 		case <-r.routingDone:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	if r.accessDone != nil {
+		select {
+		case <-r.accessDone:
 		case <-ctx.Done():
 			return ctx.Err()
 		}

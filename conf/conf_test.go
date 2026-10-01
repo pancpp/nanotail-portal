@@ -23,7 +23,6 @@ func isolateConfig(t *testing.T) string {
 	for key, value := range original.AllSettings() {
 		v.SetDefault(key, value)
 	}
-	v.SetEnvPrefix(original.GetEnvPrefix())
 	path := filepath.Join(t.TempDir(), "nanotail-portal.yml")
 	v.SetConfigFile(path)
 	gViper = v
@@ -39,9 +38,6 @@ func TestDefaults(t *testing.T) {
 	t.Setenv("NANOTAIL_DATA_DIR", "")
 	if got := ConfigFile(); got != filepath.Join(DEFAULT_DATA_DIR, "nanotail-portal.yml") {
 		t.Errorf("configuration path = %q", got)
-	}
-	if got := gViper.GetEnvPrefix(); got != "NANOTAIL" {
-		t.Errorf("environment prefix = %q, want NANOTAIL", got)
 	}
 	for key, want := range map[string]string{
 		"http_listen_addr":  "127.0.0.1:7080",

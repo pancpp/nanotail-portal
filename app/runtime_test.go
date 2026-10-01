@@ -111,3 +111,39 @@ func TestRuntimeShutdownWaitsForRouting(t *testing.T) {
 		}
 	})
 }
+
+func TestRuntimeShutdownWaitsForAccess(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		workerCtx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		collectorDone, accessDone := make(chan struct{}), make(chan struct{})
+		close(collectorDone)
+		runtime := &Runtime{server: &http.Server{}, stopCollector: cancel, collectorDone: collectorDone, accessDone: accessDone}
+		done := make(chan error, 1)
+		go func() { done <- runtime.Shutdown(t.Context()) }()
+		<-workerCtx.Done()
+		synctest.Wait()
+		select {
+		case err := <-done:
+			t.Fatalf("shutdown returned before IP reporting stopped: %v", err)
+		default:
+		}
+		close(accessDone)
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestRuntimeShutdownAccessDeadline(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		defer cancel()
+		collectorDone := make(chan struct{})
+		close(collectorDone)
+		runtime := &Runtime{server: &http.Server{}, stopCollector: func() {}, collectorDone: collectorDone, accessDone: make(chan struct{})}
+		if err := runtime.Shutdown(ctx); !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("shutdown = %v, want context deadline exceeded", err)
+		}
+	})
+}

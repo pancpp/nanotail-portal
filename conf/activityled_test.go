@@ -6,14 +6,9 @@ import (
 )
 
 func TestVPNTrafficLEDConfiguration(t *testing.T) {
-	t.Run("default and environment override", func(t *testing.T) {
-		t.Setenv("NANOTAIL_VPN_TRAFFIC_LED", "")
+	t.Run("default", func(t *testing.T) {
 		if !GetBool("vpn_traffic_led") {
 			t.Fatal("traffic LED should default to enabled")
-		}
-		t.Setenv("NANOTAIL_VPN_TRAFFIC_LED", "false")
-		if GetBool("vpn_traffic_led") {
-			t.Fatal("environment opt-out was ignored")
 		}
 	})
 	t.Run("YAML override", func(t *testing.T) {

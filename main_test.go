@@ -22,11 +22,7 @@ func TestFactoryResetProcess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("subprocess integration test")
 	}
-	binary := filepath.Join(t.TempDir(), "nanotail-portal")
-	build := exec.Command("go", "build", "-ldflags=-X github.com/pancpp/nanotail-portal/conf.gUseEmbeddedWebUI=true", "-o", binary, ".")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, output)
-	}
+	binary := buildFactoryResetPortal(t)
 	for _, failLogout := range []bool{false, true} {
 		t.Run(fmt.Sprintf("logout_failure_%v", failLogout), func(t *testing.T) {
 			var defaultListener net.Listener
@@ -88,7 +84,7 @@ esac
 			if err := os.WriteFile(fake, []byte(script), 0700); err != nil {
 				t.Fatal(err)
 			}
-			configuration := fmt.Sprintf("http_listen_addr: %q\ntailscale_binary: %q\nenable_console_log: false\n", address, fake)
+			configuration := fmt.Sprintf("http_listen_addr: %q\ntailscale_binary: %q\nenable_console_log: false\nvpn_traffic_led: false\naccess_enable: false\n", address, fake)
 			if err := os.WriteFile(filepath.Join(dir, "nanotail-portal.yml"), []byte(configuration), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -103,9 +99,9 @@ esac
 				cmd := exec.Command(filepath.Join(installation, "current", "nanotail-portal"), "--data-dir", dataArgument)
 				cmd.Dir = launchDir
 				cmd.Env = append(os.Environ(), "NANOTAIL_TEST_CALLS="+filepath.Join(dir, "commands"), fmt.Sprintf("NANOTAIL_TEST_LOGOUT_FAIL=%v", failLogout))
-				// This survives factory reset/re-exec and prevents integration
-				// tests from touching physical LEDs or the host's real VPN.
-				cmd.Env = append(cmd.Env, "NANOTAIL_VPN_TRAFFIC_LED=false", "NANOTAIL_TAILSCALE_BINARY="+fake)
+				// Read only by the test build's configuration initializer; its
+				// isolated defaults survive factory reset and re-exec.
+				cmd.Env = append(cmd.Env, "NANOTAIL_TEST_TAILSCALE_BINARY="+fake)
 				cmd.Stdout, cmd.Stderr = output, output
 				if err := cmd.Start(); err != nil {
 					t.Fatal(err)
@@ -299,4 +295,53 @@ esac
 			checkResetDiagnostics("data cleanup complete", "portal ready")
 		})
 	}
+}
+
+func buildFactoryResetPortal(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	repo, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Reset empties the YAML file. Override defaults in this test build so the
+	// restarted process cannot enable device services or invoke host Tailscale.
+	// An overlay adds the initializer without changing production source files
+	// or relying on configuration environment bindings the portal does not have.
+	const fixture = `package conf
+
+import "os"
+
+func init() {
+	fake := os.Getenv("NANOTAIL_TEST_TAILSCALE_BINARY")
+	if fake == "" {
+		panic("factory-reset test requires a fake Tailscale binary")
+	}
+	gViper.SetDefault("tailscale_binary", fake)
+	gViper.SetDefault("vpn_traffic_led", false)
+	gViper.SetDefault("access_enable", false)
+}
+`
+	fixturePath := filepath.Join(dir, "fixture.go")
+	if err := os.WriteFile(fixturePath, []byte(fixture), 0600); err != nil {
+		t.Fatal(err)
+	}
+	overlay, err := json.Marshal(struct{ Replace map[string]string }{
+		Replace: map[string]string{
+			filepath.Join(repo, "conf", "zz_factoryreset_fixture.go"): fixturePath,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	overlayPath := filepath.Join(dir, "overlay.json")
+	if err := os.WriteFile(overlayPath, overlay, 0600); err != nil {
+		t.Fatal(err)
+	}
+	binary := filepath.Join(dir, "nanotail-portal")
+	build := exec.Command("go", "build", "-overlay", overlayPath, "-ldflags=-X github.com/pancpp/nanotail-portal/conf.gUseEmbeddedWebUI=true", "-o", binary, ".")
+	if output, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build: %v\n%s", err, output)
+	}
+	return binary
 }

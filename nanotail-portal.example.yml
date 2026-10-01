@@ -2,6 +2,7 @@
 # Select a different data directory with --data-dir or NANOTAIL_DATA_DIR.
 # Relative database and log paths are resolved inside that data directory.
 # An empty configuration file uses all of these defaults.
+# Application settings below are read from YAML, without environment overrides.
 http_listen_addr: 127.0.0.1:7080
 database: nanotail-portal.sqlite3
 log_dir: logs
@@ -10,3 +11,9 @@ tailscale_binary: /usr/bin/tailscale
 tailscale_socket: ""
 tailscale_timeout: 15s
 vpn_traffic_led: true
+# Linux LAN reporting: check every 10 seconds and refresh after 10 minutes.
+# The worker remains inactive until device-signature retrieval is implemented.
+access_enable: true
+# Includes the API version; /login and /update-ip are appended to this prefix.
+access_api_prefix: https://tailscale.fairkid.ca/api/device/v1
+access_eth_name: eth0
