@@ -31,7 +31,8 @@ func init() {
 	)
 
 	pflag.BoolVarP(&showVersion, "version", "V", false, "Show version information")
-	pflag.StringVarP(&configFile, "config", "c", "nanotail-portal.yml", "Configuration file")
+	pflag.StringVar(&dataDirectory, "data-dir", DEFAULT_DATA_DIR, "Persistent data directory (overrides NANOTAIL_DATA_DIR)")
+	pflag.StringVarP(&configFile, "config", "c", "nanotail-portal.yml", "Configuration file, relative to the data directory unless absolute")
 	pflag.Parse()
 	if showVersion {
 		fmt.Println("###############################################")
@@ -65,16 +66,21 @@ func init() {
 }
 
 func Init() error {
-	if pflag.NArg() != 0 {
-		return fmt.Errorf("unexpected arguments %q: database initialization and migrations now run automatically at startup", pflag.Args())
+	if err := validateArguments(); err != nil {
+		return err
 	}
-	p := gViper.ConfigFileUsed()
+	p := ConfigFile()
+	gViper.SetConfigFile(p)
 	if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
-		f, err := os.Create(p)
+		f, err := os.OpenFile(p, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		if err != nil {
 			return err
 		}
-		f.Close()
+		if err := f.Close(); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
 	}
 	if err := gViper.ReadInConfig(); err != nil {
 		return err
@@ -91,7 +97,7 @@ func UseEmbeddedWebUI() bool {
 }
 
 func ConfigFile() string {
-	return gViper.ConfigFileUsed()
+	return DataPath(gViper.ConfigFileUsed())
 }
 
 func GetString(key string) string {

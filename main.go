@@ -31,7 +31,10 @@ func main() {
 func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 	defer cancel()
-	files, err := factoryreset.Open(".")
+	if err := conf.PrepareDataDir(); err != nil {
+		return err
+	}
+	files, err := factoryreset.Open(conf.DataDir())
 	if err != nil {
 		return err
 	}
@@ -77,7 +80,7 @@ func run() error {
 		return err
 	}
 	reset := factoryreset.NewController(func() error {
-		if err := files.ValidatePaths(conf.ConfigFile(), conf.GetString("database"), conf.GetString("log_dir")); err != nil {
+		if err := files.ValidatePaths(conf.ConfigFile(), conf.DatabasePath(), conf.LogDir()); err != nil {
 			return err
 		}
 		info, err := os.Stat(executable)
@@ -87,7 +90,7 @@ func run() error {
 		if !info.Mode().IsRegular() || info.Mode()&0111 == 0 {
 			return fmt.Errorf("portal executable is not available for restart")
 		}
-		logs, err := filepath.Abs(conf.GetString("log_dir"))
+		logs, err := filepath.Abs(conf.LogDir())
 		if err != nil {
 			return err
 		}

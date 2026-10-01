@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
+
+	"github.com/pancpp/nanotail-portal/conf"
 )
 
 const SigningKeyFile = "nanotail-portal.key"
@@ -20,7 +22,7 @@ var gJwtSigningKey []byte
 
 func Init() error {
 	gJwtSigningKey = nil
-	key, err := loadSigningKey(SigningKeyFile)
+	key, err := loadSigningKey(conf.DataPath(SigningKeyFile))
 	if err != nil {
 		return fmt.Errorf("initialize JWT signing key: %w", err)
 	}

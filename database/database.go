@@ -19,7 +19,7 @@ var (
 )
 
 func Init(ctx context.Context) error {
-	dsn := fmt.Sprintf("file:%s?cache=shared&mode=rwc", conf.GetString("database"))
+	dsn := fmt.Sprintf("file:%s?cache=shared&mode=rwc", conf.DatabasePath())
 	sqldb, err := sql.Open(sqliteshim.ShimName, dsn)
 	if err != nil {
 		log.Println("(database) open sqlite failed, err:", err)

@@ -3,7 +3,9 @@
 .claude/
 .codex/
 .vscode/
-logs/
+/logs/
+/data/
+/build/
 
 nanotail-portal
 nanotail-portal.arm64

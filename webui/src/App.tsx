@@ -1,14 +1,16 @@
+import { lazy } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './auth'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
-import OverviewPage from './pages/OverviewPage'
-import SettingsPage from './pages/SettingsPage'
-import NetworkPage from './pages/NetworkPage'
-import AccessControlPage from './pages/AccessControlPage'
-import TailscaleSetupPage from './pages/TailscaleSetupPage'
 import { TailscaleProvider } from './tailscale'
 import { DeviceProvider } from './device'
+
+const OVERVIEW_PAGE = lazy(() => import('./pages/OverviewPage'))
+const SETTINGS_PAGE = lazy(() => import('./pages/SettingsPage'))
+const NETWORK_PAGE = lazy(() => import('./pages/NetworkPage'))
+const ACCESS_CONTROL_PAGE = lazy(() => import('./pages/AccessControlPage'))
+const TAILSCALE_SETUP_PAGE = lazy(() => import('./pages/TailscaleSetupPage'))
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
@@ -40,12 +42,12 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<TailscaleProvider><DeviceProvider><DashboardPage /></DeviceProvider></TailscaleProvider>}>
-          <Route index element={<OverviewPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="network" element={<NetworkPage />} />
-          <Route path="access-control" element={<AccessControlPage />} />
-          <Route path="tailscale-setup" element={<TailscaleSetupPage />} />
-          <Route path="tailscale-setup/:guide" element={<TailscaleSetupPage />} />
+          <Route index element={<OVERVIEW_PAGE />} />
+          <Route path="settings" element={<SETTINGS_PAGE />} />
+          <Route path="network" element={<NETWORK_PAGE />} />
+          <Route path="access-control" element={<ACCESS_CONTROL_PAGE />} />
+          <Route path="tailscale-setup" element={<TAILSCALE_SETUP_PAGE />} />
+          <Route path="tailscale-setup/:guide" element={<TAILSCALE_SETUP_PAGE />} />
         </Route>
       </Route>
 

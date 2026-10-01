@@ -12,7 +12,7 @@ import (
 const marker = ".nanotail-reset-pending"
 const markerContents = "nanotail factory reset v1\n"
 
-var ErrPaths = errors.New("Factory reset requires nanotail-portal.yml, nanotail-portal.sqlite3, and logs in the portal working directory; custom storage paths must be reset manually")
+var ErrPaths = errors.New("Factory reset requires nanotail-portal.yml, nanotail-portal.sqlite3, and logs in the portal data directory; custom storage paths must be reset manually")
 
 // Files deliberately operates on a fixed allowlist, never paths supplied by an
 // HTTP request or an unchecked log_dir. Root also confines operations if paths
@@ -190,7 +190,7 @@ func (f *Files) Resume() (bool, error) {
 	return true, nil
 }
 
-// LockInstance prevents another portal in the same working directory from
+// LockInstance prevents another portal using the same data directory from
 // continuing to write while a factory reset is clearing its files.
 func (f *Files) LockInstance() (*os.File, error) {
 	lock, err := f.root.OpenFile(".nanotail-portal.lock", os.O_CREATE|os.O_RDWR|syscall.O_NOFOLLOW, 0600)
@@ -199,7 +199,7 @@ func (f *Files) LockInstance() (*os.File, error) {
 	}
 	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		lock.Close()
-		return nil, fmt.Errorf("another portal is running in this working directory: %w", err)
+		return nil, fmt.Errorf("another portal is running with this data directory: %w", err)
 	}
 	return lock, nil
 }

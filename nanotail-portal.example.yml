@@ -1,0 +1,12 @@
+# Save as /srv/nanotail-portal/data/nanotail-portal.yml.
+# Select a different data directory with --data-dir or NANOTAIL_DATA_DIR.
+# Relative database and log paths are resolved inside that data directory.
+# An empty configuration file uses all of these defaults.
+http_listen_addr: 127.0.0.1:7080
+database: nanotail-portal.sqlite3
+log_dir: logs
+enable_console_log: false
+tailscale_binary: /usr/bin/tailscale
+tailscale_socket: ""
+tailscale_timeout: 15s
+vpn_traffic_led: true

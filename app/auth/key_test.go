@@ -15,7 +15,9 @@ import (
 
 func isolatedKey(t *testing.T) {
 	t.Helper()
-	t.Chdir(t.TempDir())
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("NANOTAIL_DATA_DIR", dir)
 	previous := gJwtSigningKey
 	gJwtSigningKey = nil
 	t.Cleanup(func() { gJwtSigningKey = previous })

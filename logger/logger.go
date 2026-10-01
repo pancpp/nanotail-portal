@@ -13,7 +13,7 @@ import (
 var fileWriter *lumberjack.Logger
 
 func Init() error {
-	logDir := conf.GetString("log_dir")
+	logDir := conf.LogDir()
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return err
 	}

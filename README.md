@@ -47,18 +47,19 @@ Reset diagnostics use the normal configured logger. To follow
 the default log file on the device:
 
 ```sh
-sudo tail -F /srv/nanotail/logs/nanotail-portal.log
+sudo tail -F /srv/nanotail-portal/data/logs/nanotail-portal.log
 ```
 
 The `[factory-reset]` messages report reset stages. With
 `enable_console_log: true`, the normal logger also writes to the service journal,
-which can be followed with `sudo journalctl -u nanotail.service -b -f`.
+which can be followed with `sudo journalctl -u nanotail-portal.service -b -f`
+when using the supplied service unit.
 Factory reset clears the portal's file logs and restores default configuration.
 
 A reset clears `nanotail-portal.yml`, `nanotail-portal.sqlite3` (including SQLite journal/WAL
 sidecars), and all contents of `logs`; deletes `nanotail-portal.key`; runs `tailscale logout`; clears the
 initiating browser's saved JWT; and restarts the portal. The reset deliberately
-supports only these default paths in the working directory. Custom storage paths,
+supports only these default paths in the data directory. Custom storage paths,
 symlinked targets, and hard-linked files are refused instead of risking unrelated
 data. No automatic backup is made.
 
@@ -69,7 +70,7 @@ resumes with its existing settings. On success it closes SQLite and logging,
 records reset intent, and replaces its own process (also works without systemd).
 The new process clears the files before initialization. An interrupted cleanup
 is resumed at the next startup; a cleanup error prevents serving partial state.
-Only one portal process may run in a working directory.
+Only one portal process may use a data directory at a time.
 
 The WebUI signs out on acceptance or an uncertain/disconnected response and
 never automatically retries this destructive operation. Acceptance does not
@@ -88,19 +89,64 @@ Tailscale routing preferences are not additionally reset or revoked. Deleting
 `nanotail-portal.key` causes startup to generate a new signing key, so all pre-reset
 JWTs—including tokens saved in other browsers—are rejected after restart.
 
-Configuration is read from `nanotail-portal.yml` in the process working directory.
-It is created if missing; an empty file uses the built-in defaults.
+## Application layout and configuration
+
+The installed layout separates versioned executables from persistent data:
+
+```text
+/srv/nanotail-portal/
+├── releases/
+│   ├── v0.1.0/nanotail-portal
+│   └── v0.2.0/nanotail-portal
+├── current  -> releases/v0.2.0
+├── previous -> releases/v0.1.0
+└── data/
+    ├── nanotail-portal.yml
+    ├── nanotail-portal.sqlite3
+    ├── nanotail-portal.key
+    └── logs/
+```
+
+The supplied `nanotail-portal.service` starts
+`/srv/nanotail-portal/current/nanotail-portal` with its working directory set to
+`/srv/nanotail-portal/data`. Application storage is resolved explicitly from the
+data directory, independently of the executable location and launch directory.
+The instance lock, reset recovery marker, and SQLite sidecars also live in `data/`.
+Factory reset only clears its allowed runtime files there; it preserves releases
+and the `current`/`previous` links.
+
+The data directory is selected by `--data-dir`, then `NANOTAIL_DATA_DIR`, then the
+default `/srv/nanotail-portal/data`. It is a startup option, not a YAML setting.
+Relative overrides are resolved against the launch directory once at startup.
+The portal creates a missing data directory with mode `0700`; existing directory
+permissions are preserved. The service's working directory must exist before
+systemd starts it.
+
+Configuration defaults to `nanotail-portal.yml` inside the data directory.
+`-c`/`--config` selects a different file; relative configuration paths are also
+resolved inside the data directory. A missing file is created with mode `0600`;
+an empty file uses the built-in defaults. See
+[`nanotail-portal.example.yml`](nanotail-portal.example.yml) for the supported defaults.
 `NANOTAIL_TAILSCALE_BINARY` overrides `tailscale_binary`, including after reset;
 integration tests use it to keep all VPN commands on a disposable fake binary.
-The default database is `nanotail-portal.sqlite3`. When upgrading an existing
-installation, stop the portal and copy your existing configuration and database
-to these names, or set `database` in the new configuration to your existing
-database path. The rename does not move existing runtime files automatically.
-Rename your existing signing key to `nanotail-portal.key` while the portal is
-stopped to preserve existing sessions.
 
-Paths are relative to the process working directory. Logs are written to
-`logs/nanotail-portal.log`, with rotation at 10 MB and three backups.
+The default database is `data/nanotail-portal.sqlite3`; logs are written to
+`data/logs/nanotail-portal.log`, with rotation at 10 MB and three backups.
+Relative `database` and `log_dir` values are resolved inside the data directory;
+absolute custom storage paths remain supported but disable WebUI factory reset.
+The signing key always lives in the selected data directory.
+
+Existing installations must be migrated explicitly while the portal is stopped:
+back up their data, copy the configuration, database (including any sidecars),
+signing key, and logs from `/srv/nanotail` into `/srv/nanotail-portal/data`, preserving
+ownership and permissions, install the executable in a versioned release directory,
+create `current`, and update the installed service paths. Preserve the signing key
+to retain existing sessions. Older `nanotail.yml`, `nanotail.sqlite3`, and
+`nanotail.key` files must also be renamed to their `nanotail-portal.*` equivalents.
+This source change does not perform migration or manage release switching.
+To keep using an existing data directory temporarily, pass
+`--data-dir /srv/nanotail` explicitly.
+
 Use `go run . --version` to print build metadata without starting services.
 
 For frontend development, start the backend and run `npm run dev` in `webui/`.
@@ -109,12 +155,13 @@ Vite forwards `/api` to `127.0.0.1:7080`. Alternatively, build the frontend once
 ```sh
 npm --prefix webui ci
 npm --prefix webui run build
-go run .
+go run -ldflags='-X github.com/pancpp/nanotail-portal/conf.gUseEmbeddedWebUI=true' . --data-dir ./data
 ```
 
-Open `http://localhost:8080` to use the built UI. The backend serves `/`, `/login`,
-and `/assets/` from `webui/dist`. It also works without a frontend build, exposing
-only the API. A new frontend build is detected when the backend starts.
+Open `http://localhost:7080` to use the built UI. This command embeds the current
+`webui/dist` build and stores local runtime files in `./data`. Rebuild/restart the
+backend to embed a newer frontend build. For development with Vite, the separate
+frontend server proxies API requests to port 7080.
 
 ## Tailscale integration
 
@@ -325,7 +372,7 @@ Login returns `{"token":"<JWT>"}`. JWTs expire after seven days. The current
 stateless JWT implementation does not revoke existing tokens after a password
 change; they remain valid until expiry.
 
-The JWT signing key is stored in `nanotail-portal.key` in the process working directory.
+The JWT signing key is stored in `nanotail-portal.key` in the selected data directory.
 Startup reads an existing nonempty key (ignoring surrounding whitespace).
 If the file is missing, empty, or whitespace-only, it generates a cryptographically
 random 256-bit key, stores its hexadecimal representation atomically with
@@ -770,9 +817,16 @@ Create a release for nanotail (Linux/ARM64) with:
 ```
 
 The script installs frontend dependencies, builds the React WebUI, and embeds it
-in a static Linux/ARM64 binary at `./nanotail-portal`. Version metadata is filled
+in a static Linux/ARM64 binary at `build/releases/<version>/nanotail-portal`. Version metadata is filled
 automatically from Git and the build time. Go, Git, and Node/npm are required.
-There are no arguments or target overrides.
+The build output contains the executable, including its WebUI and database
+migrations. It does not create runtime data or change installed release links.
+`GOOS` and `GOARCH` can override the default Linux/ARM64 target.
+
+For a local development build and run, use `./run.sh`. It builds for the host
+architecture and starts with `--data-dir <checkout>/data`. Additional application
+arguments are forwarded, for example `./run.sh --data-dir /tmp/portal-data`.
+Both `build/` and `data/` are ignored by Git.
 
 Routing UI checks:
 

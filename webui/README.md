@@ -47,7 +47,9 @@ browser local storage. Its JWT expiry is checked when restoring a session and
 while the page is open. This client-side check only controls navigation; the
 backend verifies the signature on protected requests. JWTs currently last seven
 days. There is no `/me` or `/logout` API, so ordinary sign-out only clears the local token.
-The backend loads its signing key from `nanotail-portal.key`, generating a new random
+The backend loads its signing key from `nanotail-portal.key` in its data directory
+(default `/srv/nanotail-portal/data`, configurable with `--data-dir` or
+`NANOTAIL_DATA_DIR`), generating a new random
 key if missing or empty. Normal restarts preserve sessions; factory reset
 deletes this key so all old JWTs are rejected after restart.
 

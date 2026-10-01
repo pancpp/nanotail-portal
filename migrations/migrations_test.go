@@ -19,7 +19,9 @@ import (
 // directory and runs serially, just like the authentication integration tests.
 func startupDB(t *testing.T) *bun.DB {
 	t.Helper()
-	t.Chdir(t.TempDir())
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("NANOTAIL_DATA_DIR", dir)
 	if err := database.Init(t.Context()); err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +173,7 @@ func TestStartupRetriesAfterMigrationRecordFailure(t *testing.T) {
 
 func TestStartupRejectsConcurrentMigrator(t *testing.T) {
 	db := startupDB(t)
-	lock, err := os.OpenFile(conf.GetString("database"), os.O_RDWR, 0)
+	lock, err := os.OpenFile(conf.DatabasePath(), os.O_RDWR, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

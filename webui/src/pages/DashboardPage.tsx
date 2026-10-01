@@ -1,6 +1,6 @@
 import Button from '../components/Button'
 import { useI18n, T } from '../i18n'
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   CircleGauge,
@@ -151,7 +151,9 @@ export default function DashboardPage() {
           {needsSetup && <div className="connection-notice" role="status"><strong>{t("This device is not signed in to a tailnet.")}</strong>
             <p>{t("Use Sign in to Tailscale on the Overview to connect this device. Your portal login is separate from your Tailscale account.")}</p>
             {pathname !== '/' && <Link to="/">{t("Open the sign-in guide")}</Link>}</div>}
-          <Outlet />
+          <Suspense fallback={<p role="status">{t("Loading…")}</p>}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
       {credentialSetup.pending && !keyRenewalDialogOpen && <TailscaleCredentialSetupPrompt key={credentialSetup.binding} />}

@@ -36,6 +36,10 @@ func TestDefaults(t *testing.T) {
 	if got := gViper.ConfigFileUsed(); got != "nanotail-portal.yml" {
 		t.Errorf("configuration file = %q, want nanotail-portal.yml", got)
 	}
+	t.Setenv("NANOTAIL_DATA_DIR", "")
+	if got := ConfigFile(); got != filepath.Join(DEFAULT_DATA_DIR, "nanotail-portal.yml") {
+		t.Errorf("configuration path = %q", got)
+	}
 	if got := gViper.GetEnvPrefix(); got != "NANOTAIL" {
 		t.Errorf("environment prefix = %q, want NANOTAIL", got)
 	}

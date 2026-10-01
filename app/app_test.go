@@ -21,7 +21,9 @@ func newTestApp(t *testing.T) *echo.Echo {
 	t.Helper()
 	// Never create a real signing key in the source tree. Database fixtures
 	// already use an independent, open connection and are unaffected by chdir.
-	t.Chdir(t.TempDir())
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("NANOTAIL_DATA_DIR", dir)
 	if err := auth.Init(); err != nil {
 		t.Fatal(err)
 	}

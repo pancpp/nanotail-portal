@@ -23,7 +23,7 @@ func TestFactoryResetProcess(t *testing.T) {
 		t.Skip("subprocess integration test")
 	}
 	binary := filepath.Join(t.TempDir(), "nanotail-portal")
-	build := exec.Command("go", "build", "-o", binary, ".")
+	build := exec.Command("go", "build", "-ldflags=-X github.com/pancpp/nanotail-portal/conf.gUseEmbeddedWebUI=true", "-o", binary, ".")
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, output)
 	}
@@ -44,7 +44,36 @@ func TestFactoryResetProcess(t *testing.T) {
 			}
 			address := listener.Addr().String()
 			listener.Close()
-			dir := t.TempDir()
+			installation := t.TempDir()
+			dir := filepath.Join(installation, "data")
+			release := filepath.Join(installation, "releases", "test-version")
+			for _, path := range []string{dir, release} {
+				if err := os.MkdirAll(path, 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.Link(binary, filepath.Join(release, "nanotail-portal")); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink("releases/test-version", filepath.Join(installation, "current")); err != nil {
+				t.Fatal(err)
+			}
+			assertReleaseUntouched := func() {
+				t.Helper()
+				entries, err := os.ReadDir(release)
+				if err != nil || len(entries) != 1 || entries[0].Name() != "nanotail-portal" {
+					t.Fatalf("release directory changed: %v %v", entries, err)
+				}
+				if target, err := os.Readlink(filepath.Join(installation, "current")); err != nil || target != "releases/test-version" {
+					t.Fatal("current release link changed")
+				}
+				for _, name := range []string{"nanotail-portal.yml", "nanotail-portal.sqlite3", "nanotail-portal.key", "logs", ".nanotail-portal.lock", ".nanotail-reset-pending"} {
+					if _, err := os.Stat(filepath.Join(installation, name)); !os.IsNotExist(err) {
+						t.Fatalf("runtime file outside data directory: %s", name)
+					}
+				}
+			}
+			t.Cleanup(assertReleaseUntouched)
 			fake := filepath.Join(dir, "fake-tailscale")
 			const script = `#!/bin/sh
 case "$1" in
@@ -68,10 +97,11 @@ esac
 				t.Fatal(err)
 			}
 			t.Cleanup(func() { output.Close() })
+			launchDir, dataArgument := installation, "data"
 			startProcess := func() (*exec.Cmd, chan error) {
 				t.Helper()
-				cmd := exec.Command(binary)
-				cmd.Dir = dir
+				cmd := exec.Command(filepath.Join(installation, "current", "nanotail-portal"), "--data-dir", dataArgument)
+				cmd.Dir = launchDir
 				cmd.Env = append(os.Environ(), "NANOTAIL_TEST_CALLS="+filepath.Join(dir, "commands"), fmt.Sprintf("NANOTAIL_TEST_LOGOUT_FAIL=%v", failLogout))
 				// This survives factory reset/re-exec and prevents integration
 				// tests from touching physical LEDs or the host's real VPN.
@@ -146,6 +176,16 @@ esac
 				}
 			}
 			token := waitLogin(address, "admin")
+			assertReleaseUntouched()
+			response, err := client.Get("http://" + address + "/")
+			if err != nil {
+				t.Fatal(err)
+			}
+			page, readErr := io.ReadAll(response.Body)
+			response.Body.Close()
+			if readErr != nil || response.StatusCode != http.StatusOK || !bytes.Contains(page, []byte(`id="root"`)) {
+				t.Fatal("embedded WebUI unavailable from release layout")
+			}
 			oldKey, err := os.ReadFile(filepath.Join(dir, "nanotail-portal.key"))
 			if err != nil || len(oldKey) == 0 {
 				t.Fatal("startup did not persist a signing key")
@@ -163,6 +203,10 @@ esac
 				done <- nil // Keep cleanup nonblocking if the next launch fails.
 			case <-time.After(5 * time.Second):
 				t.Fatal("normal shutdown timed out")
+			}
+			if failLogout {
+				// The same data and signing key also survive a different launch directory.
+				launchDir, dataArgument = t.TempDir(), dir
 			}
 			cmd, done = startProcess()
 			waitLogin(address, "admin")

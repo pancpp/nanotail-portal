@@ -3,32 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-npm --prefix webui ci --include=dev --no-audit --no-fund
-npm --prefix webui run build
-
-conf_package="github.com/pancpp/nanotail-portal/conf"
+# Development uses the host architecture and keeps runtime data out of releases.
+GOOS="$(go env GOHOSTOS)" GOARCH="$(go env GOHOSTARCH)" ./build.sh
 version="$(git describe --tags --always --dirty)"
-build_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-git_hash="$(git rev-parse --short HEAD)"
-build_number="$(git rev-list --count HEAD)"
-
-# Generate GraphQL
-pushd app
-go tool gqlgen generate
-popd
-
-# Build nanotail-portal
-GOOS=linux \
-GOARCH=arm64 \
-go build -trimpath \
-    -ldflags="-s -w \
-        -X $conf_package.gVersion=$version \
-        -X $conf_package.gBuildTime=$build_time \
-        -X $conf_package.gGitHash=$git_hash \
-        -X $conf_package.gBuildNumber=$build_number \
-        -X $conf_package.gUseEmbeddedWebUI=true" \
-    -o nanotail-portal
-
-echo "Built nanotail-portal (Linux ARM64, embedded WebUI)"
-
-./nanotail-portal -c nanotail-portal.yml
+exec "$(pwd)/build/releases/$version/nanotail-portal" --data-dir "$(pwd)/data" "$@"

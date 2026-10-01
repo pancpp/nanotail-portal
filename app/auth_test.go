@@ -14,7 +14,9 @@ import (
 // The database package owns a global connection, so these tests run serially.
 func setupAuthDatabase(t *testing.T, ctx context.Context) *bun.DB {
 	t.Helper()
-	t.Chdir(t.TempDir())
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("NANOTAIL_DATA_DIR", dir)
 	if err := database.Init(ctx); err != nil {
 		t.Fatal(err)
 	}
