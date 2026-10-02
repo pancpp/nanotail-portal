@@ -380,6 +380,53 @@ func TestServiceOnlineCheckAndSelectedReleaseVerification(t *testing.T) {
 	}
 }
 
+func TestServiceCurrentVersionUpdateAvailability(t *testing.T) {
+	public, private := serviceTestKeys(t)
+	data := serviceTestPackage(t, private, "v1.2.0")
+	for _, test := range []struct {
+		current   string
+		available bool
+	}{
+		{"v1.0.0", true},
+		{"v1.2.0", false},
+		{"v2.0.0", false},
+		{"v1.2.0+g137e856", false},
+		{"v2.0.0+g137e856", false},
+		{"v2.0.0+g137e856.dirtyish", false},
+		{"v2.0.0+g137e856.dirty.fixed", false},
+		{"137e856", false},
+		{"v1.0.0-dirty", true},
+		{"v1.2.0-dirty", true},
+		{"v2.0.0-dirty", true},
+		{"v2.0.0-3-g137e856-dirty", true},
+		{"137e856-dirty", true},
+		{"v0.0.0-dev.57.20261002094814+g137e856.dirty", true},
+		{"v1.2.0+g137e856.dirty", true},
+		{"v2.0.0+g137e856.dirty", true},
+	} {
+		t.Run(test.current, func(t *testing.T) {
+			source := &serviceTestSource{latest: serviceTestRelease("v1.2.0", int64(len(data))), data: data}
+			s := NewService(t.TempDir(), test.current, "linux", "arm64", []ed25519.PublicKey{public}, source)
+			status, err := s.Check(t.Context())
+			if err != nil || status.UpdateAvailable != test.available || status.CurrentVersion != test.current || status.LatestRelease == nil || status.LatestRelease.Version != "v1.2.0" || status.CheckedAt == nil {
+				t.Fatalf("unexpected update availability: %+v, %v", status, err)
+			}
+			if test.available {
+				status, err = s.Download(t.Context(), "v1.2.0")
+				if err != nil || status.StagedPackage == nil || status.StagedPackage.Version != "v1.2.0" {
+					t.Fatalf("latest signed release was not staged: %+v, %v", status, err)
+				}
+			}
+			// Dirty builds still need a compatible release from GitHub.
+			source.latest = nil
+			status, err = s.Check(t.Context())
+			if err != nil || status.UpdateAvailable || status.LatestRelease != nil {
+				t.Fatalf("missing release advertised as available: %+v, %v", status, err)
+			}
+		})
+	}
+}
+
 func TestServiceUnknownCurrentVersionCanDownloadCheckedRelease(t *testing.T) {
 	public, private := serviceTestKeys(t)
 	data := serviceTestPackage(t, private, "1.2.0")

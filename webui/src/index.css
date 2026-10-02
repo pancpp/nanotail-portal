@@ -1847,6 +1847,14 @@ a:focus-visible, dialog:focus-visible {
 .upgrade-verified h3 { display: flex; align-items: center; gap: 8px; color: var(--green-dark); }
 .upgrade-verified p:last-child { margin-bottom: 0; }
 .upgrade-content .upgrade-staging-note { margin: 24px 0 0; }
+.upgrade-installation { margin: 0 0 24px; padding: 18px; border: 1px solid #c4dece; border-radius: 12px; background: #edf8f1; font-size: 16px; line-height: 1.6; overflow-wrap: anywhere; }
+.upgrade-installation h3 { display: flex; align-items: center; gap: 8px; color: var(--green-dark); }
+.upgrade-installation h3 svg { flex-shrink: 0; }
+.upgrade-installation--error { border-color: #e4b9a4; background: #fff5ee; }
+.upgrade-installation--error h3 { color: #8c4224; }
+.upgrade-install-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+.upgrade-install-actions button { display: inline-flex; align-items: center; gap: 8px; }
+.upgrade-install-dialog h2 { overflow-wrap: anywhere; }
 .factory-reset-settings .panel__eyebrow, .factory-reset-dialog .panel__eyebrow { color: #a42f32; }
 .secondary-button.danger-button { color: #a42f32; border-color: #dfb2b3; }
 .secondary-button.danger-button:hover:not(:disabled) { color: #852025; background: #fff0f0; }

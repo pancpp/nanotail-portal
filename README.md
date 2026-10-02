@@ -486,19 +486,34 @@ Factory reset continues to leave OS forwarding/firewall configuration unchanged.
 ### Application upgrades
 
 The **Software upgrade** card at the end of Settings checks GitHub Releases for
-`pancpp/nanotail-portal` and downloads signed packages. The current WebUI verifies
-and stages packages; it has no installation button yet. Installation is available
-through the backend API described below. Downloading a package alone does not
+`pancpp/nanotail-portal` and downloads signed packages. Choose **Prepare upgrade**
+to download and verify a release, then **Install and restart** to review and
+confirm installation of that exact package. Downloading a package alone does not
 restart the portal, run migrations, or change the installed release.
+
+The card follows installation and automatic recovery through the portal restart.
+It reports completion only after the backend confirms the new release is healthy
+and the installed version matches. Choose **Refresh portal** to load the new
+WebUI. If installation is canceled or the previous release is restored, the card
+shows that result. Devices that do not support installation show an explanation.
+
+Installation is submitted once. If its response is interrupted, the WebUI checks
+status rather than retrying the mutation. This tab remembers the attempt across
+navigation or refresh, and Settings also discovers pending backend operations.
+After six minutes of monitoring, use **Reload upgrade status** to keep checking.
+A lost request with no recorded installation remains blocked through the server's
+preparation timeout before another attempt is offered.
 
 **Check for updates** queries GitHub's latest published stable release and compares
 its semantic-version tag with the running version. The release must contain an
 uploaded `nanotail-portal-<version>-linux-arm64.tar.gz` asset for this device;
 GitHub's generated source archives are not upgrade packages. Drafts and
-prereleases are excluded. **Prepare upgrade** downloads and verifies the selected
-release. An unversioned development build cannot be compared, but can still
-prepare the latest release. No manual package upload or arbitrary download URL
-is accepted from the browser. The public repository requires no GitHub token.
+prereleases are excluded. Dirty builds (versions ending in `-dirty` or `.dirty`)
+always offer the latest compatible release, even when its version is equal to or
+lower than the running version. **Prepare upgrade** downloads and verifies the
+selected release. An unversioned development build cannot be compared, but can
+still prepare the latest release. No manual package upload or arbitrary download
+URL is accepted from the browser. The public repository requires no GitHub token.
 Missing packages, rate limits, and failed requests are reported as errors rather
 than as a successful check with no update.
 

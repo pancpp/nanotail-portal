@@ -177,10 +177,13 @@ func (s *Service) check(ctx context.Context) error {
 		}
 		copy := *release
 		release = &copy
-		// Development builds without a valid version cannot be ordered against
-		// releases. They can still download the checked release explicitly.
-		comparison, err := CompareVersions(release.Version, s.Status().CurrentVersion)
-		available = err == nil && comparison > 0
+		current := s.Status().CurrentVersion
+		// build.sh uses git describe's -dirty suffix; release.sh uses .dirty
+		// build metadata. Either can always move to the latest trusted release,
+		// regardless of the local version's ordering or SemVer validity.
+		dirty := strings.HasSuffix(current, "-dirty") || strings.HasSuffix(current, ".dirty")
+		comparison, err := CompareVersions(release.Version, current)
+		available = dirty || (err == nil && comparison > 0)
 	}
 	now := time.Now().UTC()
 	s.mu.Lock()
