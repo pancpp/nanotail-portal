@@ -7,6 +7,9 @@ import re
 import subprocess
 import sys
 
+import qrcode
+from qrcode.image.pil import PilImage
+
 
 ACCESS_URL_PREFIX = "https://tailscale.fairkid.ca/redirect/"
 
@@ -32,15 +35,6 @@ def main():
     args = parser.parse_args()
     if not args.target.strip():
         parser.error("--target must not be empty")
-
-    try:
-        import qrcode
-        if args.output is not None:
-            from qrcode.image.pil import PilImage
-    except ImportError:
-        print("(access-qrcode) Install the QR dependency with: "
-              "python3 -m pip install 'qrcode[pil]>=8,<9'", file=sys.stderr)
-        return 1
 
     try:
         access_url = ACCESS_URL_PREFIX + read_device_id(args.target)

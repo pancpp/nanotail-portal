@@ -216,16 +216,10 @@ To generate a device signature from a machine with SSH access to the device, run
 
 ```sh
 cd scripts
-./sign-device.sh --target nanotail.local --key /path/to/privkey.pem
+python3 sign_device.py --target nanotail.local --key /path/to/privkey.pem
 ```
 
-The same command is available as a standalone Python script:
-
-```sh
-./sign-device.py --target nanotail.local --key /path/to/privkey.pem
-```
-
-The Python version requires Python 3, OpenSSL, and SSH on the host. Its temporary
+The script requires Python 3, OpenSSL, and SSH on the host. Its temporary
 files stay under `/tmp` on the host and are removed when signing finishes.
 
 The target is an SSH destination, such as a hostname, SSH config alias, or
@@ -236,7 +230,7 @@ Ed25519 private key, and prints the Base64 signature.
 To sign and provision the device's SD-card vendor storage, run from `scripts`:
 
 ```sh
-./provision-device.py --target nanotail.local --key /path/to/privkey.pem
+python3 provision_device.py --target nanotail.local --key /path/to/privkey.pem
 ```
 
 Vendor record `0x80` contains exactly 72 bytes: offsets 0–7 hold the device ID
@@ -278,19 +272,34 @@ backups are untouched.
 The private key stays on the signing machine. After provisioning, the portal
 loads the device ID and signature from vendor storage when its reporting worker starts.
 
-To generate an access QR code, install the Python QR dependency on the host and
+To generate an access QR code, install the shared Python dependencies on the host and
 run from `scripts`:
 
 ```sh
-python3 -m pip install 'qrcode[pil]>=8,<9'
-python3 access-qrcode.py --target nanotail --output qrcode.png
+python3 -m pip install -r requirements.txt
+python3 access_qrcode.py --target nanotail --output qrcode.png
 ```
 
-The script reads the device-tree serial number over SSH, formats it as lowercase
+`scripts/requirements.txt` covers all Python scripts in that folder, including
+release signing and QR image generation. SSH and OpenSSL for device signing and
+provisioning remain host tools, as described above.
+
+The QR script reads the device-tree serial number over SSH, formats it as lowercase
 hex, and generates `https://tailscale.fairkid.ca/redirect/<device-id>`. It prints
 the URL and QR code to the terminal. `--output` optionally saves the same QR code
 as a PNG file; omit it for terminal output only. No files are created on the
 target device.
+
+Each Python utility has a corresponding `test_*.py` script under `scripts/`.
+Run all Python tests from the repository root, or run a single test script:
+
+```sh
+python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 scripts/test_release_package.py
+```
+
+The tests use temporary files and generated test keys, with device operations
+mocked. They do not require a Go toolchain or a connected device.
 
 The SD-capable `vendor_storage` command's source, build instructions, and tests
 are in [vendor_storage](vendor_storage/README.md). Build it with
@@ -656,16 +665,19 @@ it on the release-signing machine. The private key is never included in portal
 builds or upgrade packages. These release keys are separate from device identity
 signatures and the portal's JWT signing key.
 
-Build and sign a complete release in one command:
+Install the shared script dependencies in your Python environment from the
+repository root, then build and sign a complete release:
 
 ```sh
+python3 -m pip install -r scripts/requirements.txt
 ./release.sh --key .release-signing/release-private.pem
 ```
 
 `release.sh` reinstalls frontend dependencies, rebuilds the WebUI, regenerates
-GraphQL code, and builds a new Linux/ARM64 executable. It packages the executable
-and service/nginx templates, signs the manifest, and verifies the archive against
-the embedded public key before saving it as
+GraphQL code, and builds a new Linux/ARM64 executable. It calls
+`scripts/release_package.py` to package the executable and service/nginx templates,
+sign the manifest, and verify the archive against the embedded public key before
+saving it as
 `build/nanotail-portal-<version>-linux-arm64.tar.gz`. A repository `LICENSE`, when
 present, is included too. The private key stays outside the package.
 
@@ -677,6 +689,11 @@ overwritten, and failed builds or verification leave no published package.
 Published releases and the upgrader support Linux/ARM64 only. `release.sh` rejects
 other `GOOS` or `GOARCH` overrides before building. GraphQL generation and the signing
 tool run natively on the build machine, which does not need an ARM64 processor.
+The packaging script requires Python 3 and the
+[`cryptography`](https://cryptography.io/en/stable/hazmat/primitives/asymmetric/ed25519/)
+package on the build machine. It generates keys, signs, and verifies in the Python
+process, with no `openssl` executable or Go packaging command. Existing Ed25519
+keys and signed packages remain compatible.
 Relative key paths are resolved from the directory where you invoke the command.
 
 To publish an online update, build from a clean commit tagged with a stable
@@ -691,20 +708,23 @@ For more control over package contents, build an executable first and use the
 lower-level packaging command:
 
 ```sh
-go run ./cmd/release-package create \
-  -binary build/releases/v1.2.3/nanotail-portal \
-  -version v1.2.3 -os linux -arch arm64 \
-  -private-key .release-signing/release-private.pem \
-  -output build/nanotail-portal-v1.2.3-linux-arm64.tar.gz
+python3 scripts/release_package.py create \
+  --binary build/releases/v1.2.3/nanotail-portal \
+  --version v1.2.3 --os linux --arch arm64 \
+  --private-key .release-signing/release-private.pem \
+  --output build/nanotail-portal-v1.2.3-linux-arm64.tar.gz
 
-go run ./cmd/release-package verify \
-  -package build/nanotail-portal-v1.2.3-linux-arm64.tar.gz \
-  -os linux -arch arm64
+python3 scripts/release_package.py verify \
+  --package build/nanotail-portal-v1.2.3-linux-arm64.tar.gz \
+  --os linux --arch arm64
 ```
 
 Use the same version for the executable's build metadata and the manifest.
-Optional `-release-notes`, `-service`, `-nginx`, and `-license` flags include
-the corresponding local files. The package contains these entries, with the
+Optional `--release-notes`, `--service`, `--nginx`, and `--license` flags include
+the corresponding local files. Verification defaults to the repository's
+`upgrade/release-public.pem`, resolved relative to the script; `--public-key PATH`
+selects another trusted public key or PEM bundle. The old single-dash flag forms
+are also accepted. The package contains these entries, with the
 manifest and signature first:
 
 ```text
@@ -725,8 +745,15 @@ and a `files` map of relative paths to `{ "sha256": "...", "size": 123 }` record
 It never carries a replacement trusted key or device data. Use the packaging
 command rather than repacking the archive by hand.
 
-To generate a separate new signing pair, the `keygen` command accepts
-`-private-key PATH -public-key PATH` and refuses to overwrite existing files.
+To generate a separate new signing pair:
+
+```sh
+python3 scripts/release_package.py keygen \
+  --private-key private_key.pem --public-key public_key.pem
+```
+
+The private key is PKCS8 PEM with mode `0600`; the public key is PKIX PEM.
+Key generation and package creation refuse to overwrite existing files.
 Generating another pair does not change the key trusted by installed portals;
 trust-key changes require a deliberate application update.
 

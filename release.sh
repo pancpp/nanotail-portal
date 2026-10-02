@@ -54,6 +54,10 @@ fi
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 repo_dir=$PWD
+if ! command -v python3 >/dev/null 2>&1; then
+    printf '(release) required command not found: python3\n' >&2
+    exit 1
+fi
 valid_version() {
     local version=$1 prerelease identifier
     local -a identifiers
@@ -103,23 +107,20 @@ if $tagged_release && [[ -n "$(git status --porcelain --untracked-files=normal)"
     exit 1
 fi
 
-# Build the signing tool for the build machine while the portal targets ARM64.
-# Neither key material nor this tool is packaged.
-GOOS="$(go env GOHOSTOS)" GOARCH="$(go env GOHOSTARCH)" \
-    go build -o "$work_dir/release-package" ./cmd/release-package
+# Sign on the build machine. Neither key material nor this tool is packaged.
 package_args=(
-    create -binary "$work_dir/build/nanotail-portal"
-    -version "$version" -os linux -arch arm64
-    -private-key "$private_key" -output "$work_dir/package.tar.gz"
-    -service "$repo_dir/nanotail-portal.service"
-    -nginx "$repo_dir/nanotail-portal.nginx"
+    create --binary "$work_dir/build/nanotail-portal"
+    --version "$version" --os linux --arch arm64
+    --private-key "$private_key" --output "$work_dir/package.tar.gz"
+    --service "$repo_dir/nanotail-portal.service"
+    --nginx "$repo_dir/nanotail-portal.nginx"
 )
 if [[ -f "$repo_dir/LICENSE" ]]; then
-    package_args+=(-license "$repo_dir/LICENSE")
+    package_args+=(--license "$repo_dir/LICENSE")
 fi
-"$work_dir/release-package" "${package_args[@]}"
-"$work_dir/release-package" verify -package "$work_dir/package.tar.gz" \
-    -os linux -arch arm64
+python3 "$repo_dir/scripts/release_package.py" "${package_args[@]}"
+python3 "$repo_dir/scripts/release_package.py" verify --package "$work_dir/package.tar.gz" \
+    --os linux --arch arm64
 
 # Publish only a verified archive. A hard link on this same filesystem is
 # atomic and refuses an existing destination, including a racing release.

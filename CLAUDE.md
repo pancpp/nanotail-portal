@@ -39,6 +39,18 @@ npm --prefix webui run test:routing-browser   # headless Chrome; needs a prior b
 
 `routing.browser.mjs` is the only browser-test entry point. The other `*.browser.mjs` files export `check*` functions that it imports and runs against mocked API responses.
 
+Python utilities (`scripts/`):
+
+```sh
+python3 -m pip install -r scripts/requirements.txt
+python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 scripts/test_release_package.py      # single utility
+```
+
+Each utility's Python tests live in `scripts/test_*.py` and run with `unittest`.
+Use temporary files and test keys, and mock device operations. Python scripts
+are tested in Python; Go tests cover Go code.
+
 GraphQL code generation (required after editing `app/graph/schema.graphqls`):
 
 ```sh
@@ -48,7 +60,7 @@ cd app && go tool gqlgen generate
 Build/release:
 - `./build.sh` builds the WebUI, regenerates GraphQL, and produces a static `embedwebui` binary at `build/releases/<version>/nanotail-portal` (default target linux/arm64; `GOOS`/`GOARCH` override it). Version metadata is injected into `conf.gVersion` and related vars via `-ldflags -X`.
 - `./run.sh [args]` builds for the host and runs with `--data-dir ./data`.
-- `./release.sh --key .release-signing/release-private.pem` builds, then signs and verifies an upgrade package with `cmd/release-package`, writing `build/nanotail-portal-<version>-linux-arm64.tar.gz`. The embedded trust key is `upgrade/release-public.pem`.
+- `./release.sh --key .release-signing/release-private.pem` builds, then signs and verifies an upgrade package with `scripts/release_package.py` (Python 3 and the `cryptography` package), writing `build/nanotail-portal-<version>-linux-arm64.tar.gz`. The embedded trust key is `upgrade/release-public.pem`.
 
 ## Architecture
 
