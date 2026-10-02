@@ -1,3 +1,5 @@
+//go:build embedwebui
+
 package main
 
 import (
@@ -339,7 +341,7 @@ func init() {
 		t.Fatal(err)
 	}
 	binary := filepath.Join(dir, "nanotail-portal")
-	build := exec.Command("go", "build", "-overlay", overlayPath, "-ldflags=-X github.com/pancpp/nanotail-portal/conf.gUseEmbeddedWebUI=true", "-o", binary, ".")
+	build := exec.Command("go", "build", "-overlay", overlayPath, "-tags", "embedwebui", "-o", binary, ".")
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, output)
 	}

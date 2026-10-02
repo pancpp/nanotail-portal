@@ -155,13 +155,17 @@ Vite forwards `/api` to `127.0.0.1:7080`. Alternatively, build the frontend once
 ```sh
 npm --prefix webui ci
 npm --prefix webui run build
-go run -ldflags='-X github.com/pancpp/nanotail-portal/conf.gUseEmbeddedWebUI=true' . --data-dir ./data
+go run -tags embedwebui . --data-dir ./data
 ```
 
 Open `http://localhost:7080` to use the built UI. This command embeds the current
 `webui/dist` build and stores local runtime files in `./data`. Rebuild/restart the
 backend to embed a newer frontend build. For development with Vite, the separate
 frontend server proxies API requests to port 7080.
+
+Without `-tags embedwebui`, the backend serves files directly from `webui/dist`
+relative to its working directory. Run it from the checkout root to use a built
+UI on disk. Untagged Go builds do not require frontend assets to exist.
 
 ### Device IP reporting
 
@@ -212,6 +216,15 @@ cd scripts
 ./sign-device.sh --target nanotail.local --key /path/to/privkey.pem
 ```
 
+The same command is available as a standalone Python script:
+
+```sh
+./sign-device.py --target nanotail.local --key /path/to/privkey.pem
+```
+
+The Python version requires Python 3, OpenSSL, and SSH on the host. Its temporary
+files stay under `/tmp` on the host and are removed when signing finishes.
+
 The target is an SSH destination, such as a hostname, SSH config alias, or
 `user@hostname`. The script reads the device-tree serial number over SSH,
 formats it as 16 lowercase hex characters, signs that text locally with the
@@ -261,6 +274,20 @@ permissions. No temporary files are created on the device. Previously saved
 backups are untouched.
 The private key stays on the signing machine. After provisioning, the portal
 loads the device ID and signature from vendor storage when its reporting worker starts.
+
+To generate an access QR code, install the Python QR dependency on the host and
+run from `scripts`:
+
+```sh
+python3 -m pip install 'qrcode[pil]>=8,<9'
+python3 access-qrcode.py --target nanotail --output qrcode.png
+```
+
+The script reads the device-tree serial number over SSH, formats it as lowercase
+hex, and generates `https://tailscale.fairkid.ca/redirect/<device-id>`. It prints
+the URL and QR code to the terminal. `--output` optionally saves the same QR code
+as a PNG file; omit it for terminal output only. No files are created on the
+target device.
 
 The SD-capable `vendor_storage` command's source, build instructions, and tests
 are in [vendor_storage](vendor_storage/README.md). Build it with
@@ -947,8 +974,19 @@ portal backend or change Tailscale/OS settings.
 For standalone development checks:
 
 ```sh
-go test -race -ldflags='-X github.com/pancpp/nanotail-portal/conf.gUseEmbeddedWebUI=true' ./...
+go test -race ./...
 go vet ./...
+```
+
+These checks do not require a frontend build. To also check embedded static
+assets and the factory-reset process in the release layout, build the frontend
+and enable the embedding tag:
+
+```sh
+npm --prefix webui ci
+npm --prefix webui run build
+go test -race -tags embedwebui ./...
+go vet -tags embedwebui ./...
 ```
 
 Tests use isolated credential files and fake Tailscale runners, and exercise
