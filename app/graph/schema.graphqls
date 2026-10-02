@@ -254,6 +254,8 @@ type TailscaleKeyRenewal {
 type Query {
   "Portal build version injected into conf.gVersion. Empty for builds without version metadata."
   portalVersion: String!
+  "Provisioned Nanotail device ID as 16 lowercase hexadecimal characters. Null when unavailable."
+  deviceID: String
   user: User!
   tailscaleClient: TailscaleClient
   tailscaleStatus: TailscaleStatus!

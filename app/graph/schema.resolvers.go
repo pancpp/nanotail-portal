@@ -78,6 +78,11 @@ func (r *queryResolver) PortalVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
+// DeviceID is the resolver for the deviceID field.
+func (r *queryResolver) DeviceID(ctx context.Context) (*string, error) {
+	return r.deviceID(ctx)
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 	return r.user(ctx)

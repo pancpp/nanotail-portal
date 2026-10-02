@@ -1011,6 +1011,19 @@ input:focus-visible {
   white-space: nowrap;
 }
 
+.status-card__device-id {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 12px 0 16px;
+  font-size: 13px;
+}
+
+.status-card__device-id dt { color: #66756d; }
+.status-card__device-id dd { margin: 0; color: #1e2c25; overflow-wrap: anywhere; }
+.status-card__device-id code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
 .status-card__footer {
   display: flex;
   margin-top: auto;

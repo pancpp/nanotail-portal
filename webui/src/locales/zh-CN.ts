@@ -411,6 +411,8 @@ export const zhCN: Record<string, string> = {
   "{0}Live device and Tailscale status": "{0}设备与 Tailscale 实时状态",
   "Network status": "网络状态",
   "Tailscale status": "Tailscale 状态",
+  "Device ID": "设备 ID",
+  "The server did not return a valid device ID.": "服务器未返回有效的设备 ID。",
   "Connected to your tailnet": "已连接到您的 tailnet",
   "No active tailnet connection": "没有活动的 tailnet 连接",
   "No Tailscale address": "暂无 Tailscale 地址",

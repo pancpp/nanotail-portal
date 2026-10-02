@@ -13,6 +13,7 @@ import { useTailscale } from '../tailscale'
 import { usePeerLatencies } from '../usePeerLatencies'
 import { nodeKeyDialogMode } from '../nodeKey'
 import DeviceStatusPanel from '../components/DeviceStatusPanel'
+import DeviceID from '../components/DeviceID'
 import NetworkActivityPanel from '../components/NetworkActivityPanel'
 import NodeKeyCard from '../components/NodeKeyCard'
 import RoutingCard from '../components/RoutingCard'
@@ -73,6 +74,7 @@ export default function OverviewPage() {
               <span>{t("Tailscale status")}</span>
               <strong>{connected ? t("Connected to your tailnet") : t(label)}</strong>
               <p>{!statusError && status?.currentTailnet?.name ? status.currentTailnet.name : t("No active tailnet connection")}</p>
+              <DeviceID />
               {needsSignIn && <button type="button" className="status-card__configure tailscale-signin" onClick={() => openDialog('signin')}><T message="Sign in to Tailscale {0}" values={{ 0: <ChevronRight size={15} /> }} /></button>}
             </div>
             <div className="status-card__footer">

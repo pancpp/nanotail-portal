@@ -13,6 +13,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/pancpp/nanotail-portal/access"
 	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
 	"github.com/pancpp/nanotail-portal/conf"
@@ -49,6 +50,10 @@ func newGraphQLServerWithClient(client *tailscale.Client) *handler.Server {
 		RoutingHost:      device.NewReader(),
 		CredentialWriter: client,
 		PeerRelay:        client,
+		DeviceID: func() (string, error) {
+			id, _, err := access.GetDeviceCredentials()
+			return id, err
+		},
 	}}))
 	srv.SetErrorPresenter(presentGraphQLError)
 

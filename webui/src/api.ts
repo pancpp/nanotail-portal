@@ -418,6 +418,15 @@ export async function portalVersionRequest(token: string, signal?: AbortSignal):
   return data.portalVersion
 }
 
+export async function deviceIDRequest(token: string, signal?: AbortSignal): Promise<string | null> {
+  const data = await graphQLRequest(token, 'DeviceID', 'query DeviceID { deviceID }', {}, signal, 'device ID')
+  if (data.deviceID === null) return null
+  if (typeof data.deviceID !== 'string' || !/^[0-9a-f]{16}$/.test(data.deviceID)) {
+    throw new Error('The server did not return a valid device ID.')
+  }
+  return data.deviceID
+}
+
 export async function deviceStatusRequest(token: string, signal?: AbortSignal): Promise<DeviceStatus> {
   const data = await graphQLRequest(token, 'DeviceStatus', `query DeviceStatus {
     deviceStatus { hostname lanIPType lanIP gateway dns lanIPv6Type lanIPv6 gateway6 ethAddr cpuload memory lastRestart uptime health }
