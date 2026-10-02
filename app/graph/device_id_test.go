@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,25 +15,14 @@ func TestDeviceIDGraphQL(t *testing.T) {
 		name          string
 		query         string
 		id            string
-		err           error
 		missingReader bool
 		want          string
 		wantReads     int
 	}{
 		{
-			name:  "provisioned device ID without Tailscale or device metrics",
+			name:  "cached device ID without Tailscale or device metrics",
 			query: `query { deviceID }`, id: "00112233aabbccdd",
 			want: `{"data":{"deviceID":"00112233aabbccdd"}}`, wantReads: 1,
-		},
-		{
-			name: "unavailable credentials", query: `query { deviceID }`,
-			err:  errors.New("private storage diagnostic with sensitive credential data"),
-			want: `{"data":{"deviceID":null}}`, wantReads: 1,
-		},
-		{
-			name: "failed read with partial ID", query: `query { deviceID }`,
-			id: "00112233aabbccdd", err: errors.New("incomplete credential"),
-			want: `{"data":{"deviceID":null}}`, wantReads: 1,
 		},
 		{
 			name: "empty ID", query: `query { deviceID }`,
@@ -57,9 +45,9 @@ func TestDeviceIDGraphQL(t *testing.T) {
 			reads := 0
 			r := &Resolver{}
 			if !tt.missingReader {
-				r.DeviceID = func() (string, error) {
+				r.DeviceID = func() string {
 					reads++
-					return tt.id, tt.err
+					return tt.id
 				}
 			}
 			server := handler.New(NewExecutableSchema(Config{Resolvers: r}))

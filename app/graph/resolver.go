@@ -74,7 +74,7 @@ type OAuthCredentialWriter interface {
 
 type Resolver struct {
 	CredentialWriter OAuthCredentialWriter
-	DeviceID         func() (string, error)
+	DeviceID         func() string
 	Tailscale        TailscaleStatusReader
 	PeerPinger       TailscalePinger
 	Device           DeviceStatusReader

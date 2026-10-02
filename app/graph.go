@@ -50,10 +50,7 @@ func newGraphQLServerWithClient(client *tailscale.Client) *handler.Server {
 		RoutingHost:      device.NewReader(),
 		CredentialWriter: client,
 		PeerRelay:        client,
-		DeviceID: func() (string, error) {
-			id, _, err := access.GetDeviceCredentials()
-			return id, err
-		},
+		DeviceID:         access.GetDeviceID,
 	}}))
 	srv.SetErrorPresenter(presentGraphQLError)
 

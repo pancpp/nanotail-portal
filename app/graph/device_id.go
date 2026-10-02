@@ -6,8 +6,8 @@ func (r *queryResolver) deviceID(context.Context) (*string, error) {
 	if r.Resolver.DeviceID == nil {
 		return nil, nil
 	}
-	id, err := r.Resolver.DeviceID()
-	if err != nil || id == "" {
+	id := r.Resolver.DeviceID()
+	if id == "" {
 		return nil, nil
 	}
 	return &id, nil

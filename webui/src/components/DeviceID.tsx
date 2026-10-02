@@ -11,15 +11,25 @@ export default function DeviceID() {
   useEffect(() => {
     if (!accessToken) { setDeviceID(null); return }
     const controller = new AbortController()
+    let retryTimer: number | undefined
     setDeviceID(undefined)
-    void deviceIDRequest(accessToken, controller.signal).then(value => {
-      if (!controller.signal.aborted) setDeviceID(value)
-    }).catch((error: unknown) => {
-      if (controller.signal.aborted) return
-      setDeviceID(null)
-      if (isSessionError(error)) logout()
-    })
-    return () => controller.abort()
+    const readDeviceID = () => {
+      void deviceIDRequest(accessToken, controller.signal).then(value => {
+        if (controller.signal.aborted) return
+        setDeviceID(value)
+        // The cached ID may still be initializing when the overview first loads.
+        if (value === null) retryTimer = window.setTimeout(readDeviceID, 5000)
+      }).catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        setDeviceID(null)
+        if (isSessionError(error)) logout()
+      })
+    }
+    readDeviceID()
+    return () => {
+      controller.abort()
+      window.clearTimeout(retryTimer)
+    }
   }, [accessToken, logout])
 
   return <dl className="status-card__device-id">

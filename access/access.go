@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/pancpp/nanotail-portal/conf"
@@ -12,6 +13,11 @@ import (
 const (
 	CHECK_INTERVAL  = 10 * time.Second
 	REPORT_INTERVAL = 600 * time.Second
+)
+
+var (
+	gDeviceID   string
+	gDeviceIDMu sync.RWMutex
 )
 
 type ReportService struct {
@@ -59,10 +65,22 @@ func Init(ctx context.Context) error {
 		lastReportTime: time.Unix(0, 0),
 	}
 
+	// Publish the cached ID to concurrent HTTP readers.
+	gDeviceIDMu.Lock()
+	gDeviceID = deviceID
+	gDeviceIDMu.Unlock()
+
 	// Keep the worker owned by the caller so shutdown can wait for it.
 	reportService.Run(ctx)
 
 	return nil
+}
+
+// GetDeviceID returns the cached ID, or an empty string before initialization.
+func GetDeviceID() string {
+	gDeviceIDMu.RLock()
+	defer gDeviceIDMu.RUnlock()
+	return gDeviceID
 }
 
 func (r *ReportService) Run(ctx context.Context) {
