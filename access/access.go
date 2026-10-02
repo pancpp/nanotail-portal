@@ -35,15 +35,10 @@ func Init(ctx context.Context) error {
 		return nil
 	}
 
-	// Get DeviceID and DeviceSig
-	deviceID, err := GetDeviceID()
+	// Read DeviceID and DeviceSig together from vendor storage.
+	deviceID, deviceSig, err := GetDeviceCredentials()
 	if err != nil {
-		log.Println("(access) get device ID err:", err)
-		return err
-	}
-	deviceSig, err := GetDeviceSignature()
-	if err != nil {
-		log.Println("(access) get device signature err:", err)
+		log.Println("(access) get device credentials err:", err)
 		return err
 	}
 

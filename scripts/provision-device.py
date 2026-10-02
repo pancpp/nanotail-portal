@@ -438,7 +438,7 @@ def update_vendor_file(path, payload):
 
 
 def sign_device(device_id, private_key):
-    """Return a raw Ed25519 signature; the private key stays on this machine."""
+    """Sign the lowercase ID returned by the stored-credential reader."""
     key_info = subprocess.run(
         ["openssl", "pkey", "-in", str(private_key), "-passin", "pass:",
          "-noout", "-text_pub"],
@@ -452,8 +452,9 @@ def sign_device(device_id, private_key):
         message = work / "message"
         signature_file = work / "signature"
         public_key = work / "public.pem"
-        # Sign the original text and its exact case, not the 8 decoded bytes.
-        message.write_bytes(b"nanotail-server/auth/device/v1\0" + device_id.encode("ascii"))
+        # The stored eight bytes decode to lowercase hex in the reporter.
+        # Keep the original serial elsewhere for exact snapshot comparisons.
+        message.write_bytes(b"nanotail-server/auth/device/v1\0" + device_id.lower().encode("ascii"))
         subprocess.run(
             ["openssl", "pkeyutl", "-sign", "-rawin", "-inkey", str(private_key),
              "-passin", "pass:", "-in", str(message), "-out", str(signature_file)],
@@ -502,7 +503,7 @@ def main():
             raise ValueError("invalid device ID response")
         device_id = identity["serial"]
 
-        # 2. Sign the exact ID text before reading any vendor-storage bytes.
+        # 2. Sign the canonical lowercase ID before reading vendor-storage bytes.
         payload = bytes.fromhex(device_id) + sign_device(device_id, private_key)
 
         # 3. Download the complete vendor area to an actual host file under /tmp.

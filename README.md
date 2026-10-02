@@ -190,13 +190,81 @@ Reporting defaults to enabled, using `eth0` and the API prefix
 `access_eth_name`, and `access_api_prefix` in YAML. Set `access_enable: false`
 to disable reporting.
 
-The device ID comes from the board's device-tree serial number. Device-signature
-retrieval is a TODO: `GetDeviceSignature()` returns an unavailable error, so the
-worker currently logs an initialization failure and exits without making HTTP
-requests. This does not prevent the portal from starting. Other initialization
-errors also disable only this worker. Once credentials are available,
-`access.Init(ctx)` runs until cancellation; shutdown and factory reset cancel its
-requests and wait for the worker to return.
+`GetDeviceCredentials()` reads the device ID and signature together from vendor
+record `0x80` directly on `/dev/mmcblk0` using Go, selecting the newest completed
+vendor slot. It checks the storage structure and 72-byte record length, then
+formats the stored 8-byte ID as 16 lowercase hex characters and the raw 64-byte
+signature as padded Base64 for login. The reporter uses both stored values;
+the server authenticates the signature. The portal needs
+read permission on the whole SD device; it does not invoke `vendor_storage` or
+write to storage. A shared lock coordinates reads with provisioning.
+
+Missing credentials, malformed storage, and storage-access
+failures cause the reporting worker to log an initialization error and exit
+without making HTTP requests. This does not prevent the portal from starting.
+With provisioned credentials, `access.Init(ctx)` runs until cancellation;
+shutdown and factory reset cancel its requests and wait for the worker to return.
+
+To generate a device signature from a machine with SSH access to the device, run:
+
+```sh
+cd scripts
+./sign-device.sh --target nanotail.local --key /path/to/privkey.pem
+```
+
+The target is an SSH destination, such as a hostname, SSH config alias, or
+`user@hostname`. The script reads the device-tree serial number over SSH,
+formats it as 16 lowercase hex characters, signs that text locally with the
+Ed25519 private key, and prints the Base64 signature.
+
+To sign and provision the device's SD-card vendor storage, run from `scripts`:
+
+```sh
+./provision-device.py --target nanotail.local --key /path/to/privkey.pem
+```
+
+Vendor record `0x80` contains exactly 72 bytes: offsets 0–7 hold the device ID
+decoded from its 16 hex characters, in displayed byte order; offsets 8–71 hold
+the raw 64-byte Ed25519 signature. There is no header, separator, Base64 text,
+or terminator. For example, `957dadbb52b09f24` becomes the bytes
+`95 7d ad bb 52 b0 9f 24`. The signature still covers the domain prefix
+`nanotail-server/auth/device/v1\0` followed by the 16-character lowercase hex ID
+text, matching the reporter's encoding of the stored ID. Existing signatures
+generated from uppercase ID text need to be reprovisioned with this format.
+
+The provisioning script is a single Python file that implements signing and
+vendor-record management itself. It requires Python 3, OpenSSL, and SSH on the
+host, and Python 3 with noninteractive `sudo` on the target. It uses Python's
+standard library and does not invoke the `vendor_storage` command.
+
+The script follows this sequence:
+
+1. Read the device ID over SSH, without opening vendor storage.
+2. Sign the lowercase hex device ID locally and verify the signature.
+3. Download the full 256 KiB vendor area from `/dev/mmcblk0` into
+   `/tmp/nanotail-provision.*/vendor-storage.bin` on the host, and validate its
+   structure and the SD-card GPT metadata.
+4. Preserve `original.bin`, then modify `vendor-storage.bin` using Python to
+   add or replace record `0x80`, preserving other records and their flags.
+5. Stream the updated file back to the SD card. The device rechecks its ID,
+   disk layout, and original vendor bytes under an exclusive lock. Only the
+   changed inactive slot is committed, with flushes between stages.
+6. Make a separate SSH request to download vendor storage again into
+   `readback.bin`. Compare the entire file with `vendor-storage.bin` and check
+   the device ID and disk layout again.
+7. Remove the host temporary directory after successful verification.
+   Otherwise, print the error and retain the available files for inspection
+   and recovery, reporting their location.
+
+All host temporary files use `/tmp`, regardless of `TMPDIR`, with private file
+permissions. No temporary files are created on the device. Previously saved
+backups are untouched.
+The private key stays on the signing machine. After provisioning, the portal
+loads the device ID and signature from vendor storage when its reporting worker starts.
+
+The SD-capable `vendor_storage` command's source, build instructions, and tests
+are in [vendor_storage](vendor_storage/README.md). Build it with
+`sh vendor_storage/build.sh` from the project root.
 
 ## Tailscale integration
 
