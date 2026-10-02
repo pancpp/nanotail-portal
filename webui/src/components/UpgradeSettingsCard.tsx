@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Download, PackageCheck, RefreshCw, RotateCw } from 'lucide-react'
+import { CheckCircle2, Download, LoaderCircle, PackageCheck, RefreshCw, RotateCw } from 'lucide-react'
 import Button from './Button'
 import { useAuth } from '../auth'
 import { useI18n } from '../i18n'
@@ -33,6 +33,9 @@ export default function UpgradeSettingsCard() {
   const complete = installation?.phase === 'complete' && status?.currentVersion === installation.version
   const historical = installation?.phase === 'complete' && !complete && !attempt
   const failed = installation && ['aborted', 'rolled-back', 'rollback-failed'].includes(installation.phase)
+  const waiting = busy === 'installing' || (monitoring && !complete && !historical && !failed && !pollExpired && !pollPaused)
+  const checking = busy === 'checking' || status?.phase === 'checking'
+  const preparing = busy === 'downloading' || status?.phase === 'downloading' || status?.phase === 'verifying'
   const phase = installation?.phase ?? (busy === 'installing' ? 'submitting' : 'unknown')
   const formatDate = (value: string) => new Date(value).toLocaleString(locale)
   let installationTitle = t('Installing upgrade')
@@ -52,7 +55,7 @@ export default function UpgradeSettingsCard() {
       <p className="credential-intro">{t('Check GitHub Releases for a new version. Downloaded packages are verified with a trusted release key before they are saved.')}</p>
       {status && <p className="upgrade-current">{t('Installed version')} <strong>{status.currentVersion || t('Unavailable')}</strong></p>}
       {(installation || attempt) && <div className={`upgrade-installation${failed ? ' upgrade-installation--error' : ''}`} data-phase={phase} role={failed ? 'alert' : 'status'} aria-live="polite">
-        <h3>{complete ? <CheckCircle2 size={20} aria-hidden="true" /> : <RotateCw size={20} aria-hidden="true" />}{installationTitle}</h3>
+        <h3>{waiting ? <LoaderCircle size={20} className="spin" aria-hidden="true" /> : complete ? <CheckCircle2 size={20} aria-hidden="true" /> : <RotateCw size={20} aria-hidden="true" />}{installationTitle}</h3>
         <p>{t('Upgrade version: {version}', { version: installation?.version ?? attempt!.version })}</p>
         {installation?.phase === 'complete' ? <p>{t(complete ? 'The new release is running. Refresh the portal to load its WebUI.' : historical ? 'This is the result of a previous installation.' : 'Checking the installed version…')}</p> :
           <p>{t(phaseMessages[phase] ?? (phase === 'submitting' ? 'Requesting installation…' : 'The request may have been accepted. Checking status before another installation can start.'))}</p>}
@@ -73,11 +76,11 @@ export default function UpgradeSettingsCard() {
           <p className="password-help">{t('Published {date} · {size}', { date: formatDate(release.publishedAt), size: formatTrafficBytes(release.size, locale) })}</p>
           {release.notes && <details><summary>{t('Release notes')}</summary><p className="upgrade-notes">{release.notes}</p></details>}
           {(status?.updateAvailable || !comparable) && <Button type="button" className="secondary-button" disabledReason={onlineReason} onClick={() => { void run('downloading') }}>
-            <Download size={17} aria-hidden="true" />{t('Prepare upgrade')}
+            {preparing ? <LoaderCircle size={17} className="spin" aria-hidden="true" /> : <Download size={17} aria-hidden="true" />}{t('Prepare upgrade')}
           </Button>}
         </div>}
         <Button type="button" className="secondary-button" disabledReason={onlineReason} onClick={() => { void run('checking') }}>
-          <RefreshCw size={17} aria-hidden="true" />{t('Check for updates')}
+          {checking ? <LoaderCircle size={17} className="spin" aria-hidden="true" /> : <RefreshCw size={17} aria-hidden="true" />}{t('Check for updates')}
         </Button>
         {status && !status.onlineCheckSupported && <p className="password-help">{t('Online update checking is not supported on this device.')}</p>}
       </div>
@@ -99,7 +102,7 @@ export default function UpgradeSettingsCard() {
         {installed ? <p>{t('This version is already installed.')}</p> : <>
           <p>{t('The verified package is ready to install. The portal will restart during installation.')}</p>
           <Button type="button" className="secondary-button" disabledReason={installReason} onClick={() => setConfirmation({ ...staged })}>
-            <RotateCw size={17} aria-hidden="true" />{t('Install and restart')}
+            {waiting ? <LoaderCircle size={17} className="spin" aria-hidden="true" /> : <RotateCw size={17} aria-hidden="true" />}{t('Install and restart')}
           </Button>
           {!status?.installationSupported && <p className="password-help">{t('Upgrade installation is not supported on this device')}</p>}
         </>}
