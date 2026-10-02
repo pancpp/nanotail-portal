@@ -8,6 +8,8 @@ import (
 	"io"
 	"strconv"
 	"time"
+
+	"github.com/pancpp/nanotail-portal/upgrade"
 )
 
 type ChangePassword struct {
@@ -256,6 +258,11 @@ type TailscaleUser struct {
 	LoginName     string `json:"loginName"`
 	DisplayName   string `json:"displayName"`
 	ProfilePicURL string `json:"profilePicURL"`
+}
+
+type UpgradeInstallResult struct {
+	Accepted     bool                  `json:"accepted"`
+	Installation *upgrade.Installation `json:"installation"`
 }
 
 type User struct {

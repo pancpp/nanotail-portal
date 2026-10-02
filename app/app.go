@@ -7,8 +7,10 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
@@ -22,6 +24,7 @@ import (
 	"github.com/pancpp/nanotail-portal/factoryreset"
 	"github.com/pancpp/nanotail-portal/tailscale"
 	"github.com/pancpp/nanotail-portal/traffic"
+	"github.com/pancpp/nanotail-portal/upgrade"
 	"github.com/pancpp/nanotail-portal/webui"
 )
 
@@ -48,7 +51,7 @@ func Init(ctx context.Context) error {
 	return nil
 }
 
-func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error) {
+func Start(ctx context.Context, reset *factoryreset.Controller, installers ...*upgrade.Installer) (*Runtime, error) {
 	if len(auth.GetJwtSignKey()) == 0 {
 		return nil, fmt.Errorf("JWT signing key must be initialized before starting HTTP services")
 	}
@@ -61,21 +64,22 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 		return nil, err
 	}
 
+	upgrades, err := newUpgradeService(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var installer *upgrade.Installer
+	if len(installers) > 0 {
+		installer = installers[0]
+	}
+	upgrades.SetInstaller(installer)
 	client := newTailscaleClient()
-	if err := initAPIsWithClient(e, client); err != nil {
+	if err := initAPIsWithClient(e, client, graphQLServices{upgrades: upgrades, reset: reset, installer: installer}); err != nil {
 		return nil, err
 	}
 	initFactoryResetAPI(e, reset)
 	// Stop admitting new work before shutdown drains already-running handlers.
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c *echo.Context) error {
-			if reset != nil && reset.Pending() {
-				c.Response().Header().Set("Retry-After", "5")
-				return echo.NewHTTPError(http.StatusServiceUnavailable, "Factory reset is in progress")
-			}
-			return next(c)
-		}
-	})
+	e.Use(maintenanceMiddleware(reset, installer))
 
 	listener, err := net.Listen("tcp", conf.GetString("http_listen_addr"))
 	if err != nil {
@@ -130,6 +134,27 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 	return runtime, nil
 }
 
+func maintenanceMiddleware(reset *factoryreset.Controller, installer *upgrade.Installer) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			// GraphQL admits only upgradeStatus selections during maintenance,
+			// after JWT authentication and operation parsing.
+			if c.Request().Method == http.MethodPost && c.Request().URL.Path == "/api/v1/query" {
+				return next(c)
+			}
+			if reset != nil && reset.Pending() {
+				c.Response().Header().Set("Retry-After", "5")
+				return echo.NewHTTPError(http.StatusServiceUnavailable, "Factory reset is in progress")
+			}
+			if installer != nil && installer.Pending() {
+				c.Response().Header().Set("Retry-After", "5")
+				return echo.NewHTTPError(http.StatusServiceUnavailable, "Upgrade installation is in progress")
+			}
+			return next(c)
+		}
+	}
+}
+
 func (r *Runtime) Errors() <-chan error { return r.serverErrors }
 
 func (r *Runtime) Shutdown(ctx context.Context) error {
@@ -178,11 +203,15 @@ func initAPIs(e *echo.Echo) error {
 	return initAPIsWithClient(e, newTailscaleClient())
 }
 
-func initAPIsWithClient(e *echo.Echo, client *tailscale.Client) error {
+func initAPIsWithClient(e *echo.Echo, client *tailscale.Client, services ...graphQLServices) error {
 	// Only login needs no header authentication
 	e.POST("/api/login", handleLogin)
 
-	gqlSrv := newGraphQLServerWithClient(client)
+	initGraphQLAPI(e, newGraphQLServerWithClient(client, services...))
+	return nil
+}
+
+func initGraphQLAPI(e *echo.Echo, gqlSrv *handler.Server) {
 	e.POST("/api/v1/query",
 		func(c *echo.Context) error {
 			token, ok := c.Get(auth.JWT_CONTEXT_KEY_TOKEN).(*jwt.Token)
@@ -193,15 +222,33 @@ func initAPIsWithClient(e *echo.Echo, client *tailscale.Client) error {
 			if !ok || claims == nil || claims.UserPID <= 0 {
 				return echo.NewHTTPError(http.StatusUnauthorized, ErrUnauthorized.Error())
 			}
+			var actionsMu sync.Mutex
+			var afterResponse []func()
+			defer func() {
+				actionsMu.Lock()
+				actions := append([]func(){}, afterResponse...)
+				actionsMu.Unlock()
+				if len(actions) == 0 {
+					return
+				}
+				// The accepted installation is durable. Flush its GraphQL reply
+				// before notifying main, even if the client has disconnected.
+				_ = http.NewResponseController(c.Response()).Flush()
+				for _, action := range actions {
+					action()
+				}
+			}()
 			ctx := context.WithValue(
 				c.Request().Context(),
 				graph.QUERY_CONTEXT_KEY,
-				&graph.ContextValue{UserPID: claims.UserPID})
+				&graph.ContextValue{UserPID: claims.UserPID, AfterResponse: func(action func()) {
+					actionsMu.Lock()
+					afterResponse = append(afterResponse, action)
+					actionsMu.Unlock()
+				}})
 			c.Response().Header().Set("Cache-Control", "no-store")
 			gqlSrv.ServeHTTP(c.Response(), c.Request().WithContext(ctx))
 			return nil
 		},
 		jwtMiddleware())
-
-	return nil
 }

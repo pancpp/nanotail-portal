@@ -2,6 +2,7 @@ import { useI18n } from '../i18n'
 import ChangePasswordForm from '../components/ChangePasswordForm'
 import FactoryResetPanel from '../components/FactoryResetPanel'
 import TailscaleCredentialForm from '../components/TailscaleCredentialForm'
+import UpgradeSettingsCard from '../components/UpgradeSettingsCard'
 import { useTailscale } from '../tailscale'
 
 export default function SettingsPage() {
@@ -12,7 +13,7 @@ export default function SettingsPage() {
       <section className="page-heading">
         <div>
           <h1>{t("Settings")}</h1>
-          <p>{t("Manage Tailscale OAuth credentials, your portal account, and device reset.")}</p>
+          <p>{t("Manage Tailscale OAuth credentials, your portal account, device reset, and software upgrades.")}</p>
         </div>
       </section>
       <section className="panel credential-settings" aria-labelledby="credential-heading">
@@ -25,6 +26,7 @@ export default function SettingsPage() {
       </section>
       <ChangePasswordForm />
       <FactoryResetPanel />
+      <UpgradeSettingsCard />
     </>
   )
 }

@@ -19,8 +19,10 @@ import (
 	"github.com/pancpp/nanotail-portal/conf"
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/pancpp/nanotail-portal/device"
+	"github.com/pancpp/nanotail-portal/factoryreset"
 	"github.com/pancpp/nanotail-portal/tailscale"
 	"github.com/pancpp/nanotail-portal/traffic"
+	"github.com/pancpp/nanotail-portal/upgrade"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -42,7 +44,17 @@ func newGraphQLServer() *handler.Server {
 	return newGraphQLServerWithClient(newTailscaleClient())
 }
 
-func newGraphQLServerWithClient(client *tailscale.Client) *handler.Server {
+type graphQLServices struct {
+	upgrades  *upgrade.Service
+	reset     *factoryreset.Controller
+	installer *upgrade.Installer
+}
+
+func newGraphQLServerWithClient(client *tailscale.Client, options ...graphQLServices) *handler.Server {
+	var services graphQLServices
+	if len(options) > 0 {
+		services = options[0]
+	}
 	deviceConfig := device.NewConfigurator()
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		Tailscale: client, PeerPinger: client, Routing: client, Connection: client, KeyRenewer: client, Device: device.NewReader(), DeviceConfig: deviceConfig, DeviceHostname: deviceConfig, Traffic: device.NewTrafficReader(),
@@ -51,8 +63,10 @@ func newGraphQLServerWithClient(client *tailscale.Client) *handler.Server {
 		CredentialWriter: client,
 		PeerRelay:        client,
 		DeviceID:         access.GetDeviceID,
+		Upgrades:         services.upgrades,
 	}}))
 	srv.SetErrorPresenter(presentGraphQLError)
+	configureUpgradeOperations(srv, services)
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -69,6 +83,20 @@ func presentGraphQLError(ctx context.Context, err error) *gqlerror.Error {
 	presented := graphql.DefaultErrorPresenter(ctx, err)
 	if presented == nil {
 		return nil
+	}
+	if message, code, ok := graph.UpgradeErrorDetails(err); ok {
+		if code == "UPGRADE_INSTALL_FAILED" {
+			log.Printf("(upgrade) installation preparation failed: %v", err)
+		}
+		return &gqlerror.Error{Message: message, Path: presented.Path, Locations: presented.Locations, Extensions: map[string]any{"code": code}}
+	}
+	for _, failure := range []struct {
+		err  error
+		code string
+	}{{errGraphQLMaintenance, "MAINTENANCE"}, {errInstallOperation, "UPGRADE_INSTALL_OPERATION"}} {
+		if errors.Is(err, failure.err) {
+			return &gqlerror.Error{Message: failure.err.Error(), Path: presented.Path, Locations: presented.Locations, Extensions: map[string]any{"code": failure.code}}
+		}
 	}
 	if errors.Is(err, auth.ErrUnauthorized) || errors.Is(err, graph.ErrInvalidPassword) ||
 		errors.Is(err, graph.ErrInvalidCredential) || errors.Is(err, graph.ErrTailscaleAdmin) ||

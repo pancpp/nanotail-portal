@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/pancpp/nanotail-portal/app/graph/model"
+	"github.com/pancpp/nanotail-portal/upgrade"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -60,7 +61,10 @@ type ComplexityRoot struct {
 		BeginTailscaleNodeKeyRenewal  func(childComplexity int, attemptID string) int
 		CancelTailscaleNodeKeyRenewal func(childComplexity int, attemptID string) int
 		ChangePassword                func(childComplexity int, passwords model.ChangePassword) int
+		CheckForUpdates               func(childComplexity int) int
 		ClearTailscaleCredential      func(childComplexity int) int
+		DownloadUpgrade               func(childComplexity int, version string) int
+		InstallUpgrade                func(childComplexity int, version string, sha256 string) int
 		LogoutTailscale               func(childComplexity int) int
 		RenewTailscaleNodeKey         func(childComplexity int) int
 		SetDeviceHostname             func(childComplexity int, hostname string) int
@@ -114,6 +118,7 @@ type ComplexityRoot struct {
 		TailscaleKeyRenewal    func(childComplexity int) int
 		TailscaleRouting       func(childComplexity int) int
 		TailscaleStatus        func(childComplexity int) int
+		UpgradeStatus          func(childComplexity int) int
 		User                   func(childComplexity int) int
 	}
 
@@ -238,6 +243,48 @@ type ComplexityRoot struct {
 		ProfilePicURL func(childComplexity int) int
 	}
 
+	UpgradeInstallResult struct {
+		Accepted     func(childComplexity int) int
+		Installation func(childComplexity int) int
+	}
+
+	UpgradeInstallation struct {
+		CompletedAt func(childComplexity int) int
+		Error       func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Phase       func(childComplexity int) int
+		StartedAt   func(childComplexity int) int
+		Version     func(childComplexity int) int
+	}
+
+	UpgradeRelease struct {
+		Notes       func(childComplexity int) int
+		PackageName func(childComplexity int) int
+		PublishedAt func(childComplexity int) int
+		Size        func(childComplexity int) int
+		Version     func(childComplexity int) int
+	}
+
+	UpgradeStagedPackage struct {
+		Notes      func(childComplexity int) int
+		SHA256     func(childComplexity int) int
+		Size       func(childComplexity int) int
+		VerifiedAt func(childComplexity int) int
+		Version    func(childComplexity int) int
+	}
+
+	UpgradeStatus struct {
+		CheckedAt             func(childComplexity int) int
+		CurrentVersion        func(childComplexity int) int
+		Installation          func(childComplexity int) int
+		InstallationSupported func(childComplexity int) int
+		LatestRelease         func(childComplexity int) int
+		OnlineCheckSupported  func(childComplexity int) int
+		Phase                 func(childComplexity int) int
+		StagedPackage         func(childComplexity int) int
+		UpdateAvailable       func(childComplexity int) int
+	}
+
 	User struct {
 		CreateTime func(childComplexity int) int
 		ID         func(childComplexity int) int
@@ -252,6 +299,9 @@ type ComplexityRoot struct {
 // region    ************************** generated!.gotpl **************************
 
 type MutationResolver interface {
+	CheckForUpdates(ctx context.Context) (*upgrade.Status, error)
+	DownloadUpgrade(ctx context.Context, version string) (*upgrade.Status, error)
+	InstallUpgrade(ctx context.Context, version string, sha256 string) (*model.UpgradeInstallResult, error)
 	SetPeerRelay(ctx context.Context, input model.PeerRelayInput) (bool, error)
 	ChangePassword(ctx context.Context, passwords model.ChangePassword) (bool, error)
 	SetTailscaleCredential(ctx context.Context, credential model.TailscaleCredential) (bool, error)
@@ -266,6 +316,7 @@ type MutationResolver interface {
 	CancelTailscaleNodeKeyRenewal(ctx context.Context, attemptID string) (*model.TailscaleKeyRenewal, error)
 }
 type QueryResolver interface {
+	UpgradeStatus(ctx context.Context) (*upgrade.Status, error)
 	PortalVersion(ctx context.Context) (string, error)
 	DeviceID(ctx context.Context) (*string, error)
 	User(ctx context.Context) (*model.User, error)
@@ -418,12 +469,40 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ChangePassword(childComplexity, args["passwords"].(model.ChangePassword)), true
+	case "Mutation.checkForUpdates":
+		if e.ComplexityRoot.Mutation.CheckForUpdates == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Mutation.CheckForUpdates(childComplexity), true
 	case "Mutation.clearTailscaleCredential":
 		if e.ComplexityRoot.Mutation.ClearTailscaleCredential == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Mutation.ClearTailscaleCredential(childComplexity), true
+	case "Mutation.downloadUpgrade":
+		if e.ComplexityRoot.Mutation.DownloadUpgrade == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_downloadUpgrade_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DownloadUpgrade(childComplexity, args["version"].(string)), true
+	case "Mutation.installUpgrade":
+		if e.ComplexityRoot.Mutation.InstallUpgrade == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_installUpgrade_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.InstallUpgrade(childComplexity, args["version"].(string), args["sha256"].(string)), true
 	case "Mutation.logoutTailscale":
 		if e.ComplexityRoot.Mutation.LogoutTailscale == nil {
 			break
@@ -688,6 +767,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.TailscaleStatus(childComplexity), true
+	case "Query.upgradeStatus":
+		if e.ComplexityRoot.Query.UpgradeStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.UpgradeStatus(childComplexity), true
 	case "Query.user":
 		if e.ComplexityRoot.Query.User == nil {
 			break
@@ -1251,6 +1336,173 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TailscaleUser.ProfilePicURL(childComplexity), true
 
+	case "UpgradeInstallResult.accepted":
+		if e.ComplexityRoot.UpgradeInstallResult.Accepted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeInstallResult.Accepted(childComplexity), true
+	case "UpgradeInstallResult.installation":
+		if e.ComplexityRoot.UpgradeInstallResult.Installation == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeInstallResult.Installation(childComplexity), true
+
+	case "UpgradeInstallation.completedAt":
+		if e.ComplexityRoot.UpgradeInstallation.CompletedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeInstallation.CompletedAt(childComplexity), true
+	case "UpgradeInstallation.error":
+		if e.ComplexityRoot.UpgradeInstallation.Error == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeInstallation.Error(childComplexity), true
+	case "UpgradeInstallation.id":
+		if e.ComplexityRoot.UpgradeInstallation.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeInstallation.ID(childComplexity), true
+	case "UpgradeInstallation.phase":
+		if e.ComplexityRoot.UpgradeInstallation.Phase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeInstallation.Phase(childComplexity), true
+	case "UpgradeInstallation.startedAt":
+		if e.ComplexityRoot.UpgradeInstallation.StartedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeInstallation.StartedAt(childComplexity), true
+	case "UpgradeInstallation.version":
+		if e.ComplexityRoot.UpgradeInstallation.Version == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeInstallation.Version(childComplexity), true
+
+	case "UpgradeRelease.notes":
+		if e.ComplexityRoot.UpgradeRelease.Notes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeRelease.Notes(childComplexity), true
+	case "UpgradeRelease.packageName":
+		if e.ComplexityRoot.UpgradeRelease.PackageName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeRelease.PackageName(childComplexity), true
+	case "UpgradeRelease.publishedAt":
+		if e.ComplexityRoot.UpgradeRelease.PublishedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeRelease.PublishedAt(childComplexity), true
+	case "UpgradeRelease.size":
+		if e.ComplexityRoot.UpgradeRelease.Size == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeRelease.Size(childComplexity), true
+	case "UpgradeRelease.version":
+		if e.ComplexityRoot.UpgradeRelease.Version == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeRelease.Version(childComplexity), true
+
+	case "UpgradeStagedPackage.notes":
+		if e.ComplexityRoot.UpgradeStagedPackage.Notes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStagedPackage.Notes(childComplexity), true
+	case "UpgradeStagedPackage.sha256":
+		if e.ComplexityRoot.UpgradeStagedPackage.SHA256 == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStagedPackage.SHA256(childComplexity), true
+	case "UpgradeStagedPackage.size":
+		if e.ComplexityRoot.UpgradeStagedPackage.Size == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStagedPackage.Size(childComplexity), true
+	case "UpgradeStagedPackage.verifiedAt":
+		if e.ComplexityRoot.UpgradeStagedPackage.VerifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStagedPackage.VerifiedAt(childComplexity), true
+	case "UpgradeStagedPackage.version":
+		if e.ComplexityRoot.UpgradeStagedPackage.Version == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStagedPackage.Version(childComplexity), true
+
+	case "UpgradeStatus.checkedAt":
+		if e.ComplexityRoot.UpgradeStatus.CheckedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.CheckedAt(childComplexity), true
+	case "UpgradeStatus.currentVersion":
+		if e.ComplexityRoot.UpgradeStatus.CurrentVersion == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.CurrentVersion(childComplexity), true
+	case "UpgradeStatus.installation":
+		if e.ComplexityRoot.UpgradeStatus.Installation == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.Installation(childComplexity), true
+	case "UpgradeStatus.installationSupported":
+		if e.ComplexityRoot.UpgradeStatus.InstallationSupported == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.InstallationSupported(childComplexity), true
+	case "UpgradeStatus.latestRelease":
+		if e.ComplexityRoot.UpgradeStatus.LatestRelease == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.LatestRelease(childComplexity), true
+	case "UpgradeStatus.onlineCheckSupported":
+		if e.ComplexityRoot.UpgradeStatus.OnlineCheckSupported == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.OnlineCheckSupported(childComplexity), true
+	case "UpgradeStatus.phase":
+		if e.ComplexityRoot.UpgradeStatus.Phase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.Phase(childComplexity), true
+	case "UpgradeStatus.stagedPackage":
+		if e.ComplexityRoot.UpgradeStatus.StagedPackage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.StagedPackage(childComplexity), true
+	case "UpgradeStatus.updateAvailable":
+		if e.ComplexityRoot.UpgradeStatus.UpdateAvailable == nil {
+			break
+		}
+
+		return e.ComplexityRoot.UpgradeStatus.UpdateAvailable(childComplexity), true
+
 	case "User.createTime":
 		if e.ComplexityRoot.User.CreateTime == nil {
 			break
@@ -1715,6 +1967,90 @@ func (ec *executionContext) childFields_TailscaleStatus(ctx context.Context, fie
 	return nil, fmt.Errorf("no field named %q was found under type TailscaleStatus", field.Name)
 }
 
+func (ec *executionContext) childFields_UpgradeInstallResult(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "accepted":
+		return ec.fieldContext_UpgradeInstallResult_accepted(ctx, field)
+	case "installation":
+		return ec.fieldContext_UpgradeInstallResult_installation(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type UpgradeInstallResult", field.Name)
+}
+
+func (ec *executionContext) childFields_UpgradeInstallation(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_UpgradeInstallation_id(ctx, field)
+	case "version":
+		return ec.fieldContext_UpgradeInstallation_version(ctx, field)
+	case "phase":
+		return ec.fieldContext_UpgradeInstallation_phase(ctx, field)
+	case "error":
+		return ec.fieldContext_UpgradeInstallation_error(ctx, field)
+	case "startedAt":
+		return ec.fieldContext_UpgradeInstallation_startedAt(ctx, field)
+	case "completedAt":
+		return ec.fieldContext_UpgradeInstallation_completedAt(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type UpgradeInstallation", field.Name)
+}
+
+func (ec *executionContext) childFields_UpgradeRelease(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "version":
+		return ec.fieldContext_UpgradeRelease_version(ctx, field)
+	case "notes":
+		return ec.fieldContext_UpgradeRelease_notes(ctx, field)
+	case "publishedAt":
+		return ec.fieldContext_UpgradeRelease_publishedAt(ctx, field)
+	case "packageName":
+		return ec.fieldContext_UpgradeRelease_packageName(ctx, field)
+	case "size":
+		return ec.fieldContext_UpgradeRelease_size(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type UpgradeRelease", field.Name)
+}
+
+func (ec *executionContext) childFields_UpgradeStagedPackage(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "version":
+		return ec.fieldContext_UpgradeStagedPackage_version(ctx, field)
+	case "sha256":
+		return ec.fieldContext_UpgradeStagedPackage_sha256(ctx, field)
+	case "size":
+		return ec.fieldContext_UpgradeStagedPackage_size(ctx, field)
+	case "verifiedAt":
+		return ec.fieldContext_UpgradeStagedPackage_verifiedAt(ctx, field)
+	case "notes":
+		return ec.fieldContext_UpgradeStagedPackage_notes(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type UpgradeStagedPackage", field.Name)
+}
+
+func (ec *executionContext) childFields_UpgradeStatus(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "currentVersion":
+		return ec.fieldContext_UpgradeStatus_currentVersion(ctx, field)
+	case "latestRelease":
+		return ec.fieldContext_UpgradeStatus_latestRelease(ctx, field)
+	case "updateAvailable":
+		return ec.fieldContext_UpgradeStatus_updateAvailable(ctx, field)
+	case "checkedAt":
+		return ec.fieldContext_UpgradeStatus_checkedAt(ctx, field)
+	case "stagedPackage":
+		return ec.fieldContext_UpgradeStatus_stagedPackage(ctx, field)
+	case "installationSupported":
+		return ec.fieldContext_UpgradeStatus_installationSupported(ctx, field)
+	case "installation":
+		return ec.fieldContext_UpgradeStatus_installation(ctx, field)
+	case "onlineCheckSupported":
+		return ec.fieldContext_UpgradeStatus_onlineCheckSupported(ctx, field)
+	case "phase":
+		return ec.fieldContext_UpgradeStatus_phase(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type UpgradeStatus", field.Name)
+}
+
 func (ec *executionContext) childFields_User(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -1886,6 +2222,42 @@ func (ec *executionContext) field_Mutation_changePassword_args(ctx context.Conte
 		return nil, err
 	}
 	args["passwords"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_downloadUpgrade_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "version",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["version"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_installUpgrade_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "version",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["version"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "sha256",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["sha256"] = arg1
 	return args, nil
 }
 
@@ -2367,6 +2739,126 @@ func (ec *executionContext) _DeviceStatus_health(ctx context.Context, field grap
 }
 func (ec *executionContext) fieldContext_DeviceStatus_health(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("DeviceStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Mutation_checkForUpdates(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_checkForUpdates(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().CheckForUpdates(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *upgrade.Status) graphql.Marshaler {
+			return ec.marshalNUpgradeStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_checkForUpdates(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_UpgradeStatus(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_downloadUpgrade(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_downloadUpgrade(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DownloadUpgrade(ctx, fc.Args["version"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *upgrade.Status) graphql.Marshaler {
+			return ec.marshalNUpgradeStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_downloadUpgrade(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_UpgradeStatus(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_downloadUpgrade_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_installUpgrade(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_installUpgrade(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().InstallUpgrade(ctx, fc.Args["version"].(string), fc.Args["sha256"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.UpgradeInstallResult) graphql.Marshaler {
+			return ec.marshalNUpgradeInstallResult2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐUpgradeInstallResult(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_installUpgrade(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_UpgradeInstallResult(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_installUpgrade_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Mutation_setPeerRelay(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3319,6 +3811,38 @@ func (ec *executionContext) _NetworkActivityTotals_recordedSince(ctx context.Con
 }
 func (ec *executionContext) fieldContext_NetworkActivityTotals_recordedSince(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("NetworkActivityTotals", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _Query_upgradeStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_upgradeStatus(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().UpgradeStatus(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *upgrade.Status) graphql.Marshaler {
+			return ec.marshalNUpgradeStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_upgradeStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_UpgradeStatus(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Query_portalVersion(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5869,6 +6393,663 @@ func (ec *executionContext) fieldContext_TailscaleUser_profilePicURL(_ context.C
 	return graphql.NewScalarFieldContext("TailscaleUser", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _UpgradeInstallResult_accepted(ctx context.Context, field graphql.CollectedField, obj *model.UpgradeInstallResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeInstallResult_accepted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Accepted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeInstallResult_accepted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeInstallResult", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeInstallResult_installation(ctx context.Context, field graphql.CollectedField, obj *model.UpgradeInstallResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeInstallResult_installation(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Installation, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *upgrade.Installation) graphql.Marshaler {
+			return ec.marshalNUpgradeInstallation2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐInstallation(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeInstallResult_installation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpgradeInstallResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_UpgradeInstallation(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpgradeInstallation_id(ctx context.Context, field graphql.CollectedField, obj *upgrade.Installation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeInstallation_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeInstallation_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeInstallation", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeInstallation_version(ctx context.Context, field graphql.CollectedField, obj *upgrade.Installation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeInstallation_version(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Version, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeInstallation_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeInstallation", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeInstallation_phase(ctx context.Context, field graphql.CollectedField, obj *upgrade.Installation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeInstallation_phase(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Phase, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeInstallation_phase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeInstallation", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeInstallation_error(ctx context.Context, field graphql.CollectedField, obj *upgrade.Installation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeInstallation_error(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Error, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeInstallation_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeInstallation", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeInstallation_startedAt(ctx context.Context, field graphql.CollectedField, obj *upgrade.Installation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeInstallation_startedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.StartedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeInstallation_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeInstallation", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeInstallation_completedAt(ctx context.Context, field graphql.CollectedField, obj *upgrade.Installation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeInstallation_completedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CompletedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeInstallation_completedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeInstallation", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeRelease_version(ctx context.Context, field graphql.CollectedField, obj *upgrade.Release) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeRelease_version(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Version, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeRelease_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeRelease", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeRelease_notes(ctx context.Context, field graphql.CollectedField, obj *upgrade.Release) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeRelease_notes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Notes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeRelease_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeRelease", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeRelease_publishedAt(ctx context.Context, field graphql.CollectedField, obj *upgrade.Release) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeRelease_publishedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PublishedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeRelease_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeRelease", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeRelease_packageName(ctx context.Context, field graphql.CollectedField, obj *upgrade.Release) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeRelease_packageName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PackageName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeRelease_packageName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeRelease", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeRelease_size(ctx context.Context, field graphql.CollectedField, obj *upgrade.Release) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeRelease_size(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Size, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int64) graphql.Marshaler {
+			return ec.marshalNInt642int64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeRelease_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeRelease", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStagedPackage_version(ctx context.Context, field graphql.CollectedField, obj *upgrade.StagedPackage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStagedPackage_version(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Version, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStagedPackage_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStagedPackage", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStagedPackage_sha256(ctx context.Context, field graphql.CollectedField, obj *upgrade.StagedPackage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStagedPackage_sha256(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SHA256, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStagedPackage_sha256(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStagedPackage", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStagedPackage_size(ctx context.Context, field graphql.CollectedField, obj *upgrade.StagedPackage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStagedPackage_size(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Size, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int64) graphql.Marshaler {
+			return ec.marshalNInt642int64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStagedPackage_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStagedPackage", field, false, false, errors.New("field of type Int64 does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStagedPackage_verifiedAt(ctx context.Context, field graphql.CollectedField, obj *upgrade.StagedPackage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStagedPackage_verifiedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.VerifiedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStagedPackage_verifiedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStagedPackage", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStagedPackage_notes(ctx context.Context, field graphql.CollectedField, obj *upgrade.StagedPackage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStagedPackage_notes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Notes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStagedPackage_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStagedPackage", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStatus_currentVersion(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_currentVersion(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CurrentVersion, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_currentVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStatus_latestRelease(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_latestRelease(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LatestRelease, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *upgrade.Release) graphql.Marshaler {
+			return ec.marshalOUpgradeRelease2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐRelease(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_latestRelease(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpgradeStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_UpgradeRelease(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpgradeStatus_updateAvailable(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_updateAvailable(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UpdateAvailable, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_updateAvailable(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStatus_checkedAt(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_checkedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CheckedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_checkedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStatus", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStatus_stagedPackage(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_stagedPackage(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.StagedPackage, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *upgrade.StagedPackage) graphql.Marshaler {
+			return ec.marshalOUpgradeStagedPackage2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐStagedPackage(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_stagedPackage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpgradeStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_UpgradeStagedPackage(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpgradeStatus_installationSupported(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_installationSupported(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.InstallationSupported, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_installationSupported(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStatus_installation(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_installation(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Installation, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *upgrade.Installation) graphql.Marshaler {
+			return ec.marshalOUpgradeInstallation2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐInstallation(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_installation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpgradeStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_UpgradeInstallation(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpgradeStatus_onlineCheckSupported(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_onlineCheckSupported(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OnlineCheckSupported, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_onlineCheckSupported(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _UpgradeStatus_phase(ctx context.Context, field graphql.CollectedField, obj *upgrade.Status) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_UpgradeStatus_phase(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Phase, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_UpgradeStatus_phase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("UpgradeStatus", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7370,6 +8551,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "checkForUpdates":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_checkForUpdates(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "downloadUpgrade":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_downloadUpgrade(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "installUpgrade":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_installUpgrade(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "setPeerRelay":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setPeerRelay(ctx, field)
@@ -7727,6 +8929,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "upgradeStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_upgradeStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "portalVersion":
 			field := field
 
@@ -8822,6 +10046,306 @@ func (ec *executionContext) _TailscaleUser(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var upgradeInstallResultImplementors = []string{"UpgradeInstallResult"}
+
+func (ec *executionContext) _UpgradeInstallResult(ctx context.Context, sel ast.SelectionSet, obj *model.UpgradeInstallResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, upgradeInstallResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpgradeInstallResult")
+		case "accepted":
+			out.Values[i] = ec._UpgradeInstallResult_accepted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "installation":
+			out.Values[i] = ec._UpgradeInstallResult_installation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var upgradeInstallationImplementors = []string{"UpgradeInstallation"}
+
+func (ec *executionContext) _UpgradeInstallation(ctx context.Context, sel ast.SelectionSet, obj *upgrade.Installation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, upgradeInstallationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpgradeInstallation")
+		case "id":
+			out.Values[i] = ec._UpgradeInstallation_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "version":
+			out.Values[i] = ec._UpgradeInstallation_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "phase":
+			out.Values[i] = ec._UpgradeInstallation_phase(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "error":
+			out.Values[i] = ec._UpgradeInstallation_error(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startedAt":
+			out.Values[i] = ec._UpgradeInstallation_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedAt":
+			out.Values[i] = ec._UpgradeInstallation_completedAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var upgradeReleaseImplementors = []string{"UpgradeRelease"}
+
+func (ec *executionContext) _UpgradeRelease(ctx context.Context, sel ast.SelectionSet, obj *upgrade.Release) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, upgradeReleaseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpgradeRelease")
+		case "version":
+			out.Values[i] = ec._UpgradeRelease_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "notes":
+			out.Values[i] = ec._UpgradeRelease_notes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "publishedAt":
+			out.Values[i] = ec._UpgradeRelease_publishedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "packageName":
+			out.Values[i] = ec._UpgradeRelease_packageName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "size":
+			out.Values[i] = ec._UpgradeRelease_size(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var upgradeStagedPackageImplementors = []string{"UpgradeStagedPackage"}
+
+func (ec *executionContext) _UpgradeStagedPackage(ctx context.Context, sel ast.SelectionSet, obj *upgrade.StagedPackage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, upgradeStagedPackageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpgradeStagedPackage")
+		case "version":
+			out.Values[i] = ec._UpgradeStagedPackage_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sha256":
+			out.Values[i] = ec._UpgradeStagedPackage_sha256(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "size":
+			out.Values[i] = ec._UpgradeStagedPackage_size(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "verifiedAt":
+			out.Values[i] = ec._UpgradeStagedPackage_verifiedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "notes":
+			out.Values[i] = ec._UpgradeStagedPackage_notes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var upgradeStatusImplementors = []string{"UpgradeStatus"}
+
+func (ec *executionContext) _UpgradeStatus(ctx context.Context, sel ast.SelectionSet, obj *upgrade.Status) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, upgradeStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpgradeStatus")
+		case "currentVersion":
+			out.Values[i] = ec._UpgradeStatus_currentVersion(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "latestRelease":
+			out.Values[i] = ec._UpgradeStatus_latestRelease(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "updateAvailable":
+			out.Values[i] = ec._UpgradeStatus_updateAvailable(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "checkedAt":
+			out.Values[i] = ec._UpgradeStatus_checkedAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "stagedPackage":
+			out.Values[i] = ec._UpgradeStatus_stagedPackage(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "installationSupported":
+			out.Values[i] = ec._UpgradeStatus_installationSupported(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "installation":
+			out.Values[i] = ec._UpgradeStatus_installation(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "onlineCheckSupported":
+			out.Values[i] = ec._UpgradeStatus_onlineCheckSupported(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "phase":
+			out.Values[i] = ec._UpgradeStatus_phase(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var userImplementors = []string{"User"}
 
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
@@ -9351,6 +10875,22 @@ func (ec *executionContext) marshalNInt642int(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt642int64(ctx context.Context, v any) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNKeyRenewalState2githubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐKeyRenewalState(ctx context.Context, v any) (model.KeyRenewalState, error) {
 	var res model.KeyRenewalState
 	err := res.UnmarshalGQL(v)
@@ -9567,6 +11107,36 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNUpgradeInstallResult2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐUpgradeInstallResult(ctx context.Context, sel ast.SelectionSet, v *model.UpgradeInstallResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpgradeInstallResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUpgradeInstallation2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐInstallation(ctx context.Context, sel ast.SelectionSet, v *upgrade.Installation) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpgradeInstallation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUpgradeStatus2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐStatus(ctx context.Context, sel ast.SelectionSet, v *upgrade.Status) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpgradeStatus(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋappᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
@@ -9926,6 +11496,27 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 	_ = ctx
 	res := graphql.MarshalTime(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOUpgradeInstallation2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐInstallation(ctx context.Context, sel ast.SelectionSet, v *upgrade.Installation) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UpgradeInstallation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUpgradeRelease2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐRelease(ctx context.Context, sel ast.SelectionSet, v *upgrade.Release) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UpgradeRelease(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUpgradeStagedPackage2ᚖgithubᚗcomᚋpancppᚋnanotailᚑportalᚋupgradeᚐStagedPackage(ctx context.Context, sel ast.SelectionSet, v *upgrade.StagedPackage) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UpgradeStagedPackage(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

@@ -352,8 +352,9 @@ export function deviceReconnectURL(currentURL: string, ip: string): string | nul
   return url.toString()
 }
 
-async function graphQLRequest(token: string, operationName: string, query: string,
-  variables: object = {}, signal?: AbortSignal, resource = 'Tailscale') {
+export async function graphQLRequest(token: string, operationName: string, query: string,
+  variables: object = {}, signal?: AbortSignal, resource = 'Tailscale',
+  fallbackMessages?: { failure: string; invalid: string }) {
   const response = await fetch('/api/v1/query', {
     method: 'POST', signal, cache: 'no-store',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -366,10 +367,10 @@ async function graphQLRequest(token: string, operationName: string, query: strin
       typeof error.message === 'string' && error.message.trim() ? [error.message] : []) : []
     throw new ApiError(messages.join('\n') ||
       (typeof payload?.message === 'string' && payload.message) ||
-      `Unable to complete the ${resource} request. Please retry.`, response.status, messages.length > 0)
+      (fallbackMessages?.failure ?? `Unable to complete the ${resource} request. Please retry.`), response.status, messages.length > 0)
   }
   if (!payload?.data || (payload.errors !== undefined && !Array.isArray(payload.errors))) {
-    throw new ApiError(`The server returned an invalid ${resource} response.`, response.status)
+    throw new ApiError(fallbackMessages?.invalid ?? `The server returned an invalid ${resource} response.`, response.status)
   }
   return payload.data
 }

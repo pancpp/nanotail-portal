@@ -328,9 +328,21 @@ func init() {
 	if err := os.WriteFile(fixturePath, []byte(fixture), 0600); err != nil {
 		t.Fatal(err)
 	}
+	// Keep the fixed production upgrade paths isolated in this test executable,
+	// including recovery mode. This is a build overlay, not a runtime setting.
+	paths, err := os.ReadFile(filepath.Join(repo, "upgrade", "paths.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths = bytes.ReplaceAll(paths, []byte(`"/srv/nanotail-portal"`), []byte(fmt.Sprintf("%q", filepath.Join(dir, "installation"))))
+	pathsFixture := filepath.Join(dir, "upgrade_paths.go")
+	if err := os.WriteFile(pathsFixture, paths, 0600); err != nil {
+		t.Fatal(err)
+	}
 	overlay, err := json.Marshal(struct{ Replace map[string]string }{
 		Replace: map[string]string{
 			filepath.Join(repo, "conf", "zz_factoryreset_fixture.go"): fixturePath,
+			filepath.Join(repo, "upgrade", "paths.go"):                pathsFixture,
 		},
 	})
 	if err != nil {

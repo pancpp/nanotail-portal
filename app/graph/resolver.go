@@ -7,6 +7,7 @@ import (
 	"github.com/pancpp/nanotail-portal/device"
 	"github.com/pancpp/nanotail-portal/tailscale"
 	"github.com/pancpp/nanotail-portal/traffic"
+	"github.com/pancpp/nanotail-portal/upgrade"
 )
 
 // This file will not be regenerated automatically.
@@ -87,4 +88,5 @@ type Resolver struct {
 	TrafficHistory   NetworkHistoryReader
 	Connection       TailscaleConnector
 	KeyRenewer       TailscaleKeyRenewer
+	Upgrades         *upgrade.Service
 }

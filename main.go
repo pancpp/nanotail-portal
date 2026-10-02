@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -16,8 +17,10 @@ import (
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/pancpp/nanotail-portal/factoryreset"
 	"github.com/pancpp/nanotail-portal/logger"
+	"github.com/pancpp/nanotail-portal/maintenance"
 	"github.com/pancpp/nanotail-portal/migrations"
 	"github.com/pancpp/nanotail-portal/tailscale"
+	"github.com/pancpp/nanotail-portal/upgrade"
 )
 
 func main() {
@@ -30,6 +33,9 @@ func main() {
 func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 	defer cancel()
+	if conf.UpgradeRecovery() {
+		return upgrade.RunRecovery(ctx)
+	}
 	if err := conf.PrepareDataDir(); err != nil {
 		return err
 	}
@@ -78,6 +84,17 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	gate := &maintenance.Gate{}
+	keys, err := upgrade.TrustedKeys()
+	if err != nil {
+		return err
+	}
+	installer := upgrade.NewInstaller(upgrade.InstallerOptions{
+		Executable: executable, Gate: gate,
+	}, keys, runtime.GOOS, runtime.GOARCH)
+	if err := installer.BeforeStartup(ctx); err != nil {
+		return fmt.Errorf("upgrade startup recovery: %w", err)
+	}
 	reset := factoryreset.NewController(func() error {
 		if err := files.ValidatePaths(conf.ConfigFile(), conf.DatabasePath(), conf.LogDir()); err != nil {
 			return err
@@ -105,7 +122,7 @@ func run() error {
 			return fmt.Errorf("portal executable cannot be inside the logs folder")
 		}
 		return nil
-	})
+	}, gate)
 	timeout, err := time.ParseDuration(conf.GetString("tailscale_timeout"))
 	if err != nil || timeout <= 0 {
 		timeout = 15 * time.Second
@@ -126,19 +143,30 @@ func run() error {
 		return err
 	}
 	for {
-		runtime, err := app.Start(ctx, reset)
+		runtime, err := app.Start(ctx, reset, installer)
 		if err != nil {
 			return err
+		}
+		readyErr := installer.MarkReady(ctx)
+		if readyErr != nil {
+			shutdownCtx, stop := context.WithTimeout(context.Background(), 30*time.Second)
+			_ = runtime.Shutdown(shutdownCtx)
+			stop()
+			return fmt.Errorf("confirm upgraded portal startup: %w", readyErr)
 		}
 		// Startup, migrations and HTTP listener are ready: reset is complete.
 		log.Printf("[factory-reset] portal ready; no reset in progress")
 		resetRequested := false
+		installRequested := false
 		select {
 		case <-ctx.Done():
 		case err = <-runtime.Errors():
 		case <-reset.Requests():
 			resetRequested = true
 			log.Printf("[factory-reset] starting reset")
+		case <-installer.Requests():
+			installRequested = true
+			log.Print("[upgrade] draining portal requests and workers before activation")
 		}
 		if resetRequested {
 			log.Printf("[factory-reset] stopping portal services and draining requests")
@@ -147,9 +175,26 @@ func run() error {
 		shutdownErr := runtime.Shutdown(shutdownCtx)
 		stop()
 		if shutdownErr != nil {
+			// Keep a prepared journal armed: the independent monitor can restart
+			// the old release even if a stuck worker also prevents process exit.
 			return fmt.Errorf("stop portal before shutdown: %w", shutdownErr)
 		}
+		if installRequested {
+			if err := database.Close(); err != nil {
+				_ = installer.Abort(context.Background())
+				return fmt.Errorf("close database before upgrade: %w", err)
+			}
+			activateCtx, activateCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			err := installer.Activate(activateCtx)
+			activateCancel()
+			if err != nil {
+				return fmt.Errorf("activate upgrade; independent recovery will restore the prior release: %w", err)
+			}
+			log.Print("[upgrade] release activated; exiting for systemd restart")
+			return nil
+		}
 		if !resetRequested {
+			_ = installer.Abort(context.Background())
 			return err
 		}
 		log.Printf("[factory-reset] portal services stopped; logging out of Tailscale")

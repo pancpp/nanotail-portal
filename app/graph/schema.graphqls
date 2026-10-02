@@ -251,7 +251,51 @@ type TailscaleKeyRenewal {
   canRenew: Boolean!
 }
 
+type UpgradeRelease {
+  version: String!
+  notes: String!
+  publishedAt: String!
+  packageName: String!
+  size: Int64!
+}
+
+type UpgradeStagedPackage {
+  version: String!
+  sha256: String!
+  size: Int64!
+  verifiedAt: Time!
+  notes: String!
+}
+
+type UpgradeInstallation {
+  id: String!
+  version: String!
+  phase: String!
+  error: String!
+  startedAt: Time!
+  completedAt: Time
+}
+
+type UpgradeStatus {
+  currentVersion: String!
+  latestRelease: UpgradeRelease
+  updateAvailable: Boolean!
+  checkedAt: Time
+  stagedPackage: UpgradeStagedPackage
+  installationSupported: Boolean!
+  installation: UpgradeInstallation
+  onlineCheckSupported: Boolean!
+  phase: String!
+}
+
+type UpgradeInstallResult {
+  accepted: Boolean!
+  installation: UpgradeInstallation!
+}
+
 type Query {
+  "Admin only: installed version, checked GitHub release, verified package, and installation progress."
+  upgradeStatus: UpgradeStatus!
   "Portal build version injected into conf.gVersion. Empty for builds without version metadata."
   portalVersion: String!
   "Provisioned Nanotail device ID as 16 lowercase hexadecimal characters. Null when unavailable."
@@ -290,6 +334,12 @@ input DeviceIP {
 }
 
 type Mutation {
+  "Admin only: check the latest stable GitHub release for this ARM64 Linux device."
+  checkForUpdates: UpgradeStatus!
+  "Admin only: download and verify the previously checked release version."
+  downloadUpgrade(version: String!): UpgradeStatus!
+  "Admin only: durably accept installation of the exact verified package, then restart after responding."
+  installUpgrade(version: String!, sha256: String!): UpgradeInstallResult!
   "Admin only: configure this device as a peer relay; enabling also ensures its tailnet relay grant using saved OAuth credentials."
   setPeerRelay(input: PeerRelayInput!): Boolean!
   changePassword(passwords: ChangePassword!): Boolean!

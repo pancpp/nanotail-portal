@@ -10,7 +10,28 @@ import (
 
 	"github.com/pancpp/nanotail-portal/app/graph/model"
 	"github.com/pancpp/nanotail-portal/conf"
+	"github.com/pancpp/nanotail-portal/upgrade"
 )
+
+// CheckForUpdates is the resolver for the checkForUpdates field.
+func (r *mutationResolver) CheckForUpdates(ctx context.Context) (*upgrade.Status, error) {
+	return r.checkForUpdates(ctx)
+}
+
+// DownloadUpgrade is the resolver for the downloadUpgrade field.
+func (r *mutationResolver) DownloadUpgrade(ctx context.Context, version string) (*upgrade.Status, error) {
+	return r.downloadUpgrade(ctx, version)
+}
+
+// InstallUpgrade is the resolver for the installUpgrade field.
+func (r *mutationResolver) InstallUpgrade(ctx context.Context, version string, sha256 string) (*model.UpgradeInstallResult, error) {
+	return r.installUpgrade(ctx, version, sha256)
+}
+
+// UpgradeStatus is the resolver for the upgradeStatus field.
+func (r *queryResolver) UpgradeStatus(ctx context.Context) (*upgrade.Status, error) {
+	return r.upgradeStatus(ctx)
+}
 
 // SetPeerRelay is the resolver for the setPeerRelay field.
 func (r *mutationResolver) SetPeerRelay(ctx context.Context, input model.PeerRelayInput) (bool, error) {

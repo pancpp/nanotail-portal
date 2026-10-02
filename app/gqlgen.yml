@@ -169,6 +169,14 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
+  UpgradeStatus:
+    model: github.com/pancpp/nanotail-portal/upgrade.Status
+  UpgradeRelease:
+    model: github.com/pancpp/nanotail-portal/upgrade.Release
+  UpgradeStagedPackage:
+    model: github.com/pancpp/nanotail-portal/upgrade.StagedPackage
+  UpgradeInstallation:
+    model: github.com/pancpp/nanotail-portal/upgrade.Installation
   TailscalePeer:
     fields:
       latencyMs:

@@ -6,6 +6,7 @@
 /logs/
 /data/
 /build/
+/.release-signing/
 
 nanotail-portal
 nanotail-portal.arm64

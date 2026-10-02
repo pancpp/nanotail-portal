@@ -1,6 +1,7 @@
 # Nanotail Portal
 
-Go/Echo backend and React WebUI for managing Tailscale on nanotail.
+Go/Echo backend and React WebUI for managing Tailscale on nanotail. Device
+releases and upgrade packages support Linux/ARM64 only.
 
 ## Run locally
 
@@ -482,6 +483,240 @@ Factory reset continues to leave OS forwarding/firewall configuration unchanged.
 
 ## API
 
+### Application upgrades
+
+The **Software upgrade** card at the end of Settings checks GitHub Releases for
+`pancpp/nanotail-portal` and downloads signed packages. The current WebUI verifies
+and stages packages; it has no installation button yet. Installation is available
+through the backend API described below. Downloading a package alone does not
+restart the portal, run migrations, or change the installed release.
+
+**Check for updates** queries GitHub's latest published stable release and compares
+its semantic-version tag with the running version. The release must contain an
+uploaded `nanotail-portal-<version>-linux-arm64.tar.gz` asset for this device;
+GitHub's generated source archives are not upgrade packages. Drafts and
+prereleases are excluded. **Prepare upgrade** downloads and verifies the selected
+release. An unversioned development build cannot be compared, but can still
+prepare the latest release. No manual package upload or arbitrary download URL
+is accepted from the browser. The public repository requires no GitHub token.
+Missing packages, rate limits, and failed requests are reported as errors rather
+than as a successful check with no update.
+
+Upgrade operations use the existing GraphQL endpoint, `POST /api/v1/query`, with
+a valid JWT and an existing administrator account:
+
+| Operation | Field | Purpose |
+| --- | --- | --- |
+| Query | `upgradeStatus` | Current version, latest check, staged package, and installation status |
+| Mutation | `checkForUpdates` | Check the latest stable GitHub release for a compatible package |
+| Mutation | `downloadUpgrade(version: String!)` | Download and verify the checked release |
+| Mutation | `installUpgrade(version: String!, sha256: String!)` | Accept installation of the exact staged package |
+
+The status query, check mutation, and download mutation return `UpgradeStatus`, with
+`currentVersion`, `latestRelease`, `updateAvailable`, `checkedAt`, `stagedPackage`,
+`phase`, `onlineCheckSupported`, `installationSupported`, and `installation`.
+A staged package includes its version, archive SHA-256, byte size, verification
+time, and signed release notes. `installation` is null when no operation is known;
+otherwise it contains `id`, `version`, `phase`, and `startedAt`, with `error` and
+`completedAt` when applicable. It reports the pending operation or the last result.
+
+Installation requires both the staged version and its exact lowercase SHA-256
+from status. The backend pins and re-verifies that archive, extracts the release,
+checks that its executable is an AArch64 ELF for Linux/ARM64, and persists the
+installation transaction before returning GraphQL data containing
+`installUpgrade { accepted installation { id version phase } }`. This acknowledges acceptance, not
+completion. An interrupted response may still mean the request was accepted;
+read status before retrying. Duplicate installations and concurrent factory resets
+are rejected. `installUpgrade` must be the only selected root field in its
+mutation. The response is written and flushed before shutdown is scheduled.
+Authenticated administrator queries selecting only `upgradeStatus` remain
+available until HTTP shutdown; other operations are rejected during maintenance.
+
+For example, inspect the staged package before submitting its version and digest:
+
+```graphql
+query UpgradeStatus {
+  upgradeStatus {
+    currentVersion
+    updateAvailable
+    latestRelease { version notes publishedAt packageName size }
+    stagedPackage { version sha256 size verifiedAt }
+    installation { id version phase error completedAt }
+  }
+}
+
+mutation InstallUpgrade($version: String!, $sha256: String!) {
+  installUpgrade(version: $version, sha256: $sha256) {
+    accepted
+    installation { id version phase startedAt }
+  }
+}
+```
+
+Resolver failures use GraphQL `errors`, with safe messages and an
+`extensions.code` such as `UPGRADE_INVALID_PACKAGE`, `UPGRADE_BUSY`, or
+`UPGRADE_GITHUB_UNAVAILABLE`. They can accompany HTTP `200`; clients must check
+`errors` before using `data`. Invalid JWTs return HTTP `401`. No upgrade REST
+routes or manual upload endpoint remain. Checks are bounded to 30 seconds;
+downloading and installation preparation are each bounded to five minutes.
+
+Packages are limited to 128 MiB compressed and 256 MiB unpacked. Verification
+checks the embedded Ed25519 public key, the exact manifest signature, all file
+sizes and SHA-256 checksums, application ID, package format, semantic version,
+and the fixed Linux/ARM64 platform. Only the defined regular-file layout is allowed;
+links, traversal paths, duplicate or unlisted files, extra archives, and arbitrary
+installation scripts are rejected. Download verification does not extract or
+execute the archive. Installation re-verifies it before safely extracting files
+into a new release directory.
+
+Upgrade files use the fixed directory `/srv/nanotail-portal/upgrade`, outside
+the portal's runtime data directory. Recovery journals and locks live directly
+in that directory; downloaded packages are verified and staged in
+`/srv/nanotail-portal/upgrade/staging/package.tar.gz`. These paths are not
+configurable. Installed releases and the `current`/`previous` links remain under
+the fixed installation root `/srv/nanotail-portal`.
+
+`installationSupported` is enabled only for the managed Linux/ARM64 systemd
+release layout running as root. The installation root, `releases/`, and active release
+directory must be root-owned directories without group or world write permission;
+recovery state must be root-owned and mode `0700`. Installation preflight also
+checks that `nanotail-portal.service` owns the running process, starts the binary
+through `current/nanotail-portal`, and uses `Restart=always` with a supported
+service type. Development launches on ARM64 Linux can check and stage packages
+without a managed systemd installation.
+
+Staging files use mode `0600`. A fully verified archive atomically replaces
+`package.tar.gz`; failed verification preserves the prior package. Startup removes
+abandoned temporary downloads and verifies the saved archive again instead of
+trusting separate package metadata. Allow space for the existing and incoming
+archives, the extracted release, and retained previous releases. Packages are
+downloaded directly by the backend, without passing through the browser or
+nginx's request-body limit.
+
+Preparation blocks new work with a maintenance gate shared with factory reset.
+After flushing installation acceptance, the main process drains active HTTP
+requests and background workers and closes the database. It then applies changed
+service or nginx integration files, atomically updates the `previous` and `current` symlinks,
+and exits. Systemd's `Restart=always` starts the selected release. A shutdown or
+database-close failure prevents activation.
+
+Optional integration templates target
+`/etc/systemd/system/nanotail-portal.service` and
+`/srv/nanotail-portal/nanotail-portal.nginx`. Omitted or byte-identical templates
+leave the installed file unchanged and skip its reload. Before a changed template
+is accepted, the previous release must contain a matching copy of the currently
+installed integration file. These retained release templates provide restoration
+without separate configuration backups. Changed service definitions are validated
+and reloaded; changed nginx configuration is tested before reload.
+
+Recovery runs as a short-lived mode of the same portal executable:
+`--upgrade-recover`, which reads `/srv/nanotail-portal/upgrade`. The enabled
+`nanotail-portal-upgrade-recovery.service` is pinned to the previous release's
+immutable executable and has a condition requiring `pending.json`. It runs
+independently of the portal service and never initializes portal configuration,
+the database, or migrations. The durable transaction survives process failure or
+reboot, allowing recovery even when the new executable cannot start.
+
+The new portal declares readiness only after migrations and HTTP startup. Within
+90 seconds of activation, recovery must observe the expected executable and the
+same systemd main PID continuously ready for ten seconds. Normal work remains
+blocked during that check. Success records `complete`; failed startup or
+interrupted activation restores the previous executable and changed integration
+files and restarts the portal. Recovery failures retain the pending transaction
+for another attempt and expose the failure in installation status and recovery
+service logs.
+
+**Database files are neither backed up nor rolled back.** Recovery restores code
+and integration files only. Release developers must keep migrations and runtime
+data compatible with the previous executable; code rollback cannot undo a
+migration that breaks that compatibility.
+
+### Signing release packages
+
+The release-signing public key is `upgrade/release-public.pem` and is embedded
+in the portal. Its private counterpart is stored locally at
+`.release-signing/release-private.pem` with mode `0600`; `.release-signing/` is
+ignored by Git. Back up the private key securely outside the checkout and keep
+it on the release-signing machine. The private key is never included in portal
+builds or upgrade packages. These release keys are separate from device identity
+signatures and the portal's JWT signing key.
+
+Build and sign a complete release in one command:
+
+```sh
+./release.sh --key .release-signing/release-private.pem
+```
+
+`release.sh` reinstalls frontend dependencies, rebuilds the WebUI, regenerates
+GraphQL code, and builds a new Linux/ARM64 executable. It packages the executable
+and service/nginx templates, signs the manifest, and verifies the archive against
+the embedded public key before saving it as
+`build/nanotail-portal-<version>-linux-arm64.tar.gz`. A repository `LICENSE`, when
+present, is included too. The private key stays outside the package.
+
+The version comes from an exact semantic-version Git tag on a clean working
+tree. Untagged or modified working trees receive
+`v0.0.0-dev.<commit-count>.<UTC-timestamp>+g<commit>[.dirty]` automatically. The
+binary and signed manifest use the same version. Existing archives are never
+overwritten, and failed builds or verification leave no published package.
+Published releases and the upgrader support Linux/ARM64 only. `release.sh` rejects
+other `GOOS` or `GOARCH` overrides before building. GraphQL generation and the signing
+tool run natively on the build machine, which does not need an ARM64 processor.
+Relative key paths are resolved from the directory where you invoke the command.
+
+To publish an online update, build from a clean commit tagged with a stable
+version such as `v1.2.3`, attach the generated archive to the GitHub Release with
+that exact tag, and publish it as the latest full release. The release tag,
+asset filename, and signed manifest version must match. `release.sh` builds and
+signs locally; it does not upload or publish the GitHub Release. Development
+packages remain useful for local verification but are not offered by stable
+online checking.
+
+For more control over package contents, build an executable first and use the
+lower-level packaging command:
+
+```sh
+go run ./cmd/release-package create \
+  -binary build/releases/v1.2.3/nanotail-portal \
+  -version v1.2.3 -os linux -arch arm64 \
+  -private-key .release-signing/release-private.pem \
+  -output build/nanotail-portal-v1.2.3-linux-arm64.tar.gz
+
+go run ./cmd/release-package verify \
+  -package build/nanotail-portal-v1.2.3-linux-arm64.tar.gz \
+  -os linux -arch arm64
+```
+
+Use the same version for the executable's build metadata and the manifest.
+Optional `-release-notes`, `-service`, `-nginx`, and `-license` flags include
+the corresponding local files. The package contains these entries, with the
+manifest and signature first:
+
+```text
+nanotail-portal/
+├── manifest.json
+├── manifest.sig
+├── payload/nanotail-portal
+├── docs/release-notes.md                 (optional)
+├── docs/LICENSE                          (optional)
+├── integration/nanotail-portal.service    (optional)
+└── integration/nanotail-portal.nginx      (optional)
+```
+
+`manifest.sig` contains the raw 64-byte Ed25519 signature of the exact
+`manifest.json` bytes. The manifest contains `format_version: 1`,
+`application: "nanotail-portal"`, `version`, `os: "linux"`, `arch: "arm64"`, optional `release_notes`,
+and a `files` map of relative paths to `{ "sha256": "...", "size": 123 }` records.
+It never carries a replacement trusted key or device data. Use the packaging
+command rather than repacking the archive by hand.
+
+To generate a separate new signing pair, the `keygen` command accepts
+`-private-key PATH -public-key PATH` and refuses to overwrite existing files.
+Generating another pair does not change the key trusted by installed portals;
+trust-key changes require a deliberate application update.
+
+### Existing application APIs
+
 Requests with JSON bodies require `Content-Type: application/json`. Protected routes
 require `Authorization: Bearer <token>`. Query-string tokens are not accepted.
 Login and JWT middleware errors use `{"message":"..."}`; GraphQL responses use
@@ -947,13 +1182,13 @@ Create a release for nanotail (Linux/ARM64) with:
 ./build.sh
 ```
 
-The script installs frontend dependencies, builds the React WebUI, and embeds it
-in a static Linux/ARM64 binary at `build/releases/<version>/nanotail-portal`. Version metadata is filled
+The script installs frontend dependencies, builds the React WebUI, and by default
+embeds it in a static Linux/ARM64 binary at `build/releases/<version>/nanotail-portal`. Version metadata is filled
 automatically from Git and the build time. Go, Git, and Node/npm are required.
 The build output contains the executable, including its WebUI and database
 migrations. It does not create runtime data or change installed release links.
-`GOARCH` can override the default ARM64 architecture; the application requires
-the Linux target (`GOOS=linux`).
+The default target is `GOOS=linux GOARCH=arm64`. `build.sh` also accepts target
+overrides for local development; `release.sh` always produces Linux/ARM64 packages.
 
 For a local development build and run, use `./run.sh`. It builds for the host
 architecture and starts with `--data-dir <checkout>/data`. Additional application

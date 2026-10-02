@@ -18,7 +18,8 @@ var (
 )
 
 var (
-	gViper *viper.Viper
+	gViper          *viper.Viper
+	upgradeRecovery bool
 )
 
 func init() {
@@ -30,6 +31,7 @@ func init() {
 	pflag.BoolVarP(&showVersion, "version", "V", false, "Show version information")
 	pflag.StringVar(&dataDirectory, "data-dir", DEFAULT_DATA_DIR, "Persistent data directory (overrides NANOTAIL_DATA_DIR)")
 	pflag.StringVarP(&configFile, "config", "c", "nanotail-portal.yml", "Configuration file, relative to the data directory unless absolute")
+	pflag.BoolVar(&upgradeRecovery, "upgrade-recover", false, "Run independent upgrade recovery")
 	pflag.Parse()
 	if showVersion {
 		fmt.Println("###############################################")
@@ -88,6 +90,8 @@ func Init() error {
 func GetVersion() (version, buildTime, gitHash, buildNumber string) {
 	return gVersion, gBuildTime, gGitHash, gBuildNumber
 }
+
+func UpgradeRecovery() bool { return upgradeRecovery }
 
 func ConfigFile() string {
 	return DataPath(gViper.ConfigFileUsed())

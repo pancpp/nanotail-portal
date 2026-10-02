@@ -10,13 +10,13 @@ npm --prefix webui run build
 (cd app && GOOS="$(go env GOHOSTOS)" GOARCH="$(go env GOHOSTARCH)" go tool gqlgen generate)
 
 conf_package="github.com/pancpp/nanotail-portal/conf"
-version="$(git describe --tags --always --dirty)"
+version="${NANOTAIL_BUILD_VERSION:-$(git describe --tags --always --dirty)}"
 build_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 git_hash="$(git rev-parse --short HEAD)"
 build_number="$(git rev-list --count HEAD)"
 target_os="${GOOS:-linux}"
 target_arch="${GOARCH:-arm64}"
-release_dir="build/releases/$version"
+release_dir="${NANOTAIL_BUILD_DIR:-build/releases/$version}"
 
 if [[ ! "$version" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]]; then
     echo "Version cannot be used as a release directory: $version" >&2
