@@ -14,8 +14,8 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/pancpp/nanotail-portal/access"
 	"github.com/pancpp/nanotail-portal/activityled"
-	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
+	"github.com/pancpp/nanotail-portal/auth"
 	"github.com/pancpp/nanotail-portal/conf"
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/pancpp/nanotail-portal/device"
@@ -33,6 +33,19 @@ type Runtime struct {
 	ledDone       chan struct{}
 	routingDone   chan struct{}
 	accessDone    chan struct{}
+}
+
+// Init initializes application services in order. Call it once after reset
+// recovery and database migrations, before starting HTTP services.
+func Init(ctx context.Context) error {
+	if err := auth.Init(); err != nil {
+		return err
+	}
+
+	if err := access.Init(ctx); err != nil {
+		log.Printf("(Device IP reporting) disabled: %v", err)
+	}
+	return nil
 }
 
 func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error) {
@@ -102,9 +115,7 @@ func Start(ctx context.Context, reset *factoryreset.Controller) (*Runtime, error
 	}()
 	go func() {
 		defer close(runtime.accessDone)
-		if err := access.Init(collectorCtx); err != nil {
-			log.Printf("(Device IP reporting) disabled: %v", err)
-		}
+		access.Run(collectorCtx)
 	}()
 
 	// Start echo server

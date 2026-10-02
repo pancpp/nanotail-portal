@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph/model"
+	"github.com/pancpp/nanotail-portal/auth"
 	"github.com/pancpp/nanotail-portal/database"
 	"golang.org/x/crypto/bcrypt"
 )

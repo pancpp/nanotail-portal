@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/pancpp/nanotail-portal/app"
-	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/conf"
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/pancpp/nanotail-portal/factoryreset"
@@ -123,9 +122,7 @@ func run() error {
 	if err := migrations.Init(ctx); err != nil {
 		return err
 	}
-	// Reset recovery has already deleted the old key, if requested. Load (or
-	// durably generate) the signing key before constructing JWT middleware.
-	if err := auth.Init(); err != nil {
+	if err := app.Init(ctx); err != nil {
 		return err
 	}
 	for {

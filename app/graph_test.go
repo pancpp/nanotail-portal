@@ -13,8 +13,8 @@ import (
 	"testing"
 
 	"github.com/99designs/gqlgen/graphql/errcode"
-	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph"
+	"github.com/pancpp/nanotail-portal/auth"
 	"github.com/pancpp/nanotail-portal/device"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"

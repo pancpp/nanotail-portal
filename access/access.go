@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/pancpp/nanotail-portal/conf"
@@ -16,8 +15,8 @@ const (
 )
 
 var (
-	gDeviceID   string
-	gDeviceIDMu sync.RWMutex
+	gDeviceID      string
+	gReportService *ReportService
 )
 
 type ReportService struct {
@@ -30,8 +29,8 @@ type ReportService struct {
 	ipv6     string
 }
 
-// Init initializes reporting and runs it until ctx is canceled. The caller owns
-// the goroutine and must wait for Init to return before completing shutdown.
+// Init prepares reporting and caches the device ID. Call it once at startup,
+// before starting HTTP handlers or the reporting worker.
 func Init(ctx context.Context) error {
 	if ctx.Err() != nil {
 		return nil
@@ -59,27 +58,30 @@ func Init(ctx context.Context) error {
 	ethName := conf.GetString("access_eth_name")
 
 	// Set reporter and eth name
-	reportService := &ReportService{
+	gReportService = &ReportService{
 		reporter:       reporter,
 		interfaceName:  ethName,
 		lastReportTime: time.Unix(0, 0),
 	}
 
-	// Publish the cached ID to concurrent HTTP readers.
-	gDeviceIDMu.Lock()
 	gDeviceID = deviceID
-	gDeviceIDMu.Unlock()
-
-	// Keep the worker owned by the caller so shutdown can wait for it.
-	reportService.Run(ctx)
 
 	return nil
 }
 
+// Run reports until ctx is canceled. The caller owns the goroutine and must
+// wait for Run to return before completing shutdown.
+func Run(ctx context.Context) {
+	if gReportService == nil {
+		return
+	}
+	// Each runtime starts with fresh observations, including after an aborted reset.
+	service := *gReportService
+	service.Run(ctx)
+}
+
 // GetDeviceID returns the cached ID, or an empty string before initialization.
 func GetDeviceID() string {
-	gDeviceIDMu.RLock()
-	defer gDeviceIDMu.RUnlock()
 	return gDeviceID
 }
 

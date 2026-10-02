@@ -8,8 +8,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/pancpp/nanotail-portal/app/auth"
 	"github.com/pancpp/nanotail-portal/app/graph/model"
+	"github.com/pancpp/nanotail-portal/auth"
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/pancpp/nanotail-portal/tailscale"
 	"github.com/uptrace/bun"

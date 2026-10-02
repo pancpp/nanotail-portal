@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/pancpp/nanotail-portal/app/auth"
+	"github.com/pancpp/nanotail-portal/auth"
 	"github.com/pancpp/nanotail-portal/database"
 	"github.com/uptrace/bun"
 	"golang.org/x/crypto/bcrypt"

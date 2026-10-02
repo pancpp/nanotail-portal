@@ -62,6 +62,58 @@ func TestInitAlreadyCanceled(t *testing.T) {
 	}
 }
 
+func TestRunRestartsReportingWithoutChangingInitialization(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		originalID, originalService := gDeviceID, gReportService
+		t.Cleanup(func() {
+			gDeviceID, gReportService = originalID, originalService
+		})
+		f := newServiceScheduleFixture(t)
+		f.service.interfaceName = "nanotail-lifecycle-test-interface-does-not-exist"
+		gDeviceID, gReportService = "board-123", f.service
+		initialized := *gReportService
+
+		for run := 1; run <= 2; run++ {
+			ctx, cancel := context.WithCancel(t.Context())
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				Run(ctx)
+			}()
+			t.Cleanup(func() {
+				cancel()
+				<-done
+			})
+			synctest.Wait()
+			logins, updates := f.snapshot()
+			if logins != run || len(updates) != run {
+				t.Fatalf("run %d started with %d logins and %d updates; want one immediate report per run", run, logins, len(updates))
+			}
+			if updates[run-1] != updates[0] {
+				t.Fatalf("run %d changed observations: got %+v, want %+v", run, updates[run-1], updates[0])
+			}
+
+			cancel()
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+				t.Fatal("reporting did not stop promptly after cancellation")
+			}
+			time.Sleep(2 * CHECK_INTERVAL)
+			synctest.Wait()
+			if logins, updates := f.snapshot(); logins != run || len(updates) != run {
+				t.Fatalf("run %d continued reporting after cancellation", run)
+			}
+			if got := GetDeviceID(); got != "board-123" {
+				t.Fatalf("run %d changed cached device ID to %q", run, got)
+			}
+			if gReportService != f.service || *gReportService != initialized {
+				t.Fatalf("run %d changed the initialized report service", run)
+			}
+		}
+	})
+}
+
 func TestReportServiceRunCancelsAndJoinsRequests(t *testing.T) {
 	for _, stage := range []string{LOGIN_API, UPDATE_IP_API} {
 		t.Run(stage, func(t *testing.T) {

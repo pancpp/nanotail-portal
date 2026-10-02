@@ -204,10 +204,12 @@ read permission on the whole SD device; it does not invoke `vendor_storage` or
 write to storage. A shared lock coordinates reads with provisioning.
 
 Missing credentials, malformed storage, and storage-access
-failures cause the reporting worker to log an initialization error and exit
-without making HTTP requests. This does not prevent the portal from starting.
-With provisioned credentials, `access.Init(ctx)` runs until cancellation;
-shutdown and factory reset cancel its requests and wait for the worker to return.
+failures log an initialization error and disable reporting without making HTTP
+requests. This does not prevent the portal from starting. `app.Init(ctx)`
+initializes the signing key and calls `access.Init(ctx)` in sequence, caching the
+device ID before the HTTP server starts. With provisioned credentials,
+`access.Run(ctx)` reports until cancellation; shutdown and factory reset cancel
+its requests and wait for the worker to return.
 
 To generate a device signature from a machine with SSH access to the device, run:
 

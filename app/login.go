@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v5"
-	"github.com/pancpp/nanotail-portal/app/auth"
+	"github.com/pancpp/nanotail-portal/auth"
 )
 
 func handleLogin(c *echo.Context) error {
