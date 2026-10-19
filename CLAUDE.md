@@ -27,7 +27,7 @@ go vet -tags embedwebui ./...
 
 `main_test.go` builds and re-execs a real portal binary (factory-reset process test). It is skipped with `-short`.
 
-Frontend (`webui/`):
+Frontend (`webui/`; `npm test` needs Node 22.6+ for `--experimental-strip-types`):
 
 ```sh
 npm --prefix webui run dev                    # Vite; proxies /api to 127.0.0.1:7080
@@ -64,7 +64,7 @@ Build/release:
 
 ## Architecture
 
-**Startup sequence (`main.go`)**: `--upgrade-recover` mode runs `upgrade.RunRecovery` and nothing else → prepare data dir → `factoryreset.Files` takes the instance lock and resumes any pending reset cleanup → `conf.Init` → `logger.Init` → `upgrade.Installer.BeforeStartup` → `database.Init` → `migrations.Init` (auto-applied, flock-guarded) → `app.Init` → loop on `app.Start`. The loop waits for a server error, a signal, a factory-reset request, or an upgrade-install request. It then drains the runtime (`Runtime.Shutdown`) and either re-execs itself for reset cleanup (after `tailscale logout`) or activates the upgrade and exits so systemd restarts the new release.
+**Startup sequence (`main.go`)**: `--upgrade-recover` mode runs `upgrade.RunRecovery` and nothing else → prepare data dir → `factoryreset.Open` + `LockInstance` (flock on `.nanotail-portal.lock` in the data dir, so only one portal runs per data dir) and resume any pending reset cleanup → `conf.Init` → `logger.Init` → `upgrade.Installer.BeforeStartup` → `database.Init` → `migrations.Init` (auto-applied, flock-guarded) → `app.Init` → loop on `app.Start`. The loop waits for a server error, a signal, a factory-reset request, or an upgrade-install request. It then drains the runtime (`Runtime.Shutdown`) and either re-execs itself for reset cleanup (after `tailscale logout`) or activates the upgrade and exits so systemd restarts the new release.
 
 **Maintenance gate**: `maintenance.Gate` is a single-owner lock shared by factory reset and upgrade install. While either is pending, `app.maintenanceMiddleware` returns 503 for everything except `POST /api/v1/query`. The GraphQL layer itself restricts that endpoint to `upgradeStatus`-only operations (`app/upgrade_graphql.go`).
 
@@ -85,6 +85,6 @@ Build/release:
 
 **Testing conventions**: tests never touch host Tailscale, LEDs, or the network. They use fake `tailscale.Runner`s, fake sysfs dirs, temp data dirs, and in-memory/local HTTP transports. Subprocess tests compile a binary with a Go build `-overlay` that injects test-only `conf` defaults (fake tailscale binary, LED and access disabled) and isolates the fixed upgrade paths. Follow that pattern rather than adding env-var config.
 
-**Frontend (`webui/src/`)**: React 19 + react-router with lazy-loaded pages (`pages/`). No GraphQL client library: feature modules (`upgrade.ts`, `routing.ts`, `api.ts`, …) build GraphQL requests with `fetch` and must check `errors` even on HTTP 200. Hooks (`use*.ts`) hold polling and flow state. Unit tests import these `.ts` modules directly.
+**Frontend (`webui/src/`)**: React 19 + react-router with lazy-loaded pages (`pages/`) and hash-based routes (`/#/login`) so the Go static server needs no SPA fallback. Disableable actions use `components/Button.tsx` with a translated `disabledReason`; an empty reason enables the button. No GraphQL client library: feature modules (`upgrade.ts`, `routing.ts`, `api.ts`, …) build GraphQL requests with `fetch` and must check `errors` even on HTTP 200. Hooks (`use*.ts`) hold polling and flow state. Unit tests import these `.ts` modules directly.
 
 **i18n**: English strings are the catalog keys; `t('English text')` is translated through `src/locales/zh-CN.ts`. `tests/localization.test.mjs` parses the source and fails if any static `t(...)` string lacks a zh-CN entry or a translation drops a placeholder. Every new UI string therefore needs a matching zh-CN entry.
